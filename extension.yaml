@@ -1,0 +1,7 @@
+﻿Id: PlayniteInsightsExporter_ccbe324c-c160-4ad5-b749-5c64f8cbc113
+Name: Generic Plugin
+Author: John Doe
+Version: 1.0
+Module: PlayniteInsightsExporter.dll
+Type: GenericPlugin
+Icon: icon.png
