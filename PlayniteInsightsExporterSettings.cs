@@ -18,16 +18,8 @@ namespace PlayniteInsightsExporter
 {
     public class PlayniteInsightsExporterSettings : ObservableObject
     {
-        //private string option1 = string.Empty;
-        //private bool option2 = false;
-        //private bool optionThatWontBeSaved = false;
-
-        //public string Option1 { get => option1; set => SetValue(ref option1, value); }
-        //public bool Option2 { get => option2; set => SetValue(ref option2, value); }
-        //// Playnite serializes settings object to a JSON object and saves it as text file.
-        //// If you want to exclude some property from being saved then use `JsonDontSerialize` ignore attribute.
-        //[DontSerialize]
-        //public bool OptionThatWontBeSaved { get => optionThatWontBeSaved; set => SetValue(ref optionThatWontBeSaved, value); }
+        private string webAppURL = string.Empty;
+        public string WebAppURL { get => webAppURL; set => SetValue(ref webAppURL, value); }
 
         [DontSerialize]
         public RelayCommand ExportLibraryButton { get; set; }
@@ -54,14 +46,11 @@ namespace PlayniteInsightsExporter
 
         public PlayniteInsightsExporterSettingsViewModel(PlayniteInsightsExporter plugin)
         {
-            this.LibExporter = new LibExporter(plugin);
             // Injecting your plugin instance is required for Save/Load method because Playnite saves data to a location based on what plugin requested the operation.
             this.Plugin = plugin;
             this.PlayniteApi = plugin.PlayniteApi;
-
             // Load saved settings.
             var savedSettings = plugin.LoadPluginSettings<PlayniteInsightsExporterSettings>();
-
             // LoadPluginSettings returns null if no saved data is available.
             if (savedSettings != null)
             {
@@ -71,6 +60,7 @@ namespace PlayniteInsightsExporter
             {
                 Settings = new PlayniteInsightsExporterSettings();
             }
+            this.LibExporter = new LibExporter(plugin, Settings);
         }
 
         public void BeginEdit()
@@ -102,21 +92,17 @@ namespace PlayniteInsightsExporter
             return true;
         }
 
-        public void OnExportLibrary()
+        public async void OnExportLibrary()
         {
-            var result = LibExporter.ExportGamesToJson();
-            var path = LibExporter.ExportedGamesFilePath;
-            if (result == null)
+            var result = await LibExporter.SendJsonToWebAppAsync();
+            if (result == "OK")
             {
-                PlayniteApi.Notifications.Add(
-                    id: $"{Plugin.Name} Error",
-                    text: "Failed to export game library as JSON.",
-                    type: NotificationType.Error
-                );
-                PlayniteApi.Dialogs.ShowMessage("Failed to export game library as JSON");
-                return;
+                PlayniteApi.Dialogs.ShowMessage("Library exported successfully!", "Playnite Insights Exporter");
             }
-            PlayniteApi.Dialogs.ShowMessage($"Exported {result} games to:\n{path}");
+            else
+            {
+                PlayniteApi.Dialogs.ShowErrorMessage($"Failed to export library. Please check the settings and try again. \n\nError: {result}", $"{Plugin.Name} Error");
+            }
         }
     }
 }

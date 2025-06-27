@@ -52,6 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Lib\LibExporter.cs" />
+    <Compile Include="Lib\Models\WebAppEndpoints.cs" />
     <Compile Include="PlayniteInsightsExporter.cs" />
     <Compile Include="PlayniteInsightsExporterSettings.cs" />
     <Compile Include="PlayniteInsightsExporterSettingsView.xaml.cs">
@@ -85,8 +86,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Lib\Models\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

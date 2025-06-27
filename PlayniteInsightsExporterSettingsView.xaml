@@ -6,10 +6,13 @@
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600">
     <StackPanel>
-        <!--<TextBlock Text="Description for Option1:"/>
-        <TextBox Text="{Binding Settings.Option1}"/>
-        <TextBlock Text="Description for Option2:"/>
-        <CheckBox IsChecked="{Binding Settings.Option2}"/>-->
-        <Button Content="Generate Lib JSON" Width="150" Command="{Binding Settings.ExportLibraryButton}"/>
+        <TextBlock Text="Playnite Insights Server URL" Margin="12,12,12,6"/>
+        <TextBox Text="{Binding Settings.WebAppURL}" Margin="12,0,12,6"/>
+        <Button 
+            Content="Send JSON to Server" 
+            Width="150" 
+            Command="{Binding Settings.ExportLibraryButton}"
+            Margin="12,12,12,12"
+            HorizontalAlignment="Left"/>
     </StackPanel>
 </UserControl>
