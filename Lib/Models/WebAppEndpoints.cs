@@ -9,5 +9,16 @@ namespace PlayniteInsightsExporter.Lib.Models
     class WebAppEndpoints
     {
         public const string SyncGames = "/api/sync/games";
+        public const string SyncFiles = "/api/sync/files";
+
+        public static string SyncGamesUrl(string webAppUrl)
+        {
+            return $"{webAppUrl.TrimEnd('/')}{SyncGames}";
+        }
+
+        public static string SyncFilesUrl(string webAppUrl)
+        {
+            return $"{webAppUrl.TrimEnd('/')}{SyncFiles}";
+        }
     }
 }

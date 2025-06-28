@@ -6,4 +6,6 @@
     <sys:String x:Key="LOCServerURLNotSet">Server URL not set, please set a valid URL in the extesion's settings.</sys:String>
     <sys:String x:Key="LOCSendingLibraryMetadataToServer">Sending library metadata to server...</sys:String>
     <sys:String x:Key="LOCLibraryMetadataSendFailed">Failed to send library metadata to server.</sys:String>
+    <sys:String x:Key="LOCSendingLibraryFilesToServer">Sending library files to server...</sys:String>
+    <sys:String x:Key="LOCLibraryFilesSendFailed">Failed to send library files to server.</sys:String>
 </ResourceDictionary>
