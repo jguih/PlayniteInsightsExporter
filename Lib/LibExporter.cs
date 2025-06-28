@@ -87,24 +87,22 @@ namespace PlayniteInsightsExporter.Lib
             {
                 json = ExportGamesToJsonString();
             }
+            if (String.IsNullOrEmpty(Settings.WebAppURL))
+            {
+                return "Server URL not set, please set a valid URL in the extesion's settings.";
+            }
             var client = new HttpClient();
             try 
             {
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 string url = Settings.WebAppURL.TrimEnd('/') + '/' + WebAppEndpoints.SyncGames.TrimStart('/');
                 HttpResponseMessage response = await client.PostAsync(url, content);
-                if (response.IsSuccessStatusCode)
-                {
-                    return "OK";
-                } 
-                else
-                {
-                    return response.ReasonPhrase;
-                }
+                response.EnsureSuccessStatusCode();
+                return "OK";
             } 
             catch (Exception e)
             {
-                return e.InnerException.Message;
+                return e.Message;
             } 
             finally
             {
