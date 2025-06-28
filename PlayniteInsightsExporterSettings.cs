@@ -92,16 +92,17 @@ namespace PlayniteInsightsExporter
             return true;
         }
 
-        public async void OnExportLibrary()
+        public void OnExportLibrary()
         {
-            var result = await LibExporter.SendJsonToWebAppAsync();
-            if (result == "OK")
+            var result = LibExporter.SendJsonToWebAppAsync();
+            var createArchiveResult = LibExporter.CreateFilesArchive();
+            if (result == "OK" && createArchiveResult == "OK")
             {
-                PlayniteApi.Dialogs.ShowMessage("Library exported successfully!", "Playnite Insights Exporter");
+                PlayniteApi.Dialogs.ShowMessage("Library synqued successfully!", "Playnite Insights Exporter");
             }
             else
             {
-                PlayniteApi.Dialogs.ShowErrorMessage($"Failed to export library. Please check the settings and try again. \n\nError: {result}", $"{Plugin.Name} Error");
+                PlayniteApi.Dialogs.ShowErrorMessage($"Failed to export library. Please check the settings and try again. \n\nError: {result}, {createArchiveResult}", $"{Plugin.Name} Error");
             }
         }
     }

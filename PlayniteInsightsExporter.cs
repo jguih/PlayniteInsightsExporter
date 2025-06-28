@@ -66,9 +66,9 @@ namespace PlayniteInsightsExporter
             // Add code to be executed when Playnite is shutting down.
         }
 
-        public override async void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
+        public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
-            var result = await LibExporter.SendJsonToWebAppAsync();
+            var result = LibExporter.SendJsonToWebAppAsync();
             if (result != "OK")
             {
                 PlayniteApi.Notifications.Add(
