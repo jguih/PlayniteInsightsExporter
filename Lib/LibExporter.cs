@@ -141,13 +141,7 @@ namespace PlayniteInsightsExporter.Lib
             using (var fileContent = new StreamContent(fileStream))
             {
                 fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/zip");
-                fileContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
-                {
-                    Name = "\"files\"",
-                    FileName = $"\"{Path.GetFileName(tmpZipPath)}\""
-                };
-                content.Add(fileContent);
-                var result = WebServerService.Post(WebAppEndpoints.SyncFiles, content, locSendingLibraryFilesToServer);
+                var result = WebServerService.Post(WebAppEndpoints.SyncFiles, fileContent, locSendingLibraryFilesToServer);
                 if (File.Exists(tmpZipPath))
                 {
                     File.Delete(tmpZipPath);
