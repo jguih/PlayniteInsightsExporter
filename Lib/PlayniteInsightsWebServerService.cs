@@ -38,7 +38,7 @@ namespace PlayniteInsightsExporter.Lib
             return $"{Settings.WebAppURL.TrimEnd('/')}/{endpoint.TrimStart('/')}";
         }
 
-        public async Task<ValidationResult> Post(string endpoint, HttpContent content, string loadingText)
+        public async Task<ValidationResult> Post(string endpoint, HttpContent content)
         {
             try
             {

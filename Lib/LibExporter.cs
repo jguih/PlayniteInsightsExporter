@@ -110,7 +110,6 @@ namespace PlayniteInsightsExporter.Lib
         private async Task<ValidationResult> CreateLibraryZip(List<string> gameIdList = null)
         {
             string tmpZipPath = GetTempLibraryZipPath();
-            string locFailedToCreateLibArchive = ResourceProvider.GetString("LOCFailedToCreateLibArchive");
             var result = DeleteLibraryZip();
             if (!result.IsValid)
             {
@@ -178,7 +177,7 @@ namespace PlayniteInsightsExporter.Lib
             {
                 return new ValidationResult(
                         IsValid: false,
-                        Message: locFailedToCreateLibArchive,
+                        Message: "Failed to create library zip file",
                         HttpCode: 500
                     );
             }
@@ -224,8 +223,7 @@ namespace PlayniteInsightsExporter.Lib
                 var result = await WebServerService
                     .Post(
                         endpoint: WebAppEndpoints.SyncGames, 
-                        content: content, 
-                        loadingText: locSendingLibraryMetadataToServer);
+                        content: content);
                 if (!result.IsValid)
                 {
                     return result;
@@ -261,8 +259,7 @@ namespace PlayniteInsightsExporter.Lib
                 result = await WebServerService
                     .Post(
                         endpoint: WebAppEndpoints.SyncFiles,
-                        content: fileContent,
-                        loadingText: locSendingLibraryFilesToServer);
+                        content: fileContent);
                 if (!result.IsValid)
                 {
                     return result;

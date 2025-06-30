@@ -20,7 +20,17 @@ namespace PlayniteInsightsExporter
     public class PlayniteInsightsExporterSettings : ObservableObject
     {
         private string webAppURL = string.Empty;
+        private bool enableMetadataLibrarySyncOnUpdate = true;
+        private bool enableMediaFilesLibrarySyncOnUpdate = false;
         public string WebAppURL { get => webAppURL; set => SetValue(ref webAppURL, value); }
+        public bool EnableMetadataLibrarySyncOnUpdate { 
+            get => enableMetadataLibrarySyncOnUpdate; 
+            set => SetValue(ref enableMetadataLibrarySyncOnUpdate, value); 
+        }
+        public bool EnableMediaFilesLibrarySyncOnUpdate { 
+            get => enableMediaFilesLibrarySyncOnUpdate; 
+            set => SetValue(ref enableMediaFilesLibrarySyncOnUpdate, value); 
+        }
 
         [DontSerialize]
         public RelayCommand ExportLibraryButton { get; set; }
@@ -41,7 +51,7 @@ namespace PlayniteInsightsExporter
             set
             {
                 settings = value;
-                settings.ExportLibraryButton = new RelayCommand(async () => await OnExportLibrary());
+                settings.ExportLibraryButton = new RelayCommand(() => OnExportLibrary());
                 OnPropertyChanged();
             }
         }
@@ -96,33 +106,36 @@ namespace PlayniteInsightsExporter
             return true;
         }
 
-        public async Task OnExportLibrary()
+        public void OnExportLibrary()
         {
-            ValidationResult result;
-            result = await LibExporter.SendLibraryJsonToWebAppAsync();
-            if (!result.IsValid)
-            {
-                PlayniteApi
-                    .Dialogs
-                    .ShowErrorMessage(
-                        $"Failed to send library metadata to web server. \nError: {result.Message}", 
-                        Plugin.Name);
-                return;
-            }
-            result = await LibExporter.SendLibraryFilesToWebAppAsync();
-            if (!result.IsValid)
-            {
-                PlayniteApi
-                    .Dialogs
-                    .ShowErrorMessage(
-                        $"Failed to send library media files to web server. \nError: {result.Message}",
-                        Plugin.Name);
-                return;
-            }
-            PlayniteApi
+            var loc_loading_syncClientServer = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
+            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+            var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
+            var progressResult = PlayniteApi
                 .Dialogs
-                .ShowMessage(
-                "Library synced sucessfully!");
+                .ActivateGlobalProgress(async (args) =>
+                {
+                    var result = await LibExporter.SendLibraryJsonToWebAppAsync();
+                    if (!result.IsValid)
+                    {
+                        throw new Exception(result.Message);
+                    }
+                    result = await LibExporter.SendLibraryFilesToWebAppAsync();
+                    if (!result.IsValid)
+                    {
+                        throw new Exception(result.Message);
+                    }
+                }, new GlobalProgressOptions(loc_loading_syncClientServer));
+            if (progressResult.Error != null)
+            {
+                PlayniteApi
+                    .Dialogs
+                    .ShowErrorMessage(
+                        $"{loc_failed_syncClientServer} \nError: {progressResult.Error.Message}", 
+                        Plugin.Name);
+                return;
+            }
+            PlayniteApi.Dialogs.ShowMessage(loc_success_syncClientServer);
         }
     }
 }

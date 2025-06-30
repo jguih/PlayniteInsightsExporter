@@ -134,15 +134,45 @@ namespace PlayniteInsightsExporter
 
         public override async void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
-            var result = await LibExporter.SendLibraryJsonToWebAppAsync();
-            if (!result.IsValid)
+            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+            var loc_loading_syncClientServer = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
+            var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
+            if (Settings.Settings.EnableMetadataLibrarySyncOnUpdate)
             {
-                PlayniteApi.Notifications.Add(
-                    new NotificationMessage(
-                        $"{Name} Error",
-                        $"Failed to export library. Please check the settings and try again. \nError: {result.Message}",
-                        NotificationType.Error)
-                    );
+                var result = await LibExporter.SendLibraryJsonToWebAppAsync();
+                if (!result.IsValid)
+                {
+                    PlayniteApi.Notifications.Add(
+                        new NotificationMessage(
+                            $"{Name} Error",
+                            $"{loc_failed_syncClientServer} \nError: {result.Message}",
+                            NotificationType.Error)
+                        );
+                }
+            }
+            if (Settings.Settings.EnableMediaFilesLibrarySyncOnUpdate)
+            {
+                var progressResult = PlayniteApi
+                            .Dialogs
+                            .ActivateGlobalProgress(
+                            async (progressArgs) =>
+                            {
+                                ValidationResult libFilesSyncResult;
+                                libFilesSyncResult = await LibExporter.SendLibraryFilesToWebAppAsync();
+                                if (!libFilesSyncResult.IsValid)
+                                {
+                                    throw new Exception(libFilesSyncResult.Message);
+                                }
+                            }, new GlobalProgressOptions(loc_loading_syncClientServer));
+                if (progressResult.Error != null)
+                {
+                    PlayniteApi.Notifications.Add(
+                        new NotificationMessage(
+                                $"{Name} Error",
+                                $"{loc_failed_syncClientServer} \nError: {progressResult.Error.Message}",
+                                NotificationType.Error
+                            ));
+                }
             }
         }
 
@@ -158,6 +188,9 @@ namespace PlayniteInsightsExporter
 
         public override IEnumerable<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
         {
+            var loc_loading_syncClientServer = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
+            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+            var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
             yield return new GameMenuItem
             {
                 Description = "Playnite Insights Server Sync",
@@ -177,27 +210,25 @@ namespace PlayniteInsightsExporter
                             result = await LibExporter.SendLibraryJsonToWebAppAsync();
                             if (!result.IsValid)
                             {
-                                throw new Exception($"Failed to send game metadata to web server. \nError: {result.Message}");
+                                throw new Exception(result.Message);
                             }
                             result = await LibExporter.SendLibraryFilesToWebAppAsync(gameIds);
                             if (!result.IsValid)
                             {
-                                throw new Exception($"Failed to send library files to web server. \nError: {result.Message}");
+                                throw new Exception(result.Message);
                             }
-                        }, new GlobalProgressOptions("Syncing..."));
+                        }, new GlobalProgressOptions(loc_loading_syncClientServer));
                     if (progressResult.Error != null)
                     {
                         PlayniteApi
                             .Dialogs
-                            .ShowErrorMessage(progressResult.Error.Message, Name);
+                            .ShowErrorMessage($"{loc_failed_syncClientServer} \nError: {progressResult.Error.Message}", Name);
                     }
                     else
                     {
                         PlayniteApi
                             .Dialogs
-                            .ShowMessage(
-                            "Game media files synced sucessfully!");
-
+                            .ShowMessage(loc_success_syncClientServer);
                     }
                 }
             };

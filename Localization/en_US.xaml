@@ -1,11 +1,12 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
-    <sys:String x:Key="LOCPackagingLibFiles">Packaging library files...</sys:String>
-    <sys:String x:Key="LOCFailedToCreateLibArchive">Failed to create library archive</sys:String>
-    <sys:String x:Key="LOCServerURLNotSet">Server URL not set, please set a valid URL in the extesion's settings.</sys:String>
-    <sys:String x:Key="LOCSendingLibraryMetadataToServer">Sending library metadata to server...</sys:String>
-    <sys:String x:Key="LOCLibraryMetadataSendFailed">Failed to send library metadata to server.</sys:String>
-    <sys:String x:Key="LOCSendingLibraryFilesToServer">Sending library files to server...</sys:String>
-    <sys:String x:Key="LOCLibraryFilesSendFailed">Failed to send library files to server.</sys:String>
+    <sys:String x:Key="LOC_Loading_SyncClientServer">Syncing library with server...</sys:String>
+    <sys:String x:Key="LOC_Failed_SyncClientServer">Syncing library with server failed.</sys:String>
+    <sys:String x:Key="LOC_Success_SyncClientServer">Successfully synced library with web server.</sys:String>
+    <!-- Labels -->
+    <sys:String x:Key="LOC_Label_WebServerURL">Playnite Insights Web Server URL</sys:String>
+    <sys:String x:Key="LOC_Label_EnableMetadataLibrarySyncOnUpdate">Sync library metadata (JSON) on library update</sys:String>
+    <sys:String x:Key="LOC_Label_EnableMediaFilesLibrarySyncOnUpdate">Sync library media files on library update</sys:String>
+    <sys:String x:Key="LOC_Label_ManualSync">Manual sync</sys:String>
 </ResourceDictionary>

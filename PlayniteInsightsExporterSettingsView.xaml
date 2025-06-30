@@ -5,14 +5,24 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="600">
-    <StackPanel>
-        <TextBlock Text="Playnite Insights Server URL" Margin="12,12,12,6"/>
-        <TextBox Text="{Binding Settings.WebAppURL}" Margin="12,0,12,6"/>
+    <StackPanel Margin="12">
+        <StackPanel Margin="0,0,0,12">
+            <TextBlock Text="{DynamicResource LOC_Label_WebServerURL}" Margin="0,0,0,12"/>
+            <TextBox Text="{Binding Settings.WebAppURL}"/>
+        </StackPanel>
+        <StackPanel Margin="0,0,0,12">
+            <CheckBox Content="{DynamicResource LOC_Label_EnableMetadataLibrarySyncOnUpdate}"
+                  IsChecked="{Binding Settings.EnableMetadataLibrarySyncOnUpdate}" />
+        </StackPanel>
+        <StackPanel Margin="0,0,0,12">
+            <CheckBox Content="{DynamicResource LOC_Label_EnableMediaFilesLibrarySyncOnUpdate}"
+          IsChecked="{Binding Settings.EnableMediaFilesLibrarySyncOnUpdate}" />
+        </StackPanel>
         <Button 
-            Content="Manual Sync" 
+            Content="{DynamicResource LOC_Label_ManualSync}" 
             Width="150" 
             Command="{Binding Settings.ExportLibraryButton}"
-            Margin="12,12,12,12"
+            Margin="0,0,0,12"
             HorizontalAlignment="Left"/>
     </StackPanel>
 </UserControl>
