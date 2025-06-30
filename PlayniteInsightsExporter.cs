@@ -34,6 +34,69 @@ namespace PlayniteInsightsExporter
             {
                 HasSettings = true
             };
+
+            PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
+            PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
+        }
+
+        private async void Games_ItemUpdated(object sender, ItemUpdatedEventArgs<Game> e)
+        {
+            if (e.UpdatedItems.Count() > 0)
+            {
+                List<string> gameIds = new List<string>();
+                foreach (var game in e.UpdatedItems)
+                {
+                    gameIds.Add(game.NewData.Id.ToString());
+                }
+                ValidationResult result;
+                result = await LibExporter.SendJsonToWebAppAsync();
+                if (!result.IsValid)
+                {
+                    PlayniteApi
+                        .Notifications
+                        .Add(
+                        Name,
+                        $"Failed to send game metadata to web server. \nError: {result.Message}",
+                        NotificationType.Error);
+                    return;
+                }
+                result = await LibExporter.SendFilesToWebAppAsync(gameIds);
+                if (!result.IsValid)
+                {
+                    PlayniteApi
+                        .Notifications
+                        .Add(
+                        Name,
+                        $"Failed to send library files to web server. \nError: {result.Message}",
+                        NotificationType.Error);
+                    return;
+                }
+            }
+
+        }
+
+        private async void OnItemCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> e)
+        {
+            if (e.AddedItems.Count() > 0)
+            {
+                // To something
+            }
+            if (e.RemovedItems.Count() > 0)
+            {
+                ValidationResult result;
+                var removedIds = e.RemovedItems.Select(g => g.Id.ToString()).ToList();
+                result = await LibExporter.SendJsonToWebAppAsync(removedItems: removedIds);
+                if (!result.IsValid)
+                {
+                    PlayniteApi
+                        .Notifications
+                        .Add(
+                        Name,
+                        $"Failed to send game metadata to web server. \nError: {result.Message}",
+                        NotificationType.Error);
+                    return;
+                }
+            }
         }
 
         public override void OnGameInstalled(OnGameInstalledEventArgs args)

@@ -53,16 +53,16 @@ namespace PlayniteInsightsExporter.Lib
                 g.InstallDirectory,
                 g.IsInstalled,
                 g.BackgroundImage,
-                g.CoverImage
+                g.CoverImage,
+                g.Description
             }).Cast<object>().ToList();
         }
 
-        private string ExportGamesToJsonString()
+        private string CommandToJsonString(SyncGameListCommand command)
         {
-            var games = GetGamesList();
             try
             {
-                return JsonConvert.SerializeObject(games, Formatting.Indented);
+                return JsonConvert.SerializeObject(command, Formatting.Indented);
             }
             catch (Exception)
             {
@@ -164,10 +164,13 @@ namespace PlayniteInsightsExporter.Lib
             }
         }
 
-        public async Task<ValidationResult> SendJsonToWebAppAsync()
+        public async Task<ValidationResult> SendJsonToWebAppAsync(
+            List<string> addedItems = null,
+            List<string> removedItems = null)
         {
             string locSendingLibraryMetadataToServer = ResourceProvider.GetString("LOCSendingLibraryMetadataToServer");
-            string json = ExportGamesToJsonString();
+            var syncGameListCommand = new SyncGameListCommand(addedItems, removedItems, GetGamesList());
+            string json = CommandToJsonString(syncGameListCommand);
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
             {
                 var result = await WebServerService
