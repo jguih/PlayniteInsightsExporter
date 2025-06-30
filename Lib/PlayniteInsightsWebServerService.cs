@@ -13,13 +13,15 @@ namespace PlayniteInsightsExporter.Lib
 {
     public class PlayniteInsightsWebServerService
     {
-        private IPlayniteAPI PlayniteApi { get; }
-        private PlayniteInsightsExporterSettings Settings { get; }
+        private readonly PlayniteInsightsExporter Plugin;
+        private readonly PlayniteInsightsExporterSettings Settings;
 
-        public PlayniteInsightsWebServerService(PlayniteInsightsExporter Plugin) 
+        public PlayniteInsightsWebServerService(
+            PlayniteInsightsExporter Plugin, 
+            PlayniteInsightsExporterSettings Settings) 
         {
-            this.Settings = Plugin.GetUserSettings();
-            this.PlayniteApi = Plugin.PlayniteApi;
+            this.Plugin = Plugin;
+            this.Settings = Settings;
         }
 
         private string GetWebAppURL(string endpoint = "")

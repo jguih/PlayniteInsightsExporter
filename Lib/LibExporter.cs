@@ -58,6 +58,13 @@ namespace PlayniteInsightsExporter.Lib
             }).Cast<object>().ToList();
         }
 
+        private List<string> GetGamesIdList()
+        {
+            return PlayniteApi.Database.Games
+                .Select(g => g.Id.ToString())
+                .ToList();
+        }
+
         private string CommandToJsonString(SyncGameListCommand command)
         {
             try
@@ -117,17 +124,30 @@ namespace PlayniteInsightsExporter.Lib
                     foreach (var folder in Directory.GetDirectories(LibraryFilesDir))
                     {
                         string gameId = Path.GetFileName(folder);
+                        // Only send game files for games included in the gameIdList, if it list is not null, otherwise send all files
                         if (gameIdList != null && !gameIdList.Contains(gameId))
                         {
                             continue;
                         }
                         string contentHash = HashService.HashFolderContents(folder);
-                        var manifestEntry = manifest.mediaExistsFor
-                            .Where(m => m.gameId == gameId)
-                            .FirstOrDefault();
-                        if (manifestEntry != null)
+                        if (manifest != null)
                         {
-                            if (manifestEntry.contentHash == contentHash) 
+                            var mediaExistsForEntry = manifest.mediaExistsFor
+                                .Where(m => m.gameId == gameId)
+                                .FirstOrDefault();
+                            // Compare generated hash with manifest's hash
+                            if (mediaExistsForEntry != null)
+                            {
+                                if (mediaExistsForEntry.contentHash == contentHash) 
+                                {
+                                    continue;
+                                }
+                            }
+                            // If game not present in manifest, skip sending media files
+                            var gameInLibrary = manifest.gamesInLibrary
+                                .Where(id => id == gameId)
+                                .FirstOrDefault();
+                            if (gameInLibrary == null)
                             {
                                 continue;
                             }
@@ -164,12 +184,40 @@ namespace PlayniteInsightsExporter.Lib
             }
         }
 
-        public async Task<ValidationResult> SendJsonToWebAppAsync(
-            List<string> addedItems = null,
-            List<string> removedItems = null)
+        /// <summary>
+        /// Compares the server's manifest with the current list of games and returns a list of games that should be removed from the server.
+        /// </summary>
+        /// <returns>List of game IDs</returns>
+        private async Task<List<string>> GetItemsToRemove()
+        {
+            var manifest = await WebServerService.GetManifestAsync();
+            if (manifest == null)
+            {
+                return new List<string>();
+            }
+            var mediaExistsFor = manifest.mediaExistsFor
+                .Select((mef) => mef.gameId)
+                .ToList();
+            var gamesIdList = GetGamesIdList();
+            var itemsToRemove = new List<string>();
+            // Remove games that are removed from library but still present in the manifest
+            foreach (var gameId in mediaExistsFor)
+            {
+                if (!gamesIdList.Contains(gameId))
+                {
+                    itemsToRemove.Add(gameId);
+                }
+            }
+            return itemsToRemove;
+        }
+
+        public async Task<ValidationResult> SendLibraryJsonToWebAppAsync()
         {
             string locSendingLibraryMetadataToServer = ResourceProvider.GetString("LOCSendingLibraryMetadataToServer");
-            var syncGameListCommand = new SyncGameListCommand(addedItems, removedItems, GetGamesList());
+            var gamesList = GetGamesList();
+            var itemsToRemove = await GetItemsToRemove();
+            var itemsToAdd = new List<string>();
+            var syncGameListCommand = new SyncGameListCommand(itemsToAdd, itemsToRemove, gamesList);
             string json = CommandToJsonString(syncGameListCommand);
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
             {
@@ -195,7 +243,7 @@ namespace PlayniteInsightsExporter.Lib
         /// </summary>
         /// <param name="gameIdList">List of game IDs to send to the server. If null all games will be sent.</param>
         /// <returns>ValidationResult</returns>
-        public async Task<ValidationResult> SendFilesToWebAppAsync(List<string> gameIdList = null)
+        public async Task<ValidationResult> SendLibraryFilesToWebAppAsync(List<string> gameIdList = null)
         {
             string locSendingLibraryFilesToServer = ResourceProvider.GetString("LOCSendingLibraryFilesToServer");
             ValidationResult result;
@@ -219,11 +267,11 @@ namespace PlayniteInsightsExporter.Lib
                 {
                     return result;
                 }
-                //result = DeleteLibraryZip();
-                //if (!result.IsValid)
-                //{
-                //    return result;
-                //}
+                result = DeleteLibraryZip();
+                if (!result.IsValid)
+                {
+                    return result;
+                }
                 return new ValidationResult(
                         IsValid: true,
                         Message: "Library zip file sent to the server sucessfully",

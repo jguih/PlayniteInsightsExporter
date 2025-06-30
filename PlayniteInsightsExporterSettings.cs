@@ -33,6 +33,7 @@ namespace PlayniteInsightsExporter
         private PlayniteInsightsExporterSettings editingClone { get; set; }
         private PlayniteInsightsExporterSettings settings;
         private readonly LibExporter LibExporter;
+        private readonly PlayniteInsightsWebServerService WebServerService;
 
         public PlayniteInsightsExporterSettings Settings
         {
@@ -46,8 +47,7 @@ namespace PlayniteInsightsExporter
         }
 
         public PlayniteInsightsExporterSettingsViewModel(
-            PlayniteInsightsExporter plugin,
-            LibExporter LibExporter)
+            PlayniteInsightsExporter plugin)
         {
             // Injecting your plugin instance is required for Save/Load method because Playnite saves data to a location based on what plugin requested the operation.
             this.Plugin = plugin;
@@ -63,7 +63,8 @@ namespace PlayniteInsightsExporter
             {
                 Settings = new PlayniteInsightsExporterSettings();
             }
-            this.LibExporter = LibExporter;
+            WebServerService = new PlayniteInsightsWebServerService(plugin, Settings);
+            LibExporter = new LibExporter(plugin, WebServerService);
         }
 
         public void BeginEdit()
@@ -98,7 +99,7 @@ namespace PlayniteInsightsExporter
         public async Task OnExportLibrary()
         {
             ValidationResult result;
-            result = await LibExporter.SendJsonToWebAppAsync();
+            result = await LibExporter.SendLibraryJsonToWebAppAsync();
             if (!result.IsValid)
             {
                 PlayniteApi
@@ -108,7 +109,7 @@ namespace PlayniteInsightsExporter
                         Plugin.Name);
                 return;
             }
-            result = await LibExporter.SendFilesToWebAppAsync();
+            result = await LibExporter.SendLibraryFilesToWebAppAsync();
             if (!result.IsValid)
             {
                 PlayniteApi

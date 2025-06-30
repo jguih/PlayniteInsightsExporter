@@ -14,7 +14,8 @@ namespace PlayniteInsightsExporter.Lib.Models
 
     public class PlayniteLibraryManifest
     {
-        public int gamesInLibrary { get; set; }
+        public int totalGamesInLibrary { get; set; }
+        public List<string> gamesInLibrary { get; set; } = new List<string>();
         public PlayniteLibraryManifestMediaExistsFor[] mediaExistsFor { get; set; }
     }
 }

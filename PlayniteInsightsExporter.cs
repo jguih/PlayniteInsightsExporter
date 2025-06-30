@@ -19,22 +19,21 @@ namespace PlayniteInsightsExporter
     {
         private static readonly ILogger logger = LogManager.GetLogger();
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
-        private LibExporter LibExporter { get; set; }
-        private PlayniteInsightsWebServerService WebServerService { get; set; }
+        private readonly LibExporter LibExporter;
+        private readonly PlayniteInsightsWebServerService WebServerService;
 
         public readonly string Name = "Playnite Insights Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
 
         public PlayniteInsightsExporter(IPlayniteAPI api) : base(api)
         {
-            Settings = new PlayniteInsightsExporterSettingsViewModel(this, LibExporter);
-            WebServerService = new PlayniteInsightsWebServerService(this);
-            LibExporter = new LibExporter(this, WebServerService);
+            Settings = new PlayniteInsightsExporterSettingsViewModel(this);
             Properties = new GenericPluginProperties
             {
                 HasSettings = true
             };
-
+            WebServerService = new PlayniteInsightsWebServerService(this, Settings.Settings);
+            LibExporter = new LibExporter(this, WebServerService);
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
             PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
         }
@@ -49,7 +48,7 @@ namespace PlayniteInsightsExporter
                     gameIds.Add(game.NewData.Id.ToString());
                 }
                 ValidationResult result;
-                result = await LibExporter.SendJsonToWebAppAsync();
+                result = await LibExporter.SendLibraryJsonToWebAppAsync();
                 if (!result.IsValid)
                 {
                     PlayniteApi
@@ -60,7 +59,7 @@ namespace PlayniteInsightsExporter
                         NotificationType.Error);
                     return;
                 }
-                result = await LibExporter.SendFilesToWebAppAsync(gameIds);
+                result = await LibExporter.SendLibraryFilesToWebAppAsync(gameIds);
                 if (!result.IsValid)
                 {
                     PlayniteApi
@@ -84,8 +83,7 @@ namespace PlayniteInsightsExporter
             if (e.RemovedItems.Count() > 0)
             {
                 ValidationResult result;
-                var removedIds = e.RemovedItems.Select(g => g.Id.ToString()).ToList();
-                result = await LibExporter.SendJsonToWebAppAsync(removedItems: removedIds);
+                result = await LibExporter.SendLibraryJsonToWebAppAsync();
                 if (!result.IsValid)
                 {
                     PlayniteApi
@@ -136,7 +134,7 @@ namespace PlayniteInsightsExporter
 
         public override async void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
-            var result = await LibExporter.SendJsonToWebAppAsync();
+            var result = await LibExporter.SendLibraryJsonToWebAppAsync();
             if (!result.IsValid)
             {
                 PlayniteApi.Notifications.Add(
@@ -158,11 +156,6 @@ namespace PlayniteInsightsExporter
             return new PlayniteInsightsExporterSettingsView();
         }
 
-        public PlayniteInsightsExporterSettings GetUserSettings()
-        {
-            return Settings.Settings;
-        }
-
         public override IEnumerable<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
         {
             yield return new GameMenuItem
@@ -181,12 +174,12 @@ namespace PlayniteInsightsExporter
                         async (progressArgs) =>
                         {
                             ValidationResult result;
-                            result = await LibExporter.SendJsonToWebAppAsync();
+                            result = await LibExporter.SendLibraryJsonToWebAppAsync();
                             if (!result.IsValid)
                             {
                                 throw new Exception($"Failed to send game metadata to web server. \nError: {result.Message}");
                             }
-                            result = await LibExporter.SendFilesToWebAppAsync(gameIds);
+                            result = await LibExporter.SendLibraryFilesToWebAppAsync(gameIds);
                             if (!result.IsValid)
                             {
                                 throw new Exception($"Failed to send library files to web server. \nError: {result.Message}");
