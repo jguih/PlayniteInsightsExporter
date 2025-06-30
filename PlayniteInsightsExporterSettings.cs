@@ -57,7 +57,8 @@ namespace PlayniteInsightsExporter
         }
 
         public PlayniteInsightsExporterSettingsViewModel(
-            PlayniteInsightsExporter plugin)
+            PlayniteInsightsExporter plugin,
+            ILogger Logger)
         {
             // Injecting your plugin instance is required for Save/Load method because Playnite saves data to a location based on what plugin requested the operation.
             this.Plugin = plugin;
@@ -73,7 +74,7 @@ namespace PlayniteInsightsExporter
             {
                 Settings = new PlayniteInsightsExporterSettings();
             }
-            WebServerService = new PlayniteInsightsWebServerService(plugin, Settings);
+            WebServerService = new PlayniteInsightsWebServerService(plugin, Settings, Logger);
             LibExporter = new LibExporter(plugin, WebServerService);
         }
 

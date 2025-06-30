@@ -15,13 +15,16 @@ namespace PlayniteInsightsExporter.Lib
     {
         private readonly PlayniteInsightsExporter Plugin;
         private readonly PlayniteInsightsExporterSettings Settings;
+        private readonly ILogger Logger;
 
         public PlayniteInsightsWebServerService(
             PlayniteInsightsExporter Plugin, 
-            PlayniteInsightsExporterSettings Settings) 
+            PlayniteInsightsExporterSettings Settings,
+            ILogger Logger) 
         {
             this.Plugin = Plugin;
             this.Settings = Settings;
+            this.Logger = Logger;
         }
 
         private string GetWebAppURL(string endpoint = "")
@@ -50,7 +53,7 @@ namespace PlayniteInsightsExporter.Lib
                     request.Headers.Add("Origin", GetWebAppURL());
                     request.Headers.Add("Referer", GetWebAppURL());
                     var response = await client.SendAsync(request);
-                    // var responseBody = await response.Content.ReadAsStringAsync();
+                    var responseBody = await response.Content.ReadAsStringAsync();
                     response.EnsureSuccessStatusCode();
                     return new ValidationResult(
                             IsValid: true,
@@ -61,6 +64,7 @@ namespace PlayniteInsightsExporter.Lib
             }
             catch (Exception e)
             {
+                Logger.Error(e, $"POST request to {GetWebAppURL(endpoint)} failed");
                 return new ValidationResult(
                         IsValid: false,
                         Message: $"POST request to {GetWebAppURL(endpoint)} failed",
@@ -87,6 +91,7 @@ namespace PlayniteInsightsExporter.Lib
             }
             catch (Exception e)
             {
+                Logger.Error(e, "Failed to get manifest file");
                 return null;
             }
         }

@@ -27,12 +27,12 @@ namespace PlayniteInsightsExporter
 
         public PlayniteInsightsExporter(IPlayniteAPI api) : base(api)
         {
-            Settings = new PlayniteInsightsExporterSettingsViewModel(this);
+            Settings = new PlayniteInsightsExporterSettingsViewModel(this, logger);
             Properties = new GenericPluginProperties
             {
                 HasSettings = true
             };
-            WebServerService = new PlayniteInsightsWebServerService(this, Settings.Settings);
+            WebServerService = new PlayniteInsightsWebServerService(this, Settings.Settings, logger);
             LibExporter = new LibExporter(this, WebServerService);
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
             PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
