@@ -69,12 +69,12 @@ namespace PlayniteInsightsExporter
         public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
             var result = LibExporter.SendJsonToWebAppAsync();
-            if (result != "OK")
+            if (!result.IsValid)
             {
                 PlayniteApi.Notifications.Add(
                     new NotificationMessage(
                         $"{Name} Error",
-                        $"{Name}\n\nFailed to export library. Please check the settings and try again. \n\nError: {result}",
+                        $"Failed to export library. Please check the settings and try again. \nError: {result.Message}",
                         NotificationType.Error)
                     );
             }

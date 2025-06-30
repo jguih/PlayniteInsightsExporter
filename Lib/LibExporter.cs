@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Compression;
 using System.IO.Packaging;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Mime;
@@ -17,12 +18,12 @@ namespace PlayniteInsightsExporter.Lib
 {
     class LibExporter
     {
-        private PlayniteInsightsExporter Plugin;
-        private PlayniteInsightsExporterSettings Settings;
-        private IPlayniteAPI PlayniteApi;
-        private PlayniteInsightsWebServerService WebServerService;
-        public string ExportedGamesFilePath { get; }
-        public string FilesDirPath { get; }
+        private readonly PlayniteInsightsExporter Plugin;
+        private readonly PlayniteInsightsExporterSettings Settings;
+        private readonly IPlayniteAPI PlayniteApi;
+        private readonly PlayniteInsightsWebServerService WebServerService;
+        private readonly HashService HashService;
+        public string LibraryFilesDir { get; }
 
         public LibExporter(
             PlayniteInsightsExporter Plugin,
@@ -32,9 +33,9 @@ namespace PlayniteInsightsExporter.Lib
             this.Plugin = Plugin;
             this.Settings = Settings;
             this.PlayniteApi = Plugin.PlayniteApi;
-            this.ExportedGamesFilePath = Path.Combine(Plugin.GetPluginUserDataPath(), "exported_games.json");
-            this.FilesDirPath = Path.Combine(PlayniteApi.Paths.ConfigurationPath, "library", "files");
+            this.LibraryFilesDir = Path.Combine(PlayniteApi.Paths.ConfigurationPath, "library", "files");
             WebServerService = new PlayniteInsightsWebServerService(Settings, PlayniteApi);
+            HashService = new HashService();
         }
 
         private List<object> GetGamesList()
@@ -76,64 +77,122 @@ namespace PlayniteInsightsExporter.Lib
             return Path.Combine(Plugin.GetPluginUserDataPath(), "library.zip");
         }
 
-        private string CreateFilesArchive()
+        private ValidationResult DeleteLibraryZip()
         {
             string tmpZipPath = GetTempLibraryZipPath();
-            string locPackagingLibFiles = ResourceProvider.GetString("LOCPackagingLibFiles");
-            string locFailedToCreateLibArchive = ResourceProvider.GetString("LOCFailedToCreateLibArchive");
-            if (File.Exists(tmpZipPath))
-            {
-                File.Delete(tmpZipPath);
-            }
             try
             {
-                var result = PlayniteApi.Dialogs.ActivateGlobalProgress(
-                    (args) => ZipFile.CreateFromDirectory(
-                    FilesDirPath,
-                    tmpZipPath,
-                    CompressionLevel.Optimal,
-                    false
-                ), new GlobalProgressOptions(locPackagingLibFiles));
-                if (result.Error != null)
+                if (File.Exists(tmpZipPath))
                 {
-                    throw result.Error;
+                    File.Delete(tmpZipPath);
                 }
-                return "OK";
+                return new ValidationResult(
+                        IsValid: true,
+                        Message: "Library zip file deleted successfully",
+                        HttpCode: 200
+                    );
             }
             catch (Exception e)
             {
-                if (e.InnerException != null && !string.IsNullOrEmpty(e.InnerException.Message))
-                {
-                    return $"{locFailedToCreateLibArchive}: {e.InnerException.Message}";
-                }
-                return $"{locFailedToCreateLibArchive}: {e.Message}";
+                return new ValidationResult(
+                        IsValid: false,
+                        Message: "Failed to delete library zip file",
+                        HttpCode: 500
+                    );
             }
         }
 
-        public string SendJsonToWebAppAsync()
+        private async Task<ValidationResult> CreateLibraryZip()
+        {
+            string tmpZipPath = GetTempLibraryZipPath();
+            string locFailedToCreateLibArchive = ResourceProvider.GetString("LOCFailedToCreateLibArchive");
+            var result = DeleteLibraryZip();
+            if (!result.IsValid)
+            {
+                return result;
+            }
+            try
+            {
+                var manifest = await WebServerService.GetManifestAsync();
+                using (var zip = ZipFile.Open(tmpZipPath, ZipArchiveMode.Create))
+                {
+                    foreach (var folder in Directory.GetDirectories(LibraryFilesDir))
+                    {
+                        string contentHash = HashService.HashFolderContents(folder);
+                        string gameId = Path.GetFileName(folder);
+                        var manifestEntry = manifest.mediaExistsFor
+                            .Where(m => m.gameId == gameId)
+                            .FirstOrDefault();
+                        if (manifestEntry != null)
+                        {
+                            if (manifestEntry.contentHash == contentHash) 
+                            {
+                                continue;
+                            }
+                        }
+                        // Add contentHash.txt file with content hash inside
+                        string contentHashFilePath = Path.Combine(gameId, "contentHash.txt");
+                        var hashEntry = zip.CreateEntry(contentHashFilePath, CompressionLevel.Optimal);
+                        using (var entryStream = hashEntry.Open())
+                        using (var writer = new StreamWriter(entryStream))
+                        {
+                            writer.Write(contentHash);
+                        }
+                        // Add media files
+                        foreach (var file in Directory.GetFiles(folder))
+                        {
+                            string relativePath = Path.Combine(gameId, Path.GetFileName(file));
+                            zip.CreateEntryFromFile(file, relativePath, CompressionLevel.Optimal);
+                        }
+                    }
+                    return new ValidationResult(
+                            IsValid: true,
+                            Message: "",
+                            HttpCode: 200
+                        );
+                }
+            }
+            catch (Exception e)
+            {
+                return new ValidationResult(
+                        IsValid: false,
+                        Message: locFailedToCreateLibArchive,
+                        HttpCode: 500
+                    );
+            }
+        }
+
+        public ValidationResult SendJsonToWebAppAsync()
         {
             string locSendingLibraryMetadataToServer = ResourceProvider.GetString("LOCSendingLibraryMetadataToServer");
-            string locFailedToSendLibraryMetadata = ResourceProvider.GetString("LOCLibraryMetadataSendFailed");
             string json = ExportGamesToJsonString();
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
             {
-                var result = WebServerService.Post(WebAppEndpoints.SyncGames, content, locSendingLibraryMetadataToServer);
-                if (result != "OK")
+                var result = WebServerService
+                    .Post(
+                        endpoint: WebAppEndpoints.SyncGames, 
+                        content: content, 
+                        loadingText: locSendingLibraryMetadataToServer);
+                if (!result.IsValid)
                 {
-                    return $"{locFailedToSendLibraryMetadata}: {result}";
+                    return result;
                 }
-                return "OK";
+                return new ValidationResult(
+                        IsValid: true,
+                        Message: "Library zip file sent to the server sucessfully",
+                        HttpCode: 200
+                    );
             }
         }
 
-        public string SendFilesToWebApp()
+        public async Task<ValidationResult> SendFilesToWebAppAsync()
         {
-            string locFailedToSendLibraryFilesToServer = ResourceProvider.GetString("LOCLibraryFilesSendFailed");
             string locSendingLibraryFilesToServer = ResourceProvider.GetString("LOCSendingLibraryFilesToServer");
-            var createArchiveResult = CreateFilesArchive();
-            if (createArchiveResult != "OK")
+            ValidationResult result;
+            result = await CreateLibraryZip();
+            if (!result.IsValid)
             {
-                return createArchiveResult;
+                return result;
             }
             string tmpZipPath = GetTempLibraryZipPath();
             using (var content = new MultipartFormDataContent())
@@ -141,16 +200,25 @@ namespace PlayniteInsightsExporter.Lib
             using (var fileContent = new StreamContent(fileStream))
             {
                 fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/zip");
-                var result = WebServerService.Post(WebAppEndpoints.SyncFiles, fileContent, locSendingLibraryFilesToServer);
-                if (File.Exists(tmpZipPath))
+                result = WebServerService
+                    .Post(
+                        endpoint: WebAppEndpoints.SyncFiles,
+                        content: fileContent,
+                        loadingText: locSendingLibraryFilesToServer);
+                if (!result.IsValid)
                 {
-                    File.Delete(tmpZipPath);
+                    return result;
                 }
-                if (result != "OK")
+                result = DeleteLibraryZip();
+                if (!result.IsValid)
                 {
-                    return $"{locFailedToSendLibraryFilesToServer}: {result}";
+                    return result;
                 }
-                return "OK";
+                return new ValidationResult(
+                        IsValid: true,
+                        Message: "Library zip file sent to the server sucessfully",
+                        HttpCode: 200
+                    );
             }
         }
     }

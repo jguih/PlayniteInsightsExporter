@@ -4,6 +4,7 @@ using Playnite.SDK.Data;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteInsightsExporter.Lib;
+using PlayniteInsightsExporter.Lib.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -39,7 +40,7 @@ namespace PlayniteInsightsExporter
             set
             {
                 settings = value;
-                settings.ExportLibraryButton = new RelayCommand(() => OnExportLibrary());
+                settings.ExportLibraryButton = new RelayCommand(async () => await OnExportLibrary());
                 OnPropertyChanged();
             }
         }
@@ -92,18 +93,33 @@ namespace PlayniteInsightsExporter
             return true;
         }
 
-        public void OnExportLibrary()
+        public async Task OnExportLibrary()
         {
-            var result = LibExporter.SendJsonToWebAppAsync();
-            var createArchiveResult = LibExporter.SendFilesToWebApp();
-            if (result == "OK" && createArchiveResult == "OK")
+            ValidationResult result;
+            result = LibExporter.SendJsonToWebAppAsync();
+            if (!result.IsValid)
             {
-                PlayniteApi.Dialogs.ShowMessage("Library synqued successfully!", "Playnite Insights Exporter");
+                PlayniteApi
+                    .Dialogs
+                    .ShowErrorMessage(
+                        $"Failed to send library metadata to web server. \nError: {result.Message}", 
+                        Plugin.Name);
+                return;
             }
-            else
+            result = await LibExporter.SendFilesToWebAppAsync();
+            if (!result.IsValid)
             {
-                PlayniteApi.Dialogs.ShowErrorMessage($"Failed to export library. Please check the settings and try again. \n{result}\n{createArchiveResult}", $"{Plugin.Name} Error");
+                PlayniteApi
+                    .Dialogs
+                    .ShowErrorMessage(
+                        $"Failed to send library media files to web server. \nError: {result.Message}",
+                        Plugin.Name);
+                return;
             }
+            PlayniteApi
+                .Dialogs
+                .ShowMessage(
+                "Library synced sucessfully!");
         }
     }
 }

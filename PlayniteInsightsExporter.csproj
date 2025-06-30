@@ -41,6 +41,7 @@
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
@@ -52,7 +53,10 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Lib\HashService.cs" />
     <Compile Include="Lib\LibExporter.cs" />
+    <Compile Include="Lib\Models\PlayniteLibraryManifest.cs" />
+    <Compile Include="Lib\Models\ValidationResult.cs" />
     <Compile Include="Lib\Models\WebAppEndpoints.cs" />
     <Compile Include="Lib\PlayniteInsightsWebServerService.cs" />
     <Compile Include="PlayniteInsightsExporter.cs" />

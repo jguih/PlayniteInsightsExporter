@@ -1,8 +1,10 @@
-﻿using Playnite.SDK;
+﻿using Newtonsoft.Json;
+using Playnite.SDK;
 using PlayniteInsightsExporter.Lib.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -36,7 +38,7 @@ namespace PlayniteInsightsExporter.Lib
             return $"{Settings.WebAppURL.TrimEnd('/')}/{endpoint.TrimStart('/')}";
         }
 
-        public string Post(string endpoint, HttpContent content, string loadingText)
+        public ValidationResult Post(string endpoint, HttpContent content, string loadingText)
         {
             try
             {
@@ -59,16 +61,42 @@ namespace PlayniteInsightsExporter.Lib
                     {
                         throw result.Error;
                     }
-                    return "OK";
+                    return new ValidationResult(
+                            IsValid: true,
+                            Message: $"POST request to {GetWebAppURL(endpoint)} succeeded",
+                            HttpCode: 200
+                        );
                 }
             }
             catch (Exception e)
             {
-                if (e.InnerException != null && !string.IsNullOrEmpty(e.InnerException.Message))
+                return new ValidationResult(
+                        IsValid: false,
+                        Message: $"POST request to {GetWebAppURL(endpoint)} failed",
+                        HttpCode: 500
+                    );
+            }
+        }
+
+        public async Task<PlayniteLibraryManifest> GetManifestAsync()
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                using (var request = new HttpRequestMessage(HttpMethod.Get, GetWebAppURL(WebAppEndpoints.SyncManifest)))
                 {
-                    return e.InnerException.Message;
+                    request.Headers.Add("Origin", GetWebAppURL());
+                    request.Headers.Add("Referer", GetWebAppURL());
+                    var response = await client.SendAsync(request);
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    var manifest = JsonConvert.DeserializeObject<PlayniteLibraryManifest>(responseBody);
+                    response.EnsureSuccessStatusCode();
+                    return manifest;
                 }
-                return e.Message;
+            }
+            catch (Exception e)
+            {
+                return null;
             }
         }
     }
