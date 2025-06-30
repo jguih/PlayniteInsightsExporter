@@ -54,6 +54,7 @@ namespace PlayniteInsightsExporter.Lib
                 g.IsInstalled,
                 g.BackgroundImage,
                 g.CoverImage,
+                g.Icon,
                 g.Description
             }).Cast<object>().ToList();
         }
