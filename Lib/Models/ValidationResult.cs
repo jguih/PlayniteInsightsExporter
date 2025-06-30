@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteInsightsExporter.Lib.Models
 {
-    class ValidationResult
+    public class ValidationResult
     {
         private int? _httpCode;
         public bool IsValid { get; set; }

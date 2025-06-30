@@ -11,17 +11,15 @@ using System.Threading.Tasks;
 
 namespace PlayniteInsightsExporter.Lib
 {
-    class PlayniteInsightsWebServerService
+    public class PlayniteInsightsWebServerService
     {
         private IPlayniteAPI PlayniteApi { get; }
         private PlayniteInsightsExporterSettings Settings { get; }
 
-        public PlayniteInsightsWebServerService(
-            PlayniteInsightsExporterSettings Settings,
-            IPlayniteAPI PlayniteApi) 
+        public PlayniteInsightsWebServerService(PlayniteInsightsExporter Plugin) 
         {
-            this.Settings = Settings;
-            this.PlayniteApi = PlayniteApi;
+            this.Settings = Plugin.GetUserSettings();
+            this.PlayniteApi = Plugin.PlayniteApi;
         }
 
         private string GetWebAppURL(string endpoint = "")
@@ -38,7 +36,7 @@ namespace PlayniteInsightsExporter.Lib
             return $"{Settings.WebAppURL.TrimEnd('/')}/{endpoint.TrimStart('/')}";
         }
 
-        public ValidationResult Post(string endpoint, HttpContent content, string loadingText)
+        public async Task<ValidationResult> Post(string endpoint, HttpContent content, string loadingText)
         {
             try
             {
@@ -49,18 +47,9 @@ namespace PlayniteInsightsExporter.Lib
                     request.Content = content;
                     request.Headers.Add("Origin", GetWebAppURL());
                     request.Headers.Add("Referer", GetWebAppURL());
-                    var result = PlayniteApi.Dialogs.ActivateGlobalProgress(
-                        async (args) =>
-                        {
-                            var response = await client.SendAsync(request);
-                            // var responseBody = await response.Content.ReadAsStringAsync();
-                            response.EnsureSuccessStatusCode();
-                        },
-                        new GlobalProgressOptions(loadingText));
-                    if (result.Error != null)
-                    {
-                        throw result.Error;
-                    }
+                    var response = await client.SendAsync(request);
+                    // var responseBody = await response.Content.ReadAsStringAsync();
+                    response.EnsureSuccessStatusCode();
                     return new ValidationResult(
                             IsValid: true,
                             Message: $"POST request to {GetWebAppURL(endpoint)} succeeded",

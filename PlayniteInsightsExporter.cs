@@ -3,12 +3,15 @@ using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteInsightsExporter.Lib;
+using PlayniteInsightsExporter.Lib.Models;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using ValidationResult = PlayniteInsightsExporter.Lib.Models.ValidationResult;
 
 namespace PlayniteInsightsExporter
 {
@@ -17,18 +20,20 @@ namespace PlayniteInsightsExporter
         private static readonly ILogger logger = LogManager.GetLogger();
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
         private LibExporter LibExporter { get; set; }
+        private PlayniteInsightsWebServerService WebServerService { get; set; }
 
         public readonly string Name = "Playnite Insights Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
 
         public PlayniteInsightsExporter(IPlayniteAPI api) : base(api)
         {
-            Settings = new PlayniteInsightsExporterSettingsViewModel(this);
+            Settings = new PlayniteInsightsExporterSettingsViewModel(this, LibExporter);
+            WebServerService = new PlayniteInsightsWebServerService(this);
+            LibExporter = new LibExporter(this, WebServerService);
             Properties = new GenericPluginProperties
             {
                 HasSettings = true
             };
-            LibExporter = new LibExporter(this, Settings.Settings);
         }
 
         public override void OnGameInstalled(OnGameInstalledEventArgs args)
@@ -66,9 +71,9 @@ namespace PlayniteInsightsExporter
             // Add code to be executed when Playnite is shutting down.
         }
 
-        public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
+        public override async void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
-            var result = LibExporter.SendJsonToWebAppAsync();
+            var result = await LibExporter.SendJsonToWebAppAsync();
             if (!result.IsValid)
             {
                 PlayniteApi.Notifications.Add(
@@ -88,6 +93,58 @@ namespace PlayniteInsightsExporter
         public override UserControl GetSettingsView(bool firstRunSettings)
         {
             return new PlayniteInsightsExporterSettingsView();
+        }
+
+        public PlayniteInsightsExporterSettings GetUserSettings()
+        {
+            return Settings.Settings;
+        }
+
+        public override IEnumerable<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
+        {
+            yield return new GameMenuItem
+            {
+                Description = "Playnite Insights Server Sync",
+                Action = (_args) =>
+                {
+                    List<string> gameIds = new List<string>();
+                    foreach(Game game in _args.Games)
+                    {
+                        gameIds.Add(game.Id.ToString());
+                    }
+                    var progressResult = PlayniteApi
+                        .Dialogs
+                        .ActivateGlobalProgress(
+                        async (progressArgs) =>
+                        {
+                            ValidationResult result;
+                            result = await LibExporter.SendJsonToWebAppAsync();
+                            if (!result.IsValid)
+                            {
+                                throw new Exception($"Failed to send game metadata to web server. \nError: {result.Message}");
+                            }
+                            result = await LibExporter.SendFilesToWebAppAsync(gameIds);
+                            if (!result.IsValid)
+                            {
+                                throw new Exception($"Failed to send library files to web server. \nError: {result.Message}");
+                            }
+                        }, new GlobalProgressOptions("Syncing..."));
+                    if (progressResult.Error != null)
+                    {
+                        PlayniteApi
+                            .Dialogs
+                            .ShowErrorMessage(progressResult.Error.Message, Name);
+                    }
+                    else
+                    {
+                        PlayniteApi
+                            .Dialogs
+                            .ShowMessage(
+                            "Game media files synced sucessfully!");
+
+                    }
+                }
+            };
         }
     }
 }

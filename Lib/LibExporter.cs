@@ -16,10 +16,9 @@ using System.Threading.Tasks;
 
 namespace PlayniteInsightsExporter.Lib
 {
-    class LibExporter
+    public class LibExporter
     {
         private readonly PlayniteInsightsExporter Plugin;
-        private readonly PlayniteInsightsExporterSettings Settings;
         private readonly IPlayniteAPI PlayniteApi;
         private readonly PlayniteInsightsWebServerService WebServerService;
         private readonly HashService HashService;
@@ -27,14 +26,13 @@ namespace PlayniteInsightsExporter.Lib
 
         public LibExporter(
             PlayniteInsightsExporter Plugin,
-            PlayniteInsightsExporterSettings Settings
+            PlayniteInsightsWebServerService WebServerService
         )
         {
             this.Plugin = Plugin;
-            this.Settings = Settings;
             this.PlayniteApi = Plugin.PlayniteApi;
             this.LibraryFilesDir = Path.Combine(PlayniteApi.Paths.ConfigurationPath, "library", "files");
-            WebServerService = new PlayniteInsightsWebServerService(Settings, PlayniteApi);
+            this.WebServerService = WebServerService;
             HashService = new HashService();
         }
 
@@ -102,7 +100,7 @@ namespace PlayniteInsightsExporter.Lib
             }
         }
 
-        private async Task<ValidationResult> CreateLibraryZip()
+        private async Task<ValidationResult> CreateLibraryZip(List<string> gameIdList = null)
         {
             string tmpZipPath = GetTempLibraryZipPath();
             string locFailedToCreateLibArchive = ResourceProvider.GetString("LOCFailedToCreateLibArchive");
@@ -118,8 +116,12 @@ namespace PlayniteInsightsExporter.Lib
                 {
                     foreach (var folder in Directory.GetDirectories(LibraryFilesDir))
                     {
-                        string contentHash = HashService.HashFolderContents(folder);
                         string gameId = Path.GetFileName(folder);
+                        if (gameIdList != null && !gameIdList.Contains(gameId))
+                        {
+                            continue;
+                        }
+                        string contentHash = HashService.HashFolderContents(folder);
                         var manifestEntry = manifest.mediaExistsFor
                             .Where(m => m.gameId == gameId)
                             .FirstOrDefault();
@@ -162,13 +164,13 @@ namespace PlayniteInsightsExporter.Lib
             }
         }
 
-        public ValidationResult SendJsonToWebAppAsync()
+        public async Task<ValidationResult> SendJsonToWebAppAsync()
         {
             string locSendingLibraryMetadataToServer = ResourceProvider.GetString("LOCSendingLibraryMetadataToServer");
             string json = ExportGamesToJsonString();
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
             {
-                var result = WebServerService
+                var result = await WebServerService
                     .Post(
                         endpoint: WebAppEndpoints.SyncGames, 
                         content: content, 
@@ -185,11 +187,16 @@ namespace PlayniteInsightsExporter.Lib
             }
         }
 
-        public async Task<ValidationResult> SendFilesToWebAppAsync()
+        /// <summary>
+        ///     Send library media files to the web server.
+        /// </summary>
+        /// <param name="gameIdList">List of game IDs to send to the server. If null all games will be sent.</param>
+        /// <returns>ValidationResult</returns>
+        public async Task<ValidationResult> SendFilesToWebAppAsync(List<string> gameIdList = null)
         {
             string locSendingLibraryFilesToServer = ResourceProvider.GetString("LOCSendingLibraryFilesToServer");
             ValidationResult result;
-            result = await CreateLibraryZip();
+            result = await CreateLibraryZip(gameIdList);
             if (!result.IsValid)
             {
                 return result;
@@ -200,7 +207,7 @@ namespace PlayniteInsightsExporter.Lib
             using (var fileContent = new StreamContent(fileStream))
             {
                 fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/zip");
-                result = WebServerService
+                result = await WebServerService
                     .Post(
                         endpoint: WebAppEndpoints.SyncFiles,
                         content: fileContent,
@@ -209,11 +216,11 @@ namespace PlayniteInsightsExporter.Lib
                 {
                     return result;
                 }
-                result = DeleteLibraryZip();
-                if (!result.IsValid)
-                {
-                    return result;
-                }
+                //result = DeleteLibraryZip();
+                //if (!result.IsValid)
+                //{
+                //    return result;
+                //}
                 return new ValidationResult(
                         IsValid: true,
                         Message: "Library zip file sent to the server sucessfully",

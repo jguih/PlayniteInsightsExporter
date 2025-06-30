@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace PlayniteInsightsExporter.Lib.Models
 {
-    class PlayniteLibraryManifestMediaExistsFor
+    public class PlayniteLibraryManifestMediaExistsFor
     {
         public string gameId { get; set; }
         public string contentHash { get; set; }
     }
 
-    class PlayniteLibraryManifest
+    public class PlayniteLibraryManifest
     {
         public int gamesInLibrary { get; set; }
         public PlayniteLibraryManifestMediaExistsFor[] mediaExistsFor { get; set; }
