@@ -8,14 +8,14 @@ namespace PlayniteInsightsExporter.Lib.Models
 {
     public class PlayniteLibraryManifestMediaExistsFor
     {
-        public string gameId { get; set; }
-        public string contentHash { get; set; }
+        public string gameId { get; set; } = null;
+        public string contentHash { get; set; } = null;
     }
 
     public class PlayniteLibraryManifest
     {
-        public int totalGamesInLibrary { get; set; }
+        public Nullable<int> totalGamesInLibrary { get; set; }
         public List<string> gamesInLibrary { get; set; } = new List<string>();
-        public PlayniteLibraryManifestMediaExistsFor[] mediaExistsFor { get; set; }
+        public List<PlayniteLibraryManifestMediaExistsFor> mediaExistsFor { get; set; } = new List<PlayniteLibraryManifestMediaExistsFor>();
     }
 }

@@ -132,9 +132,9 @@ namespace PlayniteInsightsExporter.Lib
                         string contentHash = HashService.HashFolderContents(folder);
                         if (manifest != null)
                         {
-                            var mediaExistsForEntry = manifest.mediaExistsFor
+                            var mediaExistsForEntry = manifest.mediaExistsFor?
                                 .Where(m => m.gameId == gameId)
-                                .FirstOrDefault();
+                                .FirstOrDefault() ?? null;
                             // Compare generated hash with manifest's hash
                             if (mediaExistsForEntry != null)
                             {
@@ -144,9 +144,9 @@ namespace PlayniteInsightsExporter.Lib
                                 }
                             }
                             // If game not present in manifest, skip sending media files
-                            var gameInLibrary = manifest.gamesInLibrary
+                            var gameInLibrary = manifest.gamesInLibrary?
                                 .Where(id => id == gameId)
-                                .FirstOrDefault();
+                                .FirstOrDefault() ?? null;
                             if (gameInLibrary == null)
                             {
                                 continue;
@@ -195,9 +195,9 @@ namespace PlayniteInsightsExporter.Lib
             {
                 return new List<string>();
             }
-            var mediaExistsFor = manifest.mediaExistsFor
+            var mediaExistsFor = manifest.mediaExistsFor?
                 .Select((mef) => mef.gameId)
-                .ToList();
+                .ToList() ?? new List<string>();
             var gamesIdList = GetGamesIdList();
             var itemsToRemove = new List<string>();
             // Remove games that are removed from library but still present in the manifest
@@ -213,7 +213,6 @@ namespace PlayniteInsightsExporter.Lib
 
         public async Task<ValidationResult> SendLibraryJsonToWebAppAsync()
         {
-            string locSendingLibraryMetadataToServer = ResourceProvider.GetString("LOCSendingLibraryMetadataToServer");
             var gamesList = GetGamesList();
             var itemsToRemove = await GetItemsToRemove();
             var itemsToAdd = new List<string>();
