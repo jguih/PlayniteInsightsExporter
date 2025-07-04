@@ -75,7 +75,7 @@ namespace PlayniteInsightsExporter
                 Settings = new PlayniteInsightsExporterSettings();
             }
             WebServerService = new PlayniteInsightsWebServerService(plugin, Settings, Logger);
-            LibExporter = new LibExporter(plugin, WebServerService);
+            LibExporter = new LibExporter(plugin, WebServerService, Logger);
         }
 
         public void BeginEdit()
@@ -116,7 +116,7 @@ namespace PlayniteInsightsExporter
                 .Dialogs
                 .ActivateGlobalProgress(async (args) =>
                 {
-                    var result = await LibExporter.SendLibraryJsonToWebAppAsync();
+                    var result = await LibExporter.RunFullWebAppSyncAsync();
                     if (!result.IsValid)
                     {
                         throw new Exception(result.Message);

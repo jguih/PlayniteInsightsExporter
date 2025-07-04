@@ -8,18 +8,18 @@ namespace PlayniteInsightsExporter.Lib.Models
 {
     public class SyncGameListCommand
     {
-        public List<string> AddedItems { get; } = new List<string>();
+        public List<object> AddedItems { get; } = new List<object>();
         public List<string> RemovedItems { get; } = new List<string>();
-        public List<object> GameList { get; } = new List<object>();
+        public List<object> UpdatedItems { get; } = new List<object>();
 
         public SyncGameListCommand(
-            List<string> AddedItems,
+            List<object> AddedItems,
             List<string> RemovedItems,
-            List<object> GameList) 
+            List<object> UpdatedItems) 
         {
-            this.AddedItems = AddedItems ?? new List<string>();
+            this.AddedItems = AddedItems ?? new List<object>();
             this.RemovedItems = RemovedItems ?? new List<string>();
-            this.GameList = GameList ?? new List<object>();
+            this.UpdatedItems = UpdatedItems ?? new List<object>();
         }
     }
 }

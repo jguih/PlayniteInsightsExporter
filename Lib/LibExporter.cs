@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Playnite.SDK;
+using Playnite.SDK.Models;
 using PlayniteInsightsExporter.Lib.Models;
 using System;
 using System.Collections.Generic;
@@ -22,23 +23,26 @@ namespace PlayniteInsightsExporter.Lib
         private readonly IPlayniteAPI PlayniteApi;
         private readonly PlayniteInsightsWebServerService WebServerService;
         private readonly HashService HashService;
+        private readonly ILogger Logger;
         public string LibraryFilesDir { get; }
 
         public LibExporter(
             PlayniteInsightsExporter Plugin,
-            PlayniteInsightsWebServerService WebServerService
+            PlayniteInsightsWebServerService WebServerService,
+            ILogger Logger
         )
         {
             this.Plugin = Plugin;
             this.PlayniteApi = Plugin.PlayniteApi;
             this.LibraryFilesDir = Path.Combine(PlayniteApi.Paths.ConfigurationPath, "library", "files");
             this.WebServerService = WebServerService;
-            HashService = new HashService();
+            this.Logger = Logger;
+            HashService = new HashService(Logger);
         }
 
-        private List<object> GetGamesList()
+        private object GetGameMetadata(Game g, string contentHash)
         {
-            return PlayniteApi.Database.Games.Select(g => new
+            return new
             {
                 g.Id,
                 g.Name,
@@ -55,8 +59,9 @@ namespace PlayniteInsightsExporter.Lib
                 g.BackgroundImage,
                 g.CoverImage,
                 g.Icon,
-                g.Description
-            }).Cast<object>().ToList();
+                g.Description,
+                ContentHash = contentHash
+            };
         }
 
         private List<string> GetGamesIdList()
@@ -124,7 +129,7 @@ namespace PlayniteInsightsExporter.Lib
                     foreach (var folder in Directory.GetDirectories(LibraryFilesDir))
                     {
                         string gameId = Path.GetFileName(folder);
-                        // Only send game files for games included in the gameIdList, if it list is not null, otherwise send all files
+                        // Only send game files for games included in the gameIdList when list is not null, otherwise send all files
                         if (gameIdList != null && !gameIdList.Contains(gameId))
                         {
                             continue;
@@ -145,7 +150,7 @@ namespace PlayniteInsightsExporter.Lib
                             }
                             // If game not present in manifest, skip sending media files
                             var gameInLibrary = manifest.gamesInLibrary?
-                                .Where(id => id == gameId)
+                                .Where((gil) => gil.gameId == gameId)
                                 .FirstOrDefault() ?? null;
                             if (gameInLibrary == null)
                             {
@@ -188,13 +193,8 @@ namespace PlayniteInsightsExporter.Lib
         /// Compares the server's manifest with the current list of games and returns a list of games that should be removed from the server.
         /// </summary>
         /// <returns>List of game IDs</returns>
-        private async Task<List<string>> GetItemsToRemove()
+        private List<string> GetItemsToRemove(PlayniteLibraryManifest manifest)
         {
-            var manifest = await WebServerService.GetManifestAsync();
-            if (manifest == null)
-            {
-                return new List<string>();
-            }
             var mediaExistsFor = manifest.mediaExistsFor?
                 .Select((mef) => mef.gameId)
                 .ToList() ?? new List<string>();
@@ -211,12 +211,50 @@ namespace PlayniteInsightsExporter.Lib
             return itemsToRemove;
         }
 
-        public async Task<ValidationResult> SendLibraryJsonToWebAppAsync()
+        /// <summary>
+        /// Compares the server's manifest with the current list of games and returns lists of games that should be added or updated from the server.
+        /// </summary>
+        /// <returns></returns>
+        private (List<object> itemsToAdd, List<object> itemsToUpdate) GetItemsToAddAndUpdate(PlayniteLibraryManifest manifest) {
+            List<object> itemsToUpdate = new List<object>();
+            List<object> itemsToAdd = new List<object>();
+            var gamesInLibrary = manifest.gamesInLibrary;
+            foreach (var game in PlayniteApi.Database.Games)
+            {
+                var hash = HashService.HashGameMetadata(game);
+                var gameInLibrary = manifest.gamesInLibrary?
+                    .Where((gil) => gil.gameId == game.Id.ToString())
+                    .FirstOrDefault();
+                if (gameInLibrary != null)
+                {
+                    if (gameInLibrary.contentHash != hash)
+                    {
+                        itemsToUpdate.Add(GetGameMetadata(game, hash));
+                        continue;
+                    }
+                }
+                else
+                {
+                    itemsToAdd.Add(GetGameMetadata(game, hash));
+                }
+            }
+            return (itemsToAdd, itemsToUpdate);
+        }
+
+        public async Task<ValidationResult> RunFullWebAppSyncAsync()
         {
-            var gamesList = GetGamesList();
-            var itemsToRemove = await GetItemsToRemove();
-            var itemsToAdd = new List<string>();
-            var syncGameListCommand = new SyncGameListCommand(itemsToAdd, itemsToRemove, gamesList);
+            var manifest = await WebServerService.GetManifestAsync();
+            if (manifest == null)
+            {
+                return new ValidationResult(
+                        IsValid: false,
+                        Message: "Failed to fetch library manifest",
+                        HttpCode: 500
+                    );
+            }
+            var itemsToRemove = GetItemsToRemove(manifest);
+            var (itemsToAdd, itemsToUpdate) = GetItemsToAddAndUpdate(manifest);
+            var syncGameListCommand = new SyncGameListCommand(itemsToAdd, itemsToRemove, itemsToUpdate);
             string json = CommandToJsonString(syncGameListCommand);
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
             {
@@ -243,7 +281,6 @@ namespace PlayniteInsightsExporter.Lib
         /// <returns>ValidationResult</returns>
         public async Task<ValidationResult> SendLibraryFilesToWebAppAsync(List<string> gameIdList = null)
         {
-            string locSendingLibraryFilesToServer = ResourceProvider.GetString("LOCSendingLibraryFilesToServer");
             ValidationResult result;
             result = await CreateLibraryZip(gameIdList);
             if (!result.IsValid)
@@ -267,7 +304,7 @@ namespace PlayniteInsightsExporter.Lib
                 result = DeleteLibraryZip();
                 if (!result.IsValid)
                 {
-                    return result;
+                    Logger.Warn("Failed to delete library zip after sending it to the server");
                 }
                 return new ValidationResult(
                         IsValid: true,

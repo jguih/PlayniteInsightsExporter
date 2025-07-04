@@ -33,7 +33,7 @@ namespace PlayniteInsightsExporter
                 HasSettings = true
             };
             WebServerService = new PlayniteInsightsWebServerService(this, Settings.Settings, logger);
-            LibExporter = new LibExporter(this, WebServerService);
+            LibExporter = new LibExporter(this, WebServerService, logger);
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
             PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
         }
@@ -48,7 +48,7 @@ namespace PlayniteInsightsExporter
                     gameIds.Add(game.NewData.Id.ToString());
                 }
                 ValidationResult result;
-                result = await LibExporter.SendLibraryJsonToWebAppAsync();
+                result = await LibExporter.RunFullWebAppSyncAsync();
                 if (!result.IsValid)
                 {
                     PlayniteApi
@@ -83,7 +83,7 @@ namespace PlayniteInsightsExporter
             if (e.RemovedItems.Count() > 0)
             {
                 ValidationResult result;
-                result = await LibExporter.SendLibraryJsonToWebAppAsync();
+                result = await LibExporter.RunFullWebAppSyncAsync();
                 if (!result.IsValid)
                 {
                     PlayniteApi
@@ -139,7 +139,7 @@ namespace PlayniteInsightsExporter
             var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
             if (Settings.Settings.EnableMetadataLibrarySyncOnUpdate)
             {
-                var result = await LibExporter.SendLibraryJsonToWebAppAsync();
+                var result = await LibExporter.RunFullWebAppSyncAsync();
                 if (!result.IsValid)
                 {
                     PlayniteApi.Notifications.Add(
@@ -207,7 +207,7 @@ namespace PlayniteInsightsExporter
                         async (progressArgs) =>
                         {
                             ValidationResult result;
-                            result = await LibExporter.SendLibraryJsonToWebAppAsync();
+                            result = await LibExporter.RunFullWebAppSyncAsync();
                             if (!result.IsValid)
                             {
                                 throw new Exception(result.Message);
