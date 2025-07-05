@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Windows.Documents;
 
 namespace PlayniteInsightsExporter.Lib
 {
@@ -59,6 +60,20 @@ namespace PlayniteInsightsExporter.Lib
             {
                 using(var sha256 = SHA256.Create())
                 {
+                    var developers = game.Developers != null ? 
+                        string.Join(",", game.Developers?.Select(d => d.Name)) : "";
+                    var genres = game.Genres != null ? 
+                        string.Join(",", game.Genres?.Select(g => g.Name)) : "";
+                    var tags = game.Tags != null ? 
+                        string.Join(",", game.Tags?.Select(t => t.Name)) : "";
+                    var categories = game.Categories != null ? 
+                        string.Join(",", game.Categories?.Select(c => c.Name)) : "";
+                    var features = game.Features != null ? 
+                        string.Join(",", game.Features?.Select(f => f.Name)) : "";
+                    var publishers = game.Publishers != null ? 
+                        string.Join(",", game.Publishers?.Select(p => p.Name)) : "";
+                    var platforms = game.Platforms != null ?
+                        string.Join(",", game.Platforms?.Select(p => p.Name)) : "";
                     var metadata = $"{game.Id}|" +
                         $"{game.Name}|" +
                         $"{game.Description}|" +
@@ -68,11 +83,14 @@ namespace PlayniteInsightsExporter.Lib
                         $"{game.CoverImage}|" +
                         $"{game.BackgroundImage}|" +
                         $"{game.Icon}|" +
-                        $"{game.CompletionStatus.Id}|" +
-                        $"{game.TagIds}|" +
-                        $"{game.GenreIds}|" +
-                        $"{game.CategoryIds}|" +
-                        $"{game.FeatureIds}|";
+                        $"{game.CompletionStatus?.Name ?? ""}|" +
+                        $"{tags}|" +
+                        $"{genres}|" +
+                        $"{categories}|" +
+                        $"{features}|" +
+                        $"{developers}|" +
+                        $"{publishers}|" +
+                        $"{platforms}";
                     var bytes = Encoding.UTF8.GetBytes(metadata);
                     var hash = sha256.ComputeHash(bytes);
                     return BitConverter

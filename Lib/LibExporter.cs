@@ -88,7 +88,7 @@ namespace PlayniteInsightsExporter.Lib
             return Path.Combine(Plugin.GetPluginUserDataPath(), "library.zip");
         }
 
-        private ValidationResult DeleteLibraryZip()
+        private bool DeleteLibraryZip()
         {
             string tmpZipPath = GetTempLibraryZipPath();
             try
@@ -97,33 +97,24 @@ namespace PlayniteInsightsExporter.Lib
                 {
                     File.Delete(tmpZipPath);
                 }
-                return new ValidationResult(
-                        IsValid: true,
-                        Message: "Library zip file deleted successfully",
-                        HttpCode: 200
-                    );
+                return true;
             }
             catch (Exception e)
             {
-                return new ValidationResult(
-                        IsValid: false,
-                        Message: "Failed to delete library zip file",
-                        HttpCode: 500
-                    );
+                Logger.Error(e, "Failed to delete library zip file");
+                return false;
             }
         }
 
-        private async Task<ValidationResult> CreateLibraryZip(List<string> gameIdList = null)
-        {
+        private (int includedFiles, ValidationResult result) CreateLibraryZip(
+            PlayniteLibraryManifest manifest,
+            List<string> gameIdList = null
+        ) {
             string tmpZipPath = GetTempLibraryZipPath();
-            var result = DeleteLibraryZip();
-            if (!result.IsValid)
-            {
-                return result;
-            }
             try
             {
-                var manifest = await WebServerService.GetManifestAsync();
+                var includedFiles = 0;
+                DeleteLibraryZip();
                 using (var zip = ZipFile.Open(tmpZipPath, ZipArchiveMode.Create))
                 {
                     foreach (var folder in Directory.GetDirectories(LibraryFilesDir))
@@ -137,7 +128,7 @@ namespace PlayniteInsightsExporter.Lib
                         string contentHash = HashService.HashFolderContents(folder);
                         if (manifest != null)
                         {
-                            var mediaExistsForEntry = manifest.mediaExistsFor?
+                            var mediaExistsForEntry = manifest?.mediaExistsFor?
                                 .Where(m => m.gameId == gameId)
                                 .FirstOrDefault() ?? null;
                             // Compare generated hash with manifest's hash
@@ -149,7 +140,7 @@ namespace PlayniteInsightsExporter.Lib
                                 }
                             }
                             // If game not present in manifest, skip sending media files
-                            var gameInLibrary = manifest.gamesInLibrary?
+                            var gameInLibrary = manifest?.gamesInLibrary?
                                 .Where((gil) => gil.gameId == gameId)
                                 .FirstOrDefault() ?? null;
                             if (gameInLibrary == null)
@@ -170,22 +161,26 @@ namespace PlayniteInsightsExporter.Lib
                         {
                             string relativePath = Path.Combine(gameId, Path.GetFileName(file));
                             zip.CreateEntryFromFile(file, relativePath, CompressionLevel.Optimal);
+                            includedFiles++;
                         }
                     }
-                    return new ValidationResult(
+                    return (includedFiles, 
+                        new ValidationResult(
                             IsValid: true,
                             Message: "",
                             HttpCode: 200
-                        );
+                        ));
                 }
             }
             catch (Exception e)
             {
-                return new ValidationResult(
+                Logger.Error(e, "Failed to create library zip file");
+                return (0, 
+                    new ValidationResult(
                         IsValid: false,
                         Message: "Failed to create library zip file",
                         HttpCode: 500
-                    );
+                    ));
             }
         }
 
@@ -195,7 +190,7 @@ namespace PlayniteInsightsExporter.Lib
         /// <returns>List of game IDs</returns>
         private List<string> GetItemsToRemove(PlayniteLibraryManifest manifest)
         {
-            var mediaExistsFor = manifest.mediaExistsFor?
+            var mediaExistsFor = manifest?.mediaExistsFor?
                 .Select((mef) => mef.gameId)
                 .ToList() ?? new List<string>();
             var gamesIdList = GetGamesIdList();
@@ -218,13 +213,12 @@ namespace PlayniteInsightsExporter.Lib
         private (List<object> itemsToAdd, List<object> itemsToUpdate) GetItemsToAddAndUpdate(PlayniteLibraryManifest manifest) {
             List<object> itemsToUpdate = new List<object>();
             List<object> itemsToAdd = new List<object>();
-            var gamesInLibrary = manifest.gamesInLibrary;
             foreach (var game in PlayniteApi.Database.Games)
             {
                 var hash = HashService.HashGameMetadata(game);
-                var gameInLibrary = manifest.gamesInLibrary?
+                var gameInLibrary = manifest?.gamesInLibrary?
                     .Where((gil) => gil.gameId == game.Id.ToString())
-                    .FirstOrDefault();
+                    .FirstOrDefault() ?? null;
                 if (gameInLibrary != null)
                 {
                     if (gameInLibrary.contentHash != hash)
@@ -244,14 +238,6 @@ namespace PlayniteInsightsExporter.Lib
         public async Task<ValidationResult> RunFullWebAppSyncAsync()
         {
             var manifest = await WebServerService.GetManifestAsync();
-            if (manifest == null)
-            {
-                return new ValidationResult(
-                        IsValid: false,
-                        Message: "Failed to fetch library manifest",
-                        HttpCode: 500
-                    );
-            }
             var itemsToRemove = GetItemsToRemove(manifest);
             var (itemsToAdd, itemsToUpdate) = GetItemsToAddAndUpdate(manifest);
             var syncGameListCommand = new SyncGameListCommand(itemsToAdd, itemsToRemove, itemsToUpdate);
@@ -281,11 +267,20 @@ namespace PlayniteInsightsExporter.Lib
         /// <returns>ValidationResult</returns>
         public async Task<ValidationResult> SendLibraryFilesToWebAppAsync(List<string> gameIdList = null)
         {
-            ValidationResult result;
-            result = await CreateLibraryZip(gameIdList);
+            var manifest = await WebServerService.GetManifestAsync();
+            var (includedFiles, result) = CreateLibraryZip(manifest, gameIdList);
             if (!result.IsValid)
             {
                 return result;
+            }
+            if (includedFiles == 0)
+            {
+                DeleteLibraryZip();
+                return new ValidationResult(
+                        IsValid: true,
+                        Message: "Library zip file sent to the server sucessfully",
+                        HttpCode: 200
+                    );
             }
             string tmpZipPath = GetTempLibraryZipPath();
             using (var content = new MultipartFormDataContent())
@@ -301,11 +296,7 @@ namespace PlayniteInsightsExporter.Lib
                 {
                     return result;
                 }
-                result = DeleteLibraryZip();
-                if (!result.IsValid)
-                {
-                    Logger.Warn("Failed to delete library zip after sending it to the server");
-                }
+                DeleteLibraryZip();
                 return new ValidationResult(
                         IsValid: true,
                         Message: "Library zip file sent to the server sucessfully",
