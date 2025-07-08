@@ -20,16 +20,11 @@ namespace PlayniteInsightsExporter
     public class PlayniteInsightsExporterSettings : ObservableObject
     {
         private string webAppURL = string.Empty;
-        private bool enableMetadataLibrarySyncOnUpdate = true;
-        private bool enableMediaFilesLibrarySyncOnUpdate = false;
+        private bool enableLibrarySyncOnUpdate = true;
         public string WebAppURL { get => webAppURL; set => SetValue(ref webAppURL, value); }
-        public bool EnableMetadataLibrarySyncOnUpdate { 
-            get => enableMetadataLibrarySyncOnUpdate; 
-            set => SetValue(ref enableMetadataLibrarySyncOnUpdate, value); 
-        }
-        public bool EnableMediaFilesLibrarySyncOnUpdate { 
-            get => enableMediaFilesLibrarySyncOnUpdate; 
-            set => SetValue(ref enableMediaFilesLibrarySyncOnUpdate, value); 
+        public bool EnableLibrarySyncOnUpdate { 
+            get => enableLibrarySyncOnUpdate; 
+            set => SetValue(ref enableLibrarySyncOnUpdate, value); 
         }
 
         [DontSerialize]
@@ -116,23 +111,16 @@ namespace PlayniteInsightsExporter
                 .Dialogs
                 .ActivateGlobalProgress(async (args) =>
                 {
-                    var result = await LibExporter.RunFullWebAppSyncAsync();
-                    if (!result.IsValid)
+                    var result = await LibExporter.RunFullLibrarySyncAsync();
+                    if (result == false)
                     {
-                        throw new Exception(result.Message);
-                    }
-                    result = await LibExporter.SendLibraryFilesToWebAppAsync();
-                    if (!result.IsValid)
-                    {
-                        throw new Exception(result.Message);
+                        throw new Exception("Manual full library sync failed");
                     }
                 }, new GlobalProgressOptions(loc_loading_syncClientServer));
             if (progressResult.Error != null)
             {
-                PlayniteApi
-                    .Dialogs
-                    .ShowErrorMessage(
-                        $"{loc_failed_syncClientServer} \nError: {progressResult.Error.Message}", 
+                PlayniteApi.Dialogs.ShowErrorMessage(
+                        loc_failed_syncClientServer, 
                         Plugin.Name);
                 return;
             }

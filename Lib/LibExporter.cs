@@ -85,17 +85,17 @@ namespace PlayniteInsightsExporter.Lib
 
         private string GetTempLibraryZipPath()
         {
-            return Path.Combine(Plugin.GetPluginUserDataPath(), "library.zip");
+            var id = Guid.NewGuid().ToString();
+            return Path.Combine(Plugin.GetPluginUserDataPath(), $"{id}-library.zip");
         }
 
-        private bool DeleteLibraryZip()
+        private bool DeleteLibraryZip(string path)
         {
-            string tmpZipPath = GetTempLibraryZipPath();
             try
             {
-                if (File.Exists(tmpZipPath))
+                if (File.Exists(path))
                 {
-                    File.Delete(tmpZipPath);
+                    File.Delete(path);
                 }
                 return true;
             }
@@ -106,15 +106,15 @@ namespace PlayniteInsightsExporter.Lib
             }
         }
 
-        private (int includedFiles, ValidationResult result) CreateLibraryZip(
+        private (int includedFiles, bool result) CreateLibraryZip(
             PlayniteLibraryManifest manifest,
+            string tmpZipPath,
             List<string> gameIdList = null
         ) {
-            string tmpZipPath = GetTempLibraryZipPath();
             try
             {
                 var includedFiles = 0;
-                DeleteLibraryZip();
+                DeleteLibraryZip(tmpZipPath);
                 using (var zip = ZipFile.Open(tmpZipPath, ZipArchiveMode.Create))
                 {
                     foreach (var folder in Directory.GetDirectories(LibraryFilesDir))
@@ -164,23 +164,13 @@ namespace PlayniteInsightsExporter.Lib
                             includedFiles++;
                         }
                     }
-                    return (includedFiles, 
-                        new ValidationResult(
-                            IsValid: true,
-                            Message: "",
-                            HttpCode: 200
-                        ));
+                    return (includedFiles, true);
                 }
             }
             catch (Exception e)
             {
                 Logger.Error(e, "Failed to create library zip file");
-                return (0, 
-                    new ValidationResult(
-                        IsValid: false,
-                        Message: "Failed to create library zip file",
-                        HttpCode: 500
-                    ));
+                return (0, false);
             }
         }
 
@@ -215,7 +205,7 @@ namespace PlayniteInsightsExporter.Lib
             List<object> itemsToAdd = new List<object>();
             foreach (var game in PlayniteApi.Database.Games)
             {
-                var hash = HashService.HashGameMetadata(game);
+                var hash = HashService.GetHashFromPlayniteGame(game);
                 var gameInLibrary = manifest?.gamesInLibrary?
                     .Where((gil) => gil.gameId == game.Id.ToString())
                     .FirstOrDefault() ?? null;
@@ -235,7 +225,156 @@ namespace PlayniteInsightsExporter.Lib
             return (itemsToAdd, itemsToUpdate);
         }
 
-        public async Task<ValidationResult> RunFullWebAppSyncAsync()
+        /// <summary>
+        /// Sends a request to delete the games in itemsToRemove
+        /// </summary>
+        /// <param name="itemsToRemove">List of Game ids</param>
+        /// <returns></returns>
+        public async Task<bool> RunRemovedGamesSyncAsync(List<string> itemsToRemove)
+        {
+            if (itemsToRemove == null) return false;
+            if (itemsToRemove.Count() == 0) return true;
+
+            var syncGameListCommand = new SyncGameListCommand(
+                AddedItems: new List<object>(),
+                RemovedItems: itemsToRemove,
+                UpdatedItems: new List<object>());
+            var jsonCommand = CommandToJsonString(syncGameListCommand);
+            using (var content = new StringContent(jsonCommand, Encoding.UTF8, "application/json"))
+            {
+                return await WebServerService.Post(endpoint: WebAppEndpoints.SyncGames, content: content);
+            }
+        }
+
+        /// <summary>
+        /// Sends a request to delete the games in itemsToRemove and remove their media files
+        /// </summary>
+        /// <param name="itemsToRemove"></param>
+        /// <returns></returns>
+        public async Task<bool> RunFullRemovedGamesSyncAsync(List<Game> itemsToRemove)
+        {
+            if (itemsToRemove == null) return false;
+            if (itemsToRemove.Count() == 0) return true;
+            List<string> gameIdList = new List<string>();
+            foreach (var game in itemsToRemove)
+            {
+                gameIdList.Add(game.Id.ToString());
+            }
+            var result = await RunRemovedGamesSyncAsync(gameIdList);
+            if (result == false) return false;
+            return await RunMediaFilesSyncAsync(gameIdList);
+        }
+
+        /// <summary>
+        /// Sends a request to update the games in itemsToUpdate
+        /// </summary>
+        /// <param name="itemsToUpdate"></param>
+        /// <returns></returns>
+        public async Task<bool> RunUpdatedGamesSyncAsync(List<Game> itemsToUpdate)
+        {
+            if (itemsToUpdate == null) return false;
+            if (itemsToUpdate.Count() == 0) return true;
+
+            var manifest = await WebServerService.GetManifestAsync();
+            var gameMetadataList = new List<object>();
+            foreach (var game in itemsToUpdate)
+            {
+                var hash = HashService.GetHashFromPlayniteGame(game);
+                var gameInLibrary = manifest?.gamesInLibrary?
+                    .Where((gil) => gil.gameId == game.Id.ToString())
+                    .FirstOrDefault() ?? null;
+                if (gameInLibrary != null)
+                {
+                    if (gameInLibrary.contentHash != hash)
+                    {
+                        gameMetadataList.Add(GetGameMetadata(game, hash));
+                        continue;
+                    }
+                }
+            }
+            if (gameMetadataList.Count() == 0) return true;
+            var syncGameListCommand = new SyncGameListCommand(
+                AddedItems: new List<object>(),
+                RemovedItems: new List<string>(),
+                UpdatedItems: gameMetadataList);
+            var jsonCommand = CommandToJsonString(syncGameListCommand);
+            using (var content = new StringContent(jsonCommand, Encoding.UTF8, "application/json"))
+            {
+                return await WebServerService.Post(endpoint: WebAppEndpoints.SyncGames, content: content);
+            }
+        }
+
+        /// <summary>
+        /// Sends a request to update the games in itemsToUpdate along with their media files
+        /// </summary>
+        /// <param name="itemsToUpdate"></param>
+        /// <returns></returns>
+        public async Task<bool> RunFullUpdatedGamesSyncAsync(List<Game> itemsToUpdate)
+        {
+            if (itemsToUpdate == null) return false;
+            if (itemsToUpdate.Count() == 0) return true;
+            List<string> gameIdList = new List<string>();
+            foreach (var game in itemsToUpdate)
+            {
+                gameIdList.Add(game.Id.ToString());
+            }
+            var result = await RunUpdatedGamesSyncAsync(itemsToUpdate);
+            if (result == false) return false;
+            return await RunMediaFilesSyncAsync(gameIdList);
+        }
+
+        /// <summary>
+        /// Sends a request to add the games in itemsToAdd
+        /// </summary>
+        /// <param name="itemsToAdd"></param>
+        /// <returns></returns>
+        public async Task<bool> RunAddedGamesSyncAsync(List<Game> itemsToAdd)
+        {
+            if (itemsToAdd == null) return false;
+            if (itemsToAdd.Count() == 0) return true;
+
+            var gameMetadataList = new List<object>();
+            foreach (var game in itemsToAdd)
+            {
+                var hash = HashService.GetHashFromPlayniteGame(game);
+                var metadata = GetGameMetadata(game, hash);
+                gameMetadataList.Add(metadata);
+            }
+            var syncGameListCommand = new SyncGameListCommand(
+                AddedItems: gameMetadataList, 
+                RemovedItems: new List<string>(), 
+                UpdatedItems: new List<object>());
+            var jsonCommand = CommandToJsonString(syncGameListCommand);
+            using (var content = new StringContent(jsonCommand, Encoding.UTF8, "application/json"))
+            {
+                return await WebServerService.Post(endpoint: WebAppEndpoints.SyncGames, content: content);
+            }
+        }
+
+        /// <summary>
+        /// Sends a request to add the games in itemsToAdd along with their media files
+        /// </summary>
+        /// <param name="itemsToUpdate"></param>
+        /// <returns></returns>
+        public async Task<bool> RunFullAddedGamesSyncAsync(List<Game> itemsToAdd)
+        {
+            if (itemsToAdd == null) return false;
+            if (itemsToAdd.Count() == 0) return true;
+            List<string> gameIdList = new List<string>();
+            foreach (var game in itemsToAdd)
+            {
+                gameIdList.Add(game.Id.ToString());
+            }
+            var result = await RunAddedGamesSyncAsync(itemsToAdd);
+            if (result == false) return false;
+            return await RunMediaFilesSyncAsync(gameIdList);
+        }
+
+        /// <summary>
+        /// Syncs the entire library database with the server
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> RunLibrarySyncAsync()
         {
             var manifest = await WebServerService.GetManifestAsync();
             var itemsToRemove = GetItemsToRemove(manifest);
@@ -244,19 +383,26 @@ namespace PlayniteInsightsExporter.Lib
             string json = CommandToJsonString(syncGameListCommand);
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
             {
-                var result = await WebServerService
-                    .Post(
-                        endpoint: WebAppEndpoints.SyncGames, 
-                        content: content);
-                if (!result.IsValid)
-                {
-                    return result;
-                }
-                return new ValidationResult(
-                        IsValid: true,
-                        Message: "Library zip file sent to the server sucessfully",
-                        HttpCode: 200
-                    );
+                return await WebServerService.Post(endpoint: WebAppEndpoints.SyncGames, content: content); 
+            }
+        }
+
+        /// <summary>
+        /// Syncs the entire library database and media files with the server
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> RunFullLibrarySyncAsync()
+        {
+            var manifest = await WebServerService.GetManifestAsync();
+            var itemsToRemove = GetItemsToRemove(manifest);
+            var (itemsToAdd, itemsToUpdate) = GetItemsToAddAndUpdate(manifest);
+            var syncGameListCommand = new SyncGameListCommand(itemsToAdd, itemsToRemove, itemsToUpdate);
+            string json = CommandToJsonString(syncGameListCommand);
+            using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+            {
+                var result = await WebServerService.Post(endpoint: WebAppEndpoints.SyncGames, content: content);
+                if (result == false) return false;
+                return await RunMediaFilesSyncAsync();
             }
         }
 
@@ -265,43 +411,33 @@ namespace PlayniteInsightsExporter.Lib
         /// </summary>
         /// <param name="gameIdList">List of game IDs to send to the server. If null all games will be sent.</param>
         /// <returns>ValidationResult</returns>
-        public async Task<ValidationResult> SendLibraryFilesToWebAppAsync(List<string> gameIdList = null)
+        public async Task<bool> RunMediaFilesSyncAsync(List<string> gameIdList = null)
         {
             var manifest = await WebServerService.GetManifestAsync();
-            var (includedFiles, result) = CreateLibraryZip(manifest, gameIdList);
-            if (!result.IsValid)
+            var libZipFile = GetTempLibraryZipPath();
+            var (includedFiles, result) = CreateLibraryZip(manifest, libZipFile, gameIdList);
+            if (result == false)
             {
-                return result;
+                return false;
             }
             if (includedFiles == 0)
             {
-                DeleteLibraryZip();
-                return new ValidationResult(
-                        IsValid: true,
-                        Message: "Library zip file sent to the server sucessfully",
-                        HttpCode: 200
-                    );
+                DeleteLibraryZip(libZipFile);
+                return true;
             }
-            string tmpZipPath = GetTempLibraryZipPath();
             using (var content = new MultipartFormDataContent())
-            using (var fileStream = File.OpenRead(tmpZipPath))
+            using (var fileStream = File.OpenRead(libZipFile))
             using (var fileContent = new StreamContent(fileStream))
             {
                 fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/zip");
-                result = await WebServerService
-                    .Post(
-                        endpoint: WebAppEndpoints.SyncFiles,
-                        content: fileContent);
-                if (!result.IsValid)
+                var requestResult = await WebServerService
+                    .Post(endpoint: WebAppEndpoints.SyncFiles, content: fileContent);
+                if (requestResult == false)
                 {
-                    return result;
+                    return false;
                 }
-                DeleteLibraryZip();
-                return new ValidationResult(
-                        IsValid: true,
-                        Message: "Library zip file sent to the server sucessfully",
-                        HttpCode: 200
-                    );
+                DeleteLibraryZip(libZipFile);
+                return true;
             }
         }
     }

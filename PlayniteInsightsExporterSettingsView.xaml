@@ -11,12 +11,8 @@
             <TextBox Text="{Binding Settings.WebAppURL}"/>
         </StackPanel>
         <StackPanel Margin="0,0,0,12">
-            <CheckBox Content="{DynamicResource LOC_Label_EnableMetadataLibrarySyncOnUpdate}"
-                  IsChecked="{Binding Settings.EnableMetadataLibrarySyncOnUpdate}" />
-        </StackPanel>
-        <StackPanel Margin="0,0,0,12">
-            <CheckBox Content="{DynamicResource LOC_Label_EnableMediaFilesLibrarySyncOnUpdate}"
-          IsChecked="{Binding Settings.EnableMediaFilesLibrarySyncOnUpdate}" />
+            <CheckBox Content="{DynamicResource LOC_Label_EnableLibrarySyncOnUpdate}"
+                  IsChecked="{Binding Settings.EnableLibrarySyncOnUpdate}" />
         </StackPanel>
         <Button 
             Content="{DynamicResource LOC_Label_ManualSync}" 

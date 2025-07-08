@@ -54,7 +54,7 @@ namespace PlayniteInsightsExporter.Lib
             }
         }
 
-        public string HashGameMetadata(Game game)
+        public string GetHashFromPlayniteGame(Game game)
         {
             try
             {

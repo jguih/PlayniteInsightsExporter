@@ -11,7 +11,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
-using ValidationResult = PlayniteInsightsExporter.Lib.Models.ValidationResult;
 
 namespace PlayniteInsightsExporter
 {
@@ -35,71 +34,53 @@ namespace PlayniteInsightsExporter
             WebServerService = new PlayniteInsightsWebServerService(this, Settings.Settings, logger);
             LibExporter = new LibExporter(this, WebServerService, logger);
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
-            PlayniteApi.Database.Games.ItemUpdated += Games_ItemUpdated;
-        }
-
-        private async void Games_ItemUpdated(object sender, ItemUpdatedEventArgs<Game> e)
-        {
-            if (e.UpdatedItems.Count() > 0)
-            {
-                List<string> gameIds = new List<string>();
-                foreach (var game in e.UpdatedItems)
-                {
-                    gameIds.Add(game.NewData.Id.ToString());
-                }
-                ValidationResult result;
-                result = await LibExporter.RunFullWebAppSyncAsync();
-                if (!result.IsValid)
-                {
-                    PlayniteApi
-                        .Notifications
-                        .Add(
-                        Name,
-                        $"Failed to send game metadata to web server. \nError: {result.Message}",
-                        NotificationType.Error);
-                    return;
-                }
-                result = await LibExporter.SendLibraryFilesToWebAppAsync(gameIds);
-                if (!result.IsValid)
-                {
-                    PlayniteApi
-                        .Notifications
-                        .Add(
-                        Name,
-                        $"Failed to send library files to web server. \nError: {result.Message}",
-                        NotificationType.Error);
-                    return;
-                }
-            }
-
         }
 
         private async void OnItemCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> e)
         {
+            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             if (e.AddedItems.Count() > 0)
             {
-                // To something
+                var result = await LibExporter.RunFullAddedGamesSyncAsync(e.AddedItems);
+                if (result == false)
+                {
+                    PlayniteApi.Notifications.Add(
+                        Name,
+                        loc_failed_syncClientServer,
+                        NotificationType.Error);
+                    return;
+                }
             }
             if (e.RemovedItems.Count() > 0)
             {
-                ValidationResult result;
-                result = await LibExporter.RunFullWebAppSyncAsync();
-                if (!result.IsValid)
+                var result = await LibExporter.RunFullRemovedGamesSyncAsync(e.RemovedItems);
+                if (result == false)
                 {
-                    PlayniteApi
-                        .Notifications
-                        .Add(
+                    PlayniteApi.Notifications.Add(
                         Name,
-                        $"Failed to send game metadata to web server. \nError: {result.Message}",
+                        loc_failed_syncClientServer,
                         NotificationType.Error);
                     return;
                 }
             }
         }
 
-        public override void OnGameInstalled(OnGameInstalledEventArgs args)
+        public override async void OnGameInstalled(OnGameInstalledEventArgs args)
         {
-            // Add code to be executed when game is finished installing.
+            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+            if (args.Game != null)
+            {
+                List<Game> games = new List<Game>() { args.Game };
+                var result = await LibExporter.RunFullUpdatedGamesSyncAsync(games);
+                if (result == false)
+                {
+                    PlayniteApi.Notifications.Add(
+                        Name,
+                        loc_failed_syncClientServer,
+                        NotificationType.Error);
+                    return;
+                }
+            }
         }
 
         public override void OnGameStarted(OnGameStartedEventArgs args)
@@ -112,14 +93,41 @@ namespace PlayniteInsightsExporter
             // Add code to be executed when game is preparing to be started.
         }
 
-        public override void OnGameStopped(OnGameStoppedEventArgs args)
+        public override async void OnGameStopped(OnGameStoppedEventArgs args)
         {
-            // Add code to be executed when game is preparing to be started.
+            // Add code to be executed when game is stopping.
+            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+            if (args.Game != null)
+            {
+                List<Game> games = new List<Game>() { args.Game };
+                var result = await LibExporter.RunFullUpdatedGamesSyncAsync(games);
+                if (result == false)
+                {
+                    PlayniteApi.Notifications.Add(
+                        Name,
+                        loc_failed_syncClientServer,
+                        NotificationType.Error);
+                    return;
+                }
+            }
         }
 
-        public override void OnGameUninstalled(OnGameUninstalledEventArgs args)
+        public override async void OnGameUninstalled(OnGameUninstalledEventArgs args)
         {
-            // Add code to be executed when game is uninstalled.
+            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+            if (args.Game != null)
+            {
+                List<Game> games = new List<Game>() { args.Game };
+                var result = await LibExporter.RunFullUpdatedGamesSyncAsync(games);
+                if (result == false)
+                {
+                    PlayniteApi.Notifications.Add(
+                        Name,
+                        loc_failed_syncClientServer,
+                        NotificationType.Error);
+                    return;
+                }
+            }
         }
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
@@ -130,48 +138,23 @@ namespace PlayniteInsightsExporter
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
         {
             // Add code to be executed when Playnite is shutting down.
+            PlayniteApi.Database.Games.ItemCollectionChanged -= OnItemCollectionChanged;
         }
 
         public override async void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-            var loc_loading_syncClientServer = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
-            var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
-            if (Settings.Settings.EnableMetadataLibrarySyncOnUpdate)
+            if (Settings?.Settings?.EnableLibrarySyncOnUpdate == true)
             {
-                var result = await LibExporter.RunFullWebAppSyncAsync();
-                if (!result.IsValid)
+                var result = await LibExporter.RunFullLibrarySyncAsync();
+                if (result == false)
                 {
                     PlayniteApi.Notifications.Add(
                         new NotificationMessage(
                             $"{Name} Error",
-                            $"{loc_failed_syncClientServer} \nError: {result.Message}",
+                            $"{loc_failed_syncClientServer}",
                             NotificationType.Error)
                         );
-                }
-            }
-            if (Settings.Settings.EnableMediaFilesLibrarySyncOnUpdate)
-            {
-                var progressResult = PlayniteApi
-                            .Dialogs
-                            .ActivateGlobalProgress(
-                            async (progressArgs) =>
-                            {
-                                ValidationResult libFilesSyncResult;
-                                libFilesSyncResult = await LibExporter.SendLibraryFilesToWebAppAsync();
-                                if (!libFilesSyncResult.IsValid)
-                                {
-                                    throw new Exception(libFilesSyncResult.Message);
-                                }
-                            }, new GlobalProgressOptions(loc_loading_syncClientServer));
-                if (progressResult.Error != null)
-                {
-                    PlayniteApi.Notifications.Add(
-                        new NotificationMessage(
-                                $"{Name} Error",
-                                $"{loc_failed_syncClientServer} \nError: {progressResult.Error.Message}",
-                                NotificationType.Error
-                            ));
                 }
             }
         }
@@ -196,8 +179,9 @@ namespace PlayniteInsightsExporter
                 Description = "Playnite Insights Server Sync",
                 Action = (_args) =>
                 {
+                    var games = _args.Games;
                     List<string> gameIds = new List<string>();
-                    foreach(Game game in _args.Games)
+                    foreach(Game game in games)
                     {
                         gameIds.Add(game.Id.ToString());
                     }
@@ -206,23 +190,18 @@ namespace PlayniteInsightsExporter
                         .ActivateGlobalProgress(
                         async (progressArgs) =>
                         {
-                            ValidationResult result;
-                            result = await LibExporter.RunFullWebAppSyncAsync();
-                            if (!result.IsValid)
+                            bool result;
+                            result = await LibExporter.RunFullUpdatedGamesSyncAsync(games);
+                            if (result == false)
                             {
-                                throw new Exception(result.Message);
-                            }
-                            result = await LibExporter.SendLibraryFilesToWebAppAsync(gameIds);
-                            if (!result.IsValid)
-                            {
-                                throw new Exception(result.Message);
+                                throw new Exception("Full game update sync failed");
                             }
                         }, new GlobalProgressOptions(loc_loading_syncClientServer));
                     if (progressResult.Error != null)
                     {
                         PlayniteApi
                             .Dialogs
-                            .ShowErrorMessage($"{loc_failed_syncClientServer} \nError: {progressResult.Error.Message}", Name);
+                            .ShowErrorMessage(loc_failed_syncClientServer, Name);
                     }
                     else
                     {

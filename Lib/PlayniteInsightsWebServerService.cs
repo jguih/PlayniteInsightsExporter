@@ -41,7 +41,7 @@ namespace PlayniteInsightsExporter.Lib
             return $"{Settings.WebAppURL.TrimEnd('/')}/{endpoint.TrimStart('/')}";
         }
 
-        public async Task<ValidationResult> Post(string endpoint, HttpContent content)
+        public async Task<bool> Post(string endpoint, HttpContent content)
         {
             try
             {
@@ -55,21 +55,13 @@ namespace PlayniteInsightsExporter.Lib
                     var response = await client.SendAsync(request);
                     var responseBody = await response.Content.ReadAsStringAsync();
                     response.EnsureSuccessStatusCode();
-                    return new ValidationResult(
-                            IsValid: true,
-                            Message: $"POST request to {GetWebAppURL(endpoint)} succeeded",
-                            HttpCode: 200
-                        );
+                    return true;
                 }
             }
             catch (Exception e)
             {
                 Logger.Error(e, $"POST request to {GetWebAppURL(endpoint)} failed");
-                return new ValidationResult(
-                        IsValid: false,
-                        Message: $"POST request to {GetWebAppURL(endpoint)} failed",
-                        HttpCode: 500
-                    );
+                return false;
             }
         }
 
