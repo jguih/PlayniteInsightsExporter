@@ -74,23 +74,35 @@ namespace PlayniteInsightsExporter.Lib
                         string.Join(",", game.Publishers?.Select(p => p.Name)) : "";
                     var platforms = game.Platforms != null ?
                         string.Join(",", game.Platforms?.Select(p => p.Name)) : "";
-                    var metadata = $"{game.Id}|" +
+                    var playtime = game.Playtime.ToString();
+                    var playcount = game.PlayCount.ToString();
+                    var lastActivity = game.LastActivity?.ToString() ?? "";
+                    var description = game.Description != null ?
+                        game.Description.Length > 20 ?
+                        game.Description?.Substring(0, 20) :
+                        game.Description : "";
+                    var completionStatus = game.CompletionStatus?.Name ?? "";
+                    var metadata = $"{lastActivity}|" +
                         $"{game.Name}|" +
-                        $"{game.Description}|" +
+                        $"{description}|" +
                         $"{game.Added}|" +
                         $"{game.IsInstalled}|" +
                         $"{game.InstallDirectory}|" +
                         $"{game.CoverImage}|" +
                         $"{game.BackgroundImage}|" +
                         $"{game.Icon}|" +
-                        $"{game.CompletionStatus?.Name ?? ""}|" +
+                        $"{completionStatus}|" +
                         $"{tags}|" +
                         $"{genres}|" +
                         $"{categories}|" +
                         $"{features}|" +
                         $"{developers}|" +
                         $"{publishers}|" +
-                        $"{platforms}";
+                        $"{platforms}|" +
+                        $"{playcount}|" +
+                        $"{playtime}|" +
+                        $"{game.Hidden}|" +
+                        $"{game.Version}";
                     var bytes = Encoding.UTF8.GetBytes(metadata);
                     var hash = sha256.ComputeHash(bytes);
                     return BitConverter
