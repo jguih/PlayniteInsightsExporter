@@ -191,7 +191,7 @@ namespace PlayniteInsightsExporter
                         async (progressArgs) =>
                         {
                             bool result;
-                            result = await LibExporter.RunFullUpdatedGamesSyncAsync(games);
+                            result = await LibExporter.RunFullGamesSyncAsync(games);
                             if (result == false)
                             {
                                 throw new Exception("Full game update sync failed");

@@ -200,10 +200,13 @@ namespace PlayniteInsightsExporter.Lib
         /// Compares the server's manifest with the current list of games and returns lists of games that should be added or updated from the server.
         /// </summary>
         /// <returns></returns>
-        private (List<object> itemsToAdd, List<object> itemsToUpdate) GetItemsToAddAndUpdate(PlayniteLibraryManifest manifest) {
+        private (List<object> itemsToAdd, List<object> itemsToUpdate) GetItemsToAddAndUpdate(
+            PlayniteLibraryManifest manifest,
+            IEnumerable<Game> games
+        ) {
             List<object> itemsToUpdate = new List<object>();
             List<object> itemsToAdd = new List<object>();
-            foreach (var game in PlayniteApi.Database.Games)
+            foreach (var game in games)
             {
                 var hash = HashService.GetHashFromPlayniteGame(game);
                 var gameInLibrary = manifest?.gamesInLibrary?
@@ -269,9 +272,12 @@ namespace PlayniteInsightsExporter.Lib
         /// Sends a request to update the games in itemsToUpdate
         /// </summary>
         /// <param name="itemsToUpdate"></param>
+        /// <param name="force">If true, updates games without comparing with the server</param>
         /// <returns></returns>
-        public async Task<bool> RunUpdatedGamesSyncAsync(List<Game> itemsToUpdate)
-        {
+        public async Task<bool> RunUpdatedGamesSyncAsync(
+            List<Game> itemsToUpdate,
+            bool force = false
+        ) {
             if (itemsToUpdate == null) return false;
             if (itemsToUpdate.Count() == 0) return true;
 
@@ -280,6 +286,11 @@ namespace PlayniteInsightsExporter.Lib
             foreach (var game in itemsToUpdate)
             {
                 var hash = HashService.GetHashFromPlayniteGame(game);
+                if (force == true)
+                {
+                    gameMetadataList.Add(GetGameMetadata(game, hash));
+                    continue;
+                }
                 var gameInLibrary = manifest?.gamesInLibrary?
                     .Where((gil) => gil.gameId == game.Id.ToString())
                     .FirstOrDefault() ?? null;
@@ -308,9 +319,12 @@ namespace PlayniteInsightsExporter.Lib
         /// Sends a request to update the games in itemsToUpdate along with their media files
         /// </summary>
         /// <param name="itemsToUpdate"></param>
+        /// <param name="force">If true, updates games without comparing with the server</param>
         /// <returns></returns>
-        public async Task<bool> RunFullUpdatedGamesSyncAsync(List<Game> itemsToUpdate)
-        {
+        public async Task<bool> RunFullUpdatedGamesSyncAsync(
+            List<Game> itemsToUpdate,
+            bool force = false
+        ) {
             if (itemsToUpdate == null) return false;
             if (itemsToUpdate.Count() == 0) return true;
             List<string> gameIdList = new List<string>();
@@ -318,7 +332,7 @@ namespace PlayniteInsightsExporter.Lib
             {
                 gameIdList.Add(game.Id.ToString());
             }
-            var result = await RunUpdatedGamesSyncAsync(itemsToUpdate);
+            var result = await RunUpdatedGamesSyncAsync(itemsToUpdate, force);
             if (result == false) return false;
             return await RunMediaFilesSyncAsync(gameIdList);
         }
@@ -378,13 +392,37 @@ namespace PlayniteInsightsExporter.Lib
         {
             var manifest = await WebServerService.GetManifestAsync();
             var itemsToRemove = GetItemsToRemove(manifest);
-            var (itemsToAdd, itemsToUpdate) = GetItemsToAddAndUpdate(manifest);
+            var (itemsToAdd, itemsToUpdate) = GetItemsToAddAndUpdate(manifest, PlayniteApi.Database.Games);
             var syncGameListCommand = new SyncGameListCommand(itemsToAdd, itemsToRemove, itemsToUpdate);
             string json = CommandToJsonString(syncGameListCommand);
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
             {
                 return await WebServerService.Post(endpoint: WebAppEndpoints.SyncGames, content: content); 
             }
+        }
+
+        /// <summary>
+        /// Syncs a list of games with the server
+        /// </summary>
+        /// <param name="itemsToSync"></param>
+        /// <returns></returns>
+        public async Task<bool> RunFullGamesSyncAsync(List<Game> itemsToSync)
+        {
+            var manifest = await WebServerService.GetManifestAsync();
+            var (itemsToAdd, itemsToUpdate) = GetItemsToAddAndUpdate(manifest, itemsToSync);
+            var syncGameListCommand = new SyncGameListCommand(itemsToAdd, new List<string>(), itemsToUpdate);
+            string json = CommandToJsonString(syncGameListCommand);
+            using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+            {
+                var result = await WebServerService.Post(endpoint: WebAppEndpoints.SyncGames, content: content);
+                if (result == false) return false;
+            }
+            var gameIds = new List<string>();
+            foreach (var game in itemsToSync)
+            {
+                gameIds.Add(game.Id.ToString());
+            }
+            return await RunMediaFilesSyncAsync(gameIds);
         }
 
         /// <summary>
@@ -395,7 +433,7 @@ namespace PlayniteInsightsExporter.Lib
         {
             var manifest = await WebServerService.GetManifestAsync();
             var itemsToRemove = GetItemsToRemove(manifest);
-            var (itemsToAdd, itemsToUpdate) = GetItemsToAddAndUpdate(manifest);
+            var (itemsToAdd, itemsToUpdate) = GetItemsToAddAndUpdate(manifest, PlayniteApi.Database.Games);
             var syncGameListCommand = new SyncGameListCommand(itemsToAdd, itemsToRemove, itemsToUpdate);
             string json = CommandToJsonString(syncGameListCommand);
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
