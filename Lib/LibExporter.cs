@@ -5,13 +5,9 @@ using PlayniteInsightsExporter.Lib.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
-using System.IO.Packaging;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -80,97 +76,6 @@ namespace PlayniteInsightsExporter.Lib
             catch (Exception)
             {
                 return "[]";
-            }
-        }
-
-        private string GetTempLibraryZipPath()
-        {
-            var id = Guid.NewGuid().ToString();
-            return Path.Combine(Plugin.GetPluginUserDataPath(), $"{id}-library.zip");
-        }
-
-        private bool DeleteLibraryZip(string path)
-        {
-            try
-            {
-                if (File.Exists(path))
-                {
-                    File.Delete(path);
-                }
-                return true;
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e, "Failed to delete library zip file");
-                return false;
-            }
-        }
-
-        private (int includedFiles, bool result) CreateLibraryZip(
-            PlayniteLibraryManifest manifest,
-            string tmpZipPath,
-            List<string> gameIdList = null
-        ) {
-            try
-            {
-                var includedFiles = 0;
-                DeleteLibraryZip(tmpZipPath);
-                using (var zip = ZipFile.Open(tmpZipPath, ZipArchiveMode.Create))
-                {
-                    foreach (var folder in Directory.GetDirectories(LibraryFilesDir))
-                    {
-                        string gameId = Path.GetFileName(folder);
-                        // Only send game files for games included in the gameIdList when list is not null, otherwise send all files
-                        if (gameIdList != null && !gameIdList.Contains(gameId))
-                        {
-                            continue;
-                        }
-                        string contentHash = HashService.HashFolderContents(folder);
-                        if (manifest != null)
-                        {
-                            var mediaExistsForEntry = manifest?.mediaExistsFor?
-                                .Where(m => m.gameId == gameId)
-                                .FirstOrDefault() ?? null;
-                            // Compare generated hash with manifest's hash
-                            if (mediaExistsForEntry != null)
-                            {
-                                if (mediaExistsForEntry.contentHash == contentHash) 
-                                {
-                                    continue;
-                                }
-                            }
-                            // If game not present in manifest, skip sending media files
-                            var gameInLibrary = manifest?.gamesInLibrary?
-                                .Where((gil) => gil.gameId == gameId)
-                                .FirstOrDefault() ?? null;
-                            if (gameInLibrary == null)
-                            {
-                                continue;
-                            }
-                        }
-                        // Add contentHash.txt file with content hash inside
-                        string contentHashFilePath = Path.Combine(gameId, "contentHash.txt");
-                        var hashEntry = zip.CreateEntry(contentHashFilePath, CompressionLevel.Optimal);
-                        using (var entryStream = hashEntry.Open())
-                        using (var writer = new StreamWriter(entryStream))
-                        {
-                            writer.Write(contentHash);
-                        }
-                        // Add media files
-                        foreach (var file in Directory.GetFiles(folder))
-                        {
-                            string relativePath = Path.Combine(gameId, Path.GetFileName(file));
-                            zip.CreateEntryFromFile(file, relativePath, CompressionLevel.Optimal);
-                            includedFiles++;
-                        }
-                    }
-                    return (includedFiles, true);
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e, "Failed to create library zip file");
-                return (0, false);
             }
         }
 
@@ -445,38 +350,71 @@ namespace PlayniteInsightsExporter.Lib
         }
 
         /// <summary>
-        ///     Send library media files to the web server.
+        /// Syncronizes library media files for games with the web server.
         /// </summary>
-        /// <param name="gameIdList">List of game IDs to send to the server. If null all games will be sent.</param>
+        /// <param name="gameIdList">List of game ids to check for media files changes. If null, media files for all games will be checked.</param>
         /// <returns>ValidationResult</returns>
-        public async Task<bool> RunMediaFilesSyncAsync(List<string> gameIdList = null)
+        public async Task<bool> RunMediaFilesSyncAsync(IEnumerable<string> gameIdList = null)
         {
             var manifest = await WebServerService.GetManifestAsync();
-            var libZipFile = GetTempLibraryZipPath();
-            var (includedFiles, result) = CreateLibraryZip(manifest, libZipFile, gameIdList);
-            if (result == false)
+            var resolvedGameIdList = gameIdList ?? PlayniteApi.Database.Games.Select(g => g.Id.ToString());
+            foreach (var gameId in resolvedGameIdList)
             {
-                return false;
-            }
-            if (includedFiles == 0)
-            {
-                DeleteLibraryZip(libZipFile);
-                return true;
-            }
-            using (var content = new MultipartFormDataContent())
-            using (var fileStream = File.OpenRead(libZipFile))
-            using (var fileContent = new StreamContent(fileStream))
-            {
-                fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/zip");
-                var requestResult = await WebServerService
-                    .Post(endpoint: WebAppEndpoints.SyncFiles, content: fileContent);
-                if (requestResult == false)
+                var mediaFolder = Path.Combine(LibraryFilesDir, gameId);
+                string contentHash = HashService.HashFolderContents(mediaFolder);
+                if (string.IsNullOrEmpty(contentHash))
                 {
-                    return false;
+                    Logger.Warn($"Failed to create library files content hash for game with id {gameId}. If this game does not have any media files, you can safely ignore this warning.");
+                    continue;
                 }
-                DeleteLibraryZip(libZipFile);
-                return true;
+                if (manifest != null)
+                {
+                    // If game not present in manifest, skip sending media files
+                    var gameInLibrary = manifest?.gamesInLibrary?
+                        .Where((gil) => gil.gameId == gameId)
+                        .FirstOrDefault() ?? null;
+                    if (gameInLibrary == null)
+                    {
+                        continue;
+                    }
+                    var mediaExistsForEntry = manifest?.mediaExistsFor?
+                        .Where(m => m.gameId == gameId)
+                        .FirstOrDefault() ?? null;
+                    // Compare generated hash with manifest's hash
+                    if (mediaExistsForEntry != null)
+                    {
+                        if (mediaExistsForEntry.contentHash == contentHash)
+                        {
+                            continue;
+                        }
+                    }
+                }
+                using (var content = new MultipartFormDataContent())
+                {
+                    if (Directory.Exists(mediaFolder) == false)
+                    {
+                        Logger.Warn($"Game library files directory not found: {mediaFolder}");
+                        continue;
+                    }
+                    content.Add(new StringContent(gameId), "gameId");
+                    content.Add(new StringContent(contentHash), "contentHash");
+                    foreach (var file in Directory.GetFiles(mediaFolder))
+                    {
+                        var fileContent = new StreamContent(File.OpenRead(file));
+                        var fileName = Path.GetFileName(file);
+                        fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                        content.Add(fileContent, "files", fileName);
+                    }
+                    var result = await WebServerService
+                        .Post(endpoint: WebAppEndpoints.SyncFiles, content: content);
+                    if (result == false)
+                    {
+                        Logger.Warn($"Request to sync library files for {gameId} failed");
+                        continue;
+                    }
+                }
             }
+            return true;
         }
     }
 }
