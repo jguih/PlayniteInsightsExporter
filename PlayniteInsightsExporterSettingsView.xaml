@@ -14,6 +14,10 @@
             <CheckBox Content="{DynamicResource LOC_Label_EnableLibrarySyncOnUpdate}"
                   IsChecked="{Binding Settings.EnableLibrarySyncOnUpdate}" />
         </StackPanel>
+        <StackPanel Margin="0,0,0,12">
+            <CheckBox Content="{DynamicResource LOC_Label_EnableMediaFilesSyncOnUpdate}"
+          IsChecked="{Binding Settings.EnableMediaFilesSyncOnUpdate}" />
+        </StackPanel>
         <Button 
             Content="{DynamicResource LOC_Label_ManualSync}" 
             Width="150" 

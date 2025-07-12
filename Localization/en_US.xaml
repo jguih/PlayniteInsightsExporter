@@ -3,9 +3,14 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <sys:String x:Key="LOC_Loading_SyncClientServer">Syncing library with server...</sys:String>
     <sys:String x:Key="LOC_Failed_SyncClientServer">Syncing library with server failed. Please check extension logs.</sys:String>
+    <sys:String x:Key="LOC_Failed_SyncMediaFiles">Syncing media files with server failed. Please check extension logs.</sys:String>
     <sys:String x:Key="LOC_Success_SyncClientServer">Successfully synced library with web server.</sys:String>
     <!-- Labels -->
     <sys:String x:Key="LOC_Label_WebServerURL">Playnite Insights Web Server URL</sys:String>
-    <sys:String x:Key="LOC_Label_EnableLibrarySyncOnUpdate">Sync library with server on library update</sys:String>
-    <sys:String x:Key="LOC_Label_ManualSync">Manual sync</sys:String>
+    <sys:String x:Key="LOC_Label_EnableLibrarySyncOnUpdate">Sync games database with server on library update</sys:String>
+    <sys:String x:Key="LOC_Label_EnableMediaFilesSyncOnUpdate">Sync library media files with server on library update</sys:String>
+    <sys:String x:Key="LOC_Label_ManualSync">Run Manual Sync</sys:String>
+    <sys:String x:Key="LOC_Label_MenuItem_ManualSync">Playnite Insights Manual Sync</sys:String>
+    <!--Progress-->
+    <sys:String x:Key="LOC_Progress_SyncingMediaFiles">Syncing media files {{current}} of {{total}}: {{gameName}}</sys:String>
 </ResourceDictionary>

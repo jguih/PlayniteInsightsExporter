@@ -34,6 +34,31 @@ namespace PlayniteInsightsExporter
             WebServerService = new PlayniteInsightsWebServerService(this, Settings.Settings, logger);
             LibExporter = new LibExporter(this, WebServerService, logger);
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
+            PlayniteApi.Database.Games.ItemUpdated += OnItemUpdated;
+        }
+
+        private async void OnItemUpdated(object sender, ItemUpdatedEventArgs<Game> args)
+        {
+            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+            if (args.UpdatedItems != null)
+            {
+                foreach (var game in args.UpdatedItems)
+                {
+                    var oldGame = game.OldData;
+                    var newGame = game.NewData;
+                    if (oldGame == null) continue;
+                    await LibExporter.RunLibrarySyncAsync(
+                        true, 
+                        itemsToAdd: new List<Game>(),
+                        itemsToUpdate: new List<Game> { newGame });
+                    if (oldGame.CoverImage != newGame.CoverImage ||
+                        oldGame.BackgroundImage != newGame.BackgroundImage ||
+                        oldGame.Icon != newGame.Icon)
+                    {
+                        await LibExporter.RunMediaFilesSyncAsync(new List<Game> { newGame });
+                    }
+                }
+            }
         }
 
         private async void OnItemCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> e)
@@ -41,7 +66,7 @@ namespace PlayniteInsightsExporter
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             if (e.AddedItems.Count() > 0)
             {
-                var result = await LibExporter.RunFullAddedGamesSyncAsync(e.AddedItems);
+                var result = await LibExporter.RunLibrarySyncAsync(true, itemsToAdd: e.AddedItems);
                 if (result == false)
                 {
                     PlayniteApi.Notifications.Add(
@@ -50,10 +75,11 @@ namespace PlayniteInsightsExporter
                         NotificationType.Error);
                     return;
                 }
+                await LibExporter.RunMediaFilesSyncAsync(e.AddedItems);
             }
             if (e.RemovedItems.Count() > 0)
             {
-                var result = await LibExporter.RunFullRemovedGamesSyncAsync(e.RemovedItems);
+                var result = await LibExporter.RunLibrarySyncAsync(true, itemsToRemove: e.RemovedItems);
                 if (result == false)
                 {
                     PlayniteApi.Notifications.Add(
@@ -71,7 +97,7 @@ namespace PlayniteInsightsExporter
             if (args.Game != null)
             {
                 List<Game> games = new List<Game>() { args.Game };
-                var result = await LibExporter.RunFullUpdatedGamesSyncAsync(games);
+                var result = await LibExporter.RunLibrarySyncAsync(true, itemsToUpdate: games);
                 if (result == false)
                 {
                     PlayniteApi.Notifications.Add(
@@ -80,6 +106,7 @@ namespace PlayniteInsightsExporter
                         NotificationType.Error);
                     return;
                 }
+                await LibExporter.RunMediaFilesSyncAsync(games);
             }
         }
 
@@ -100,7 +127,7 @@ namespace PlayniteInsightsExporter
             if (args.Game != null)
             {
                 List<Game> games = new List<Game>() { args.Game };
-                var result = await LibExporter.RunFullUpdatedGamesSyncAsync(games);
+                var result = await LibExporter.RunLibrarySyncAsync(true, itemsToUpdate: games);
                 if (result == false)
                 {
                     PlayniteApi.Notifications.Add(
@@ -118,7 +145,7 @@ namespace PlayniteInsightsExporter
             if (args.Game != null)
             {
                 List<Game> games = new List<Game>() { args.Game };
-                var result = await LibExporter.RunFullUpdatedGamesSyncAsync(games);
+                var result = await LibExporter.RunLibrarySyncAsync(true, itemsToUpdate: games);
                 if (result == false)
                 {
                     PlayniteApi.Notifications.Add(
@@ -127,6 +154,7 @@ namespace PlayniteInsightsExporter
                         NotificationType.Error);
                     return;
                 }
+                await LibExporter.RunMediaFilesSyncAsync(games);
             }
         }
 
@@ -146,7 +174,7 @@ namespace PlayniteInsightsExporter
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             if (Settings?.Settings?.EnableLibrarySyncOnUpdate == true)
             {
-                var result = await LibExporter.RunFullLibrarySyncAsync();
+                var result = await LibExporter.RunLibrarySyncAsync();
                 if (result == false)
                 {
                     PlayniteApi.Notifications.Add(
@@ -156,6 +184,10 @@ namespace PlayniteInsightsExporter
                             NotificationType.Error)
                         );
                 }
+            }
+            if (Settings?.Settings?.EnableMediaFilesSyncOnUpdate == true)
+            {
+                await LibExporter.RunMediaFilesSyncAsync();
             }
         }
 
@@ -174,41 +206,21 @@ namespace PlayniteInsightsExporter
             var loc_loading_syncClientServer = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
+            var loc_run_manual_sync = ResourceProvider.GetString("LOC_Label_MenuItem_ManualSync");
             yield return new GameMenuItem
             {
-                Description = "Playnite Insights Server Sync",
-                Action = (_args) =>
+                Description = loc_run_manual_sync,
+                Action = async (_args) =>
                 {
                     var games = _args.Games;
-                    List<string> gameIds = new List<string>();
-                    foreach(Game game in games)
+                    var result = await LibExporter.RunGameListSyncAsync(games);
+                    if (result == false)
                     {
-                        gameIds.Add(game.Id.ToString());
+                        PlayniteApi.Dialogs.ShowErrorMessage(loc_failed_syncClientServer, Name);
+                        return;
                     }
-                    var progressResult = PlayniteApi
-                        .Dialogs
-                        .ActivateGlobalProgress(
-                        async (progressArgs) =>
-                        {
-                            bool result;
-                            result = await LibExporter.RunFullGamesSyncAsync(games);
-                            if (result == false)
-                            {
-                                throw new Exception("Full game update sync failed");
-                            }
-                        }, new GlobalProgressOptions(loc_loading_syncClientServer));
-                    if (progressResult.Error != null)
-                    {
-                        PlayniteApi
-                            .Dialogs
-                            .ShowErrorMessage(loc_failed_syncClientServer, Name);
-                    }
-                    else
-                    {
-                        PlayniteApi
-                            .Dialogs
-                            .ShowMessage(loc_success_syncClientServer);
-                    }
+                    await LibExporter.RunMediaFilesSyncAsync(games);
+                    PlayniteApi.Dialogs.ShowMessage(loc_success_syncClientServer);
                 }
             };
         }

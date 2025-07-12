@@ -21,10 +21,15 @@ namespace PlayniteInsightsExporter
     {
         private string webAppURL = string.Empty;
         private bool enableLibrarySyncOnUpdate = true;
+        private bool enableMediaFilesSyncOnUpdate = false;
         public string WebAppURL { get => webAppURL; set => SetValue(ref webAppURL, value); }
         public bool EnableLibrarySyncOnUpdate { 
             get => enableLibrarySyncOnUpdate; 
             set => SetValue(ref enableLibrarySyncOnUpdate, value); 
+        }
+        public bool EnableMediaFilesSyncOnUpdate { 
+            get => enableMediaFilesSyncOnUpdate; 
+            set => SetValue(ref enableMediaFilesSyncOnUpdate, value);
         }
 
         [DontSerialize]
@@ -102,28 +107,19 @@ namespace PlayniteInsightsExporter
             return true;
         }
 
-        public void OnExportLibrary()
+        public async void OnExportLibrary()
         {
-            var loc_loading_syncClientServer = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
-            var progressResult = PlayniteApi
-                .Dialogs
-                .ActivateGlobalProgress(async (args) =>
-                {
-                    var result = await LibExporter.RunFullLibrarySyncAsync();
-                    if (result == false)
-                    {
-                        throw new Exception("Manual full library sync failed");
-                    }
-                }, new GlobalProgressOptions(loc_loading_syncClientServer));
-            if (progressResult.Error != null)
+            var result = await LibExporter.RunLibrarySyncAsync(true);
+            if (result == false)
             {
                 PlayniteApi.Dialogs.ShowErrorMessage(
                         loc_failed_syncClientServer, 
                         Plugin.Name);
                 return;
             }
+            await LibExporter.RunMediaFilesSyncAsync();
             PlayniteApi.Dialogs.ShowMessage(loc_success_syncClientServer);
         }
     }
