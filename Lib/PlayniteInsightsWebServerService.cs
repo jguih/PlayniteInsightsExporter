@@ -11,7 +11,13 @@ using System.Threading.Tasks;
 
 namespace PlayniteInsightsExporter.Lib
 {
-    public class PlayniteInsightsWebServerService
+    public interface IPlayniteInsightsWebServerService
+    {
+        Task<bool> Post(string endpoint, HttpContent content);
+        Task<PlayniteLibraryManifest> GetManifestAsync();
+    }
+
+    public class PlayniteInsightsWebServerService : IPlayniteInsightsWebServerService
     {
         private readonly PlayniteInsightsExporter Plugin;
         private readonly PlayniteInsightsExporterSettings Settings;

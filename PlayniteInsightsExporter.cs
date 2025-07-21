@@ -7,6 +7,7 @@ using PlayniteInsightsExporter.Lib.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,6 +21,8 @@ namespace PlayniteInsightsExporter
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
         private readonly LibExporter LibExporter;
         private readonly PlayniteInsightsWebServerService WebServerService;
+        private readonly IHashService HashService;
+        private readonly SessionTrackingService SessionTrackingService;
 
         public readonly string Name = "Playnite Insights Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
@@ -31,8 +34,20 @@ namespace PlayniteInsightsExporter
             {
                 HasSettings = true
             };
-            WebServerService = new PlayniteInsightsWebServerService(this, Settings.Settings, logger);
-            LibExporter = new LibExporter(this, WebServerService, logger);
+            WebServerService = new PlayniteInsightsWebServerService(
+                this, 
+                Settings.Settings, 
+                logger);
+            LibExporter = new LibExporter(
+                this, 
+                WebServerService, 
+                logger);
+            HashService = new HashService(logger);
+            SessionTrackingService = new SessionTrackingService(
+                this, 
+                logger, 
+                HashService,
+                WebServerService);
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
             PlayniteApi.Database.Games.ItemUpdated += OnItemUpdated;
         }
@@ -110,9 +125,13 @@ namespace PlayniteInsightsExporter
             }
         }
 
-        public override void OnGameStarted(OnGameStartedEventArgs args)
+        public override async void OnGameStarted(OnGameStartedEventArgs args)
         {
-            // Add code to be executed when game is started running.
+            if (args == null || args.Game == null)
+            {
+                return;
+            }
+            await SessionTrackingService.CreateSession(args.Game.Id.ToString());
         }
 
         public override void OnGameStarting(OnGameStartingEventArgs args)
@@ -122,20 +141,21 @@ namespace PlayniteInsightsExporter
 
         public override async void OnGameStopped(OnGameStoppedEventArgs args)
         {
-            // Add code to be executed when game is stopping.
-            if (args.Game != null)
+            if (args == null || args.Game == null)
             {
-                var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-                List<Game> games = new List<Game>() { args.Game };
-                var result = await LibExporter.RunLibrarySyncAsync(itemsToUpdate: games);
-                if (result == false)
-                {
-                    PlayniteApi.Notifications.Add(
-                        Name,
-                        loc_failed_syncClientServer,
-                        NotificationType.Error);
-                    return;
-                }
+                return;
+            }
+            await SessionTrackingService.CloseSession(args.Game.Id.ToString(), args.ElapsedSeconds);
+            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+            List<Game> games = new List<Game>() { args.Game };
+            var result = await LibExporter.RunLibrarySyncAsync(itemsToUpdate: games);
+            if (result == false)
+            {
+                PlayniteApi.Notifications.Add(
+                    Name,
+                    loc_failed_syncClientServer,
+                    NotificationType.Error);
+                return;
             }
         }
 

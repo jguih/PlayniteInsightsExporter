@@ -58,11 +58,13 @@
   <ItemGroup>
     <Compile Include="Lib\HashService.cs" />
     <Compile Include="Lib\LibExporter.cs" />
+    <Compile Include="Lib\Models\GameSession.cs" />
     <Compile Include="Lib\Models\PlayniteLibraryManifest.cs" />
     <Compile Include="Lib\Models\SyncGameListCommand.cs" />
     <Compile Include="Lib\Models\ValidationResult.cs" />
     <Compile Include="Lib\Models\WebAppEndpoints.cs" />
     <Compile Include="Lib\PlayniteInsightsWebServerService.cs" />
+    <Compile Include="Lib\SessionTrackingService.cs" />
     <Compile Include="PlayniteInsightsExporter.cs" />
     <Compile Include="PlayniteInsightsExporterSettings.cs" />
     <Compile Include="PlayniteInsightsExporterSettingsView.xaml.cs">
