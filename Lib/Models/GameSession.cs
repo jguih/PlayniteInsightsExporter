@@ -10,23 +10,46 @@ namespace PlayniteInsightsExporter.Lib.Models
     {
         public string SessionId { get; set; }
         public string GameId { get; set; }
+        public string Status { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
         public ulong? Duration { get; set; }
+
+        public static string STATUS_IN_PROGRESS = "in_progress";
+        public static string STATUS_COMPLETE = "complete";
+        public static string STATUS_STALE = "stale";
+
+        public GameSession() { }
 
         public GameSession(
             string gameId, 
             DateTime startTime, 
             string sessionId, 
+            string status,
             DateTime? endtime = null, 
             ulong? duration = null)
         {
             GameId = gameId;
             StartTime = startTime;
             EndTime = endtime;
+            Status = status;
             Duration = duration;
             SessionId = sessionId;
         }
 
+        public bool IsValidCompleteSession()
+        {
+            return Status == STATUS_COMPLETE && EndTime.HasValue && Duration.HasValue;
+        }
+
+        public bool IsValidInProgressSession()
+        {
+            return Status == STATUS_IN_PROGRESS && EndTime == null && Duration == null;
+        }
+
+        public bool IsValidStaleSession()
+        {
+            return Status == STATUS_STALE;
+        }
     }
 }

@@ -3,6 +3,7 @@ using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteInsightsExporter.Lib;
+using PlayniteInsightsExporter.Lib.Logger;
 using PlayniteInsightsExporter.Lib.Models;
 using System;
 using System.Collections.Generic;
@@ -15,14 +16,16 @@ using System.Windows.Controls;
 
 namespace PlayniteInsightsExporter
 {
-    public class PlayniteInsightsExporter : GenericPlugin
+    public interface IPlayniteInsightsExporterContext
+    {
+        string CtxGetExtensionDataFolderPath();
+    }
+    public class PlayniteInsightsExporter : GenericPlugin, IPlayniteInsightsExporterContext
     {
         private static readonly ILogger logger = LogManager.GetLogger();
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
         private readonly LibExporter LibExporter;
-        private readonly PlayniteInsightsWebServerService WebServerService;
-        private readonly IHashService HashService;
-        private readonly SessionTrackingService SessionTrackingService;
+        private readonly ISessionTrackingService SessionTrackingService;
 
         public readonly string Name = "Playnite Insights Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
@@ -34,20 +37,14 @@ namespace PlayniteInsightsExporter
             {
                 HasSettings = true
             };
-            WebServerService = new PlayniteInsightsWebServerService(
-                this, 
-                Settings.Settings, 
-                logger);
-            LibExporter = new LibExporter(
-                this, 
-                WebServerService, 
-                logger);
-            HashService = new HashService(logger);
-            SessionTrackingService = new SessionTrackingService(
+
+            var locator = new ServiceLocator(
                 this, 
                 logger, 
-                HashService,
-                WebServerService);
+                Settings.Settings);
+            LibExporter = locator.LibExporter;
+            SessionTrackingService = locator.SessionTrackingService;
+
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
             PlayniteApi.Database.Games.ItemUpdated += OnItemUpdated;
         }
@@ -192,12 +189,12 @@ namespace PlayniteInsightsExporter
 
         public override async void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
-            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             if (Settings?.Settings?.EnableLibrarySyncOnUpdate == true)
             {
                 var result = await LibExporter.RunLibrarySyncAsync();
                 if (result == false)
                 {
+                    var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
                     PlayniteApi.Notifications.Add(
                         new NotificationMessage(
                             $"{Name} Error",
@@ -209,6 +206,16 @@ namespace PlayniteInsightsExporter
             if (Settings?.Settings?.EnableMediaFilesSyncOnUpdate == true)
             {
                 await LibExporter.RunMediaFilesSyncAsync();
+            }
+            if(!(await SessionTrackingService.Sync()))
+            {
+                var loc_failed_sync_sessions = ResourceProvider.GetString("LOC_Failed_SyncSessions");
+                PlayniteApi.Notifications.Add(
+                        new NotificationMessage(
+                            $"{Name} Error",
+                            $"{loc_failed_sync_sessions}",
+                            NotificationType.Error)
+                        );
             }
         }
 
@@ -244,6 +251,11 @@ namespace PlayniteInsightsExporter
                     PlayniteApi.Dialogs.ShowMessage(loc_success_syncClientServer);
                 }
             };
+        }
+
+        public string CtxGetExtensionDataFolderPath()
+        {
+            return GetPluginUserDataPath();
         }
     }
 }

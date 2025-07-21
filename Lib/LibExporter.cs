@@ -17,14 +17,14 @@ namespace PlayniteInsightsExporter.Lib
     {
         private readonly PlayniteInsightsExporter Plugin;
         private readonly IPlayniteAPI PlayniteApi;
-        private readonly PlayniteInsightsWebServerService WebServerService;
-        private readonly HashService HashService;
+        private readonly IPlayniteInsightsWebServerService WebServerService;
+        private readonly IHashService HashService;
         private readonly ILogger Logger;
         public string LibraryFilesDir { get; }
 
         public LibExporter(
             PlayniteInsightsExporter Plugin,
-            PlayniteInsightsWebServerService WebServerService,
+            IPlayniteInsightsWebServerService WebServerService,
             ILogger Logger
         )
         {
