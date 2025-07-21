@@ -133,12 +133,7 @@ namespace PlayniteInsightsExporter.Lib
             return (itemsToAdd, itemsToUpdate);
         }
 
-        /// <summary>
-        /// Syncs the entire library database with the server
-        /// </summary>
-        /// <returns></returns>
-        public async Task<bool> RunLibrarySyncAsync(
-            bool showProgress = false,
+        private async Task<bool> _RunLibrarySyncAsync(
             IEnumerable<Game> itemsToAdd = null,
             IEnumerable<Game> itemsToUpdate = null,
             IEnumerable<Game> itemsToRemove = null
@@ -182,33 +177,48 @@ namespace PlayniteInsightsExporter.Lib
             if (!removedItems.Any() && !addedItems.Any() && !updatedItems.Any()) return true;
             var syncGameListCommand = new SyncGameListCommand(addedItems, removedItems, updatedItems);
             string json = CommandToJsonString(syncGameListCommand);
+            using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+            {
+                return await WebServerService.Post(endpoint: WebAppEndpoints.SyncGames, content: content);
+            }
+        }
+
+        /// <summary>
+        /// Syncs the entire library database with the server
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> RunLibrarySyncAsync(
+            bool showProgress = false,
+            IEnumerable<Game> itemsToAdd = null,
+            IEnumerable<Game> itemsToUpdate = null,
+            IEnumerable<Game> itemsToRemove = null
+        ) {
             if (showProgress)
             {
                 var lod_syncing_games = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
+                bool result = false;
                 var progressResult = PlayniteApi.Dialogs.ActivateGlobalProgress(async (progress) =>
                 {
                     progress.IsIndeterminate = true;
                     progress.Text = lod_syncing_games;
-                    using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
-                    {
-                        var result = await WebServerService.Post(endpoint: WebAppEndpoints.SyncGames, content);
-                        if (result == false)
-                        {
-                            throw new Exception("Failed to sync games with server.");
-                        }
-                    }
+                    result = await _RunLibrarySyncAsync(
+                        itemsToAdd: itemsToAdd,
+                        itemsToUpdate: itemsToUpdate,
+                        itemsToRemove: itemsToRemove
+                    );
                 }, new GlobalProgressOptions(lod_syncing_games, true));
-                if (progressResult.Error != null)
+                if (result == false)
                 {
                     Logger.Error(progressResult.Error, "Failed to sync games with server.");
                     return false;
                 }
                 return true;
             }
-            using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
-            {
-                return await WebServerService.Post(endpoint: WebAppEndpoints.SyncGames, content: content); 
-            }
+            return await _RunLibrarySyncAsync(
+                itemsToAdd: itemsToAdd,
+                itemsToUpdate: itemsToUpdate,
+                itemsToRemove: itemsToRemove
+            );
         }
 
         /// <summary>

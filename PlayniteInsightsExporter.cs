@@ -123,11 +123,11 @@ namespace PlayniteInsightsExporter
         public override async void OnGameStopped(OnGameStoppedEventArgs args)
         {
             // Add code to be executed when game is stopping.
-            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             if (args.Game != null)
             {
+                var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
                 List<Game> games = new List<Game>() { args.Game };
-                var result = await LibExporter.RunLibrarySyncAsync(true, itemsToUpdate: games);
+                var result = await LibExporter.RunLibrarySyncAsync(itemsToUpdate: games);
                 if (result == false)
                 {
                     PlayniteApi.Notifications.Add(
@@ -167,6 +167,7 @@ namespace PlayniteInsightsExporter
         {
             // Add code to be executed when Playnite is shutting down.
             PlayniteApi.Database.Games.ItemCollectionChanged -= OnItemCollectionChanged;
+            PlayniteApi.Database.Games.ItemUpdated -= OnItemUpdated;
         }
 
         public override async void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
