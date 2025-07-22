@@ -25,14 +25,16 @@ namespace PlayniteInsightsExporter.Lib
             ILogger logger,
             PlayniteInsightsExporterSettings settings
         ) {
-            var libDir = Path.Combine(plugin.PlayniteApi.Paths.ConfigurationPath, "library", "files");
-            var PlayniteApiCtx = new PlayniteApiCtx(plugin.PlayniteApi);
             AppLogger = new PlayniteLogger(logger);
+            var libDir = Path.Combine(plugin.PlayniteApi.Paths.ConfigurationPath, "library", "files");
+            IPlayniteProgressService progressService = new PlayniteProgressService(plugin.PlayniteApi, AppLogger);
+            IPlayniteGameRepository gameRepository = new PlayniteGameRepository(plugin.PlayniteApi, AppLogger);
             FileSystemService = new FileSystemService();
             WebServerService = new PlayniteInsightsWebServerService(settings.WebAppURL, AppLogger);
             HashService = new HashService(AppLogger);
             LibExporter = new LibExporter(
-                PlayniteApiCtx, 
+                progressService, 
+                gameRepository,
                 WebServerService, 
                 AppLogger, 
                 HashService, 

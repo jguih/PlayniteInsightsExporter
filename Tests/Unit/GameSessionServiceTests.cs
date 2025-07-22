@@ -1,9 +1,7 @@
-using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
+using Core;
+using Core.Models;
 using Moq;
 using Newtonsoft.Json;
-using PlayniteInsightsExporter;
-using PlayniteInsightsExporter.Lib;
-using PlayniteInsightsExporter.Lib.Models;
 
 namespace Tests.Unit;
 
@@ -14,7 +12,7 @@ public class GameSessionServiceTests
     private Mock<IHashService> HashServiceMock { get; }
     private Mock<IPlayniteInsightsWebServerService> WebServiceMock { get; }
     private Mock<IFileSystemService> FileSystemMock { get; }
-    private SessionTrackingService SessionsService { get; set; }
+    private IGameSessionService SessionsService { get; set; }
 
     public GameSessionServiceTests()
     {
@@ -23,7 +21,7 @@ public class GameSessionServiceTests
         HashServiceMock = new Mock<IHashService>();
         WebServiceMock = new Mock<IPlayniteInsightsWebServerService>();
         FileSystemMock = new Mock<IFileSystemService>();
-        SessionsService = new SessionTrackingService(
+        SessionsService = new GameSessionService(
             PluginCtxMock.Object,
             LoggerMock.Object,
             HashServiceMock.Object,
@@ -32,9 +30,6 @@ public class GameSessionServiceTests
         );
 
         var fakeSessionsFolder = "/fake/sessions";
-        WebServiceMock
-            .Setup(ws => ws.PostJson(It.IsAny<string>(), It.IsAny<object>()))
-            .ReturnsAsync(false);
         PluginCtxMock
             .Setup(ctx => ctx.CtxGetExtensionDataFolderPath())
             .Returns(fakeSessionsFolder);
@@ -42,7 +37,8 @@ public class GameSessionServiceTests
             .Setup(fs => fs.DirectoryExists(fakeSessionsFolder))
             .Returns(true);
         FileSystemMock
-            .Setup(fs => fs.DirectoryCreate(fakeSessionsFolder));
+            .Setup(fs => fs.PathCombine(It.IsAny<string[]>()))
+            .Returns((string[] paths) => Path.Combine(paths));
     }
 
     [Fact]

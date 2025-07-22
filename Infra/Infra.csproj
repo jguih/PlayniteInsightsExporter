@@ -52,8 +52,9 @@
   <ItemGroup>
     <Compile Include="FileSystemService.cs" />
     <Compile Include="HashService.cs" />
-    <Compile Include="PlayniteApiCtx.cs" />
+    <Compile Include="PlayniteGameRepository.cs" />
     <Compile Include="PlayniteInsightsWebServerService.cs" />
+    <Compile Include="PlayniteProgressService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

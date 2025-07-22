@@ -54,7 +54,8 @@
     <Compile Include="GameSession\GameSessionService.cs" />
     <Compile Include="IFileSystemService.cs" />
     <Compile Include="IHashService.cs" />
-    <Compile Include="IPlayniteApiContext.cs" />
+    <Compile Include="IPlayniteGameRepository.cs" />
+    <Compile Include="IPlayniteProgressService.cs" />
     <Compile Include="IPlayniteInsightsExporterContext.cs" />
     <Compile Include="IPlayniteInsightsWebServerService.cs" />
     <Compile Include="LibExporter.cs" />
