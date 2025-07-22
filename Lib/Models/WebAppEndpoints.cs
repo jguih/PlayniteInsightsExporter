@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteInsightsExporter.Lib.Models
 {
-    class WebAppEndpoints
+    public class WebAppEndpoints
     {
         public const string SyncGames = "/api/sync/games";
         public const string SyncFiles = "/api/sync/files";

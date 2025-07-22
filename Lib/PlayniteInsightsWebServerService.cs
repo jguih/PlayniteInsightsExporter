@@ -14,6 +14,7 @@ namespace PlayniteInsightsExporter.Lib
     public interface IPlayniteInsightsWebServerService
     {
         Task<bool> Post(string endpoint, HttpContent content);
+        Task<bool> PostJson(string endpoint, object data);
         Task<PlayniteLibraryManifest> GetManifestAsync();
     }
 
@@ -67,6 +68,25 @@ namespace PlayniteInsightsExporter.Lib
             catch (Exception e)
             {
                 Logger.Error(e, $"POST request to {GetWebAppURL(endpoint)} failed");
+                return false;
+            }
+        }
+
+        public async Task<bool> PostJson(string endpoint, object data)
+        {
+            try
+            {
+                using (var jsonContent = new StringContent(
+                    JsonConvert.SerializeObject(data), 
+                    Encoding.UTF8, 
+                    "application/json")
+                ) {
+                    return await Post(endpoint, jsonContent);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e, $"Failed to serialize data for POST request to {GetWebAppURL(endpoint)}");
                 return false;
             }
         }

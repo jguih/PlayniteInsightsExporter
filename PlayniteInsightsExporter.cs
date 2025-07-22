@@ -128,7 +128,7 @@ namespace PlayniteInsightsExporter
             {
                 return;
             }
-            await SessionTrackingService.CreateSession(args.Game.Id.ToString());
+            await SessionTrackingService.OpenSession(args.Game.Id.ToString());
         }
 
         public override void OnGameStarting(OnGameStartingEventArgs args)

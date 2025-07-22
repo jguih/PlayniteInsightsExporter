@@ -37,19 +37,35 @@ namespace PlayniteInsightsExporter.Lib.Models
             SessionId = sessionId;
         }
 
+        public bool IsValid()
+        {
+            return !string.IsNullOrEmpty(SessionId) &&
+                   !string.IsNullOrEmpty(GameId) &&
+                   StartTime != null &&
+                   (Status == STATUS_IN_PROGRESS || 
+                   Status == STATUS_COMPLETE || 
+                   Status == STATUS_STALE);
+        }
+
         public bool IsValidCompleteSession()
         {
-            return Status == STATUS_COMPLETE && EndTime.HasValue && Duration.HasValue;
+            return IsValid() && 
+                Status == STATUS_COMPLETE && 
+                EndTime.HasValue && 
+                Duration.HasValue;
         }
 
         public bool IsValidInProgressSession()
         {
-            return Status == STATUS_IN_PROGRESS && EndTime == null && Duration == null;
+            return IsValid() && 
+                Status == STATUS_IN_PROGRESS && 
+                EndTime == null && 
+                Duration == null;
         }
 
         public bool IsValidStaleSession()
         {
-            return Status == STATUS_STALE;
+            return IsValid() && Status == STATUS_STALE;
         }
     }
 }
