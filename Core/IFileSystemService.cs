@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PlayniteInsightsExporter.Lib
+namespace Core
 {
     public interface IFileSystemService
     {
@@ -30,9 +30,17 @@ namespace PlayniteInsightsExporter.Lib
         /// </summary>
         DateTime FileGetCreationTimeUtc(string path);
         /// <summary>
+        /// Mimics <see cref="System.IO.File.OpenRead(string)"/>
+        /// </summary>
+        FileStream FileOpenRead(string path);
+        /// <summary>
         /// Mimics <see cref="System.IO.Directory.GetFiles(string, string)"/>
         /// </summary>
         string[] DirectoryGetFiles(string path, string searchPattern);
+        /// <summary>
+        /// Mimics <see cref="System.IO.Directory.GetFiles(string)"/>
+        /// </summary>
+        string[] DirectoryGetFiles(string path);
         /// <summary>
         /// Mimics <see cref="System.IO.Directory.Exists(string)"/>
         /// </summary>
@@ -41,48 +49,13 @@ namespace PlayniteInsightsExporter.Lib
         /// Mimics <see cref="System.IO.Directory.CreateDirectory(string)"/>
         /// </summary>
         void DirectoryCreate(string path);
-    }
-    public class FileSystemService : IFileSystemService
-    {
-
-        public string[] DirectoryGetFiles(string path, string searchPattern)
-        {
-            return Directory.GetFiles(path, searchPattern);
-        }
-
-        public void FileDelete(string path)
-        {
-            File.Delete(path);
-        }
-
-        public bool FileExists(string path)
-        {
-            return File.Exists(path);
-        }
-
-        public DateTime FileGetCreationTimeUtc(string path)
-        {
-            return File.GetCreationTimeUtc(path);
-        }
-
-        public string FileReadAllText(string path)
-        {
-            return File.ReadAllText(path);
-        }
-
-        public void FileWriteAllText(string path, string contents)
-        {
-            File.WriteAllText(path, contents);
-        }
-
-        public void DirectoryCreate(string path)
-        {
-            Directory.CreateDirectory(path);
-        }
-
-        public bool DirectoryExists(string path)
-        {
-            return Directory.Exists(path);
-        }
+        /// <summary>
+        /// Mimics <see cref="System.IO.Path.Combine(string[])"/>
+        /// </summary>
+        string PathCombine(params string[] paths);
+        /// <summary>
+        /// Mimics <see cref="System.IO.Path.GetFileName(string)"/>
+        /// </summary>
+        string PathGetFileName(string path);
     }
 }

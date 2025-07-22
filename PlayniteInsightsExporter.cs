@@ -1,10 +1,10 @@
-﻿using Playnite.SDK;
+﻿using Core;
+using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteInsightsExporter.Lib;
 using PlayniteInsightsExporter.Lib.Logger;
-using PlayniteInsightsExporter.Lib.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -16,16 +16,12 @@ using System.Windows.Controls;
 
 namespace PlayniteInsightsExporter
 {
-    public interface IPlayniteInsightsExporterContext
-    {
-        string CtxGetExtensionDataFolderPath();
-    }
     public class PlayniteInsightsExporter : GenericPlugin, IPlayniteInsightsExporterContext
     {
         private static readonly ILogger logger = LogManager.GetLogger();
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
         private readonly LibExporter LibExporter;
-        private readonly ISessionTrackingService SessionTrackingService;
+        private readonly IGameSessionService SessionTrackingService;
 
         public readonly string Name = "Playnite Insights Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");

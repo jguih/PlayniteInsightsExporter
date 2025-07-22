@@ -5,7 +5,7 @@ using PlayniteInsightsExporter;
 using PlayniteInsightsExporter.Lib;
 using PlayniteInsightsExporter.Lib.Models;
 
-namespace UnitTests;
+namespace Tests.Unit;
 
 public class GameSessionServiceTests
 {

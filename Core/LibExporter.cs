@@ -1,10 +1,10 @@
-﻿using Newtonsoft.Json;
+﻿using Core;
+using Core.Models;
+using Newtonsoft.Json;
 using Playnite.SDK;
 using Playnite.SDK.Models;
-using PlayniteInsightsExporter.Lib.Models;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -15,25 +15,28 @@ namespace PlayniteInsightsExporter.Lib
 {
     public class LibExporter
     {
-        private readonly PlayniteInsightsExporter Plugin;
-        private readonly IPlayniteAPI PlayniteApi;
+        private readonly IPlayniteApiContext PlayniteApi;
         private readonly IPlayniteInsightsWebServerService WebServerService;
         private readonly IHashService HashService;
-        private readonly ILogger Logger;
+        private readonly IAppLogger Logger;
+        private readonly IFileSystemService Fs;
         public string LibraryFilesDir { get; }
 
         public LibExporter(
-            PlayniteInsightsExporter Plugin,
+            IPlayniteApiContext PlayniteApi,
             IPlayniteInsightsWebServerService WebServerService,
-            ILogger Logger
+            IAppLogger Logger,
+            IHashService HashService,
+            string LibraryFilesDir,
+            IFileSystemService FileSystemService
         )
         {
-            this.Plugin = Plugin;
-            this.PlayniteApi = Plugin.PlayniteApi;
-            this.LibraryFilesDir = Path.Combine(PlayniteApi.Paths.ConfigurationPath, "library", "files");
+            this.PlayniteApi = PlayniteApi;
             this.WebServerService = WebServerService;
             this.Logger = Logger;
-            HashService = new HashService(Logger);
+            this.HashService = HashService;
+            this.LibraryFilesDir = LibraryFilesDir;
+            Fs = FileSystemService;
         }
 
         private object GetGameMetadata(Game g, string contentHash)
@@ -62,7 +65,7 @@ namespace PlayniteInsightsExporter.Lib
 
         private List<string> GetGamesIdList()
         {
-            return PlayniteApi.Database.Games
+            return PlayniteApi.DatabaseGames()
                 .Select(g => g.Id.ToString())
                 .ToList();
         }
@@ -152,7 +155,7 @@ namespace PlayniteInsightsExporter.Lib
             }
             if (itemsToUpdate == null || itemsToAdd == null)
             {
-                var (added, updated) = GetItemsToAddAndUpdate(manifest, PlayniteApi.Database.Games);
+                var (added, updated) = GetItemsToAddAndUpdate(manifest, PlayniteApi.DatabaseGames());
                 if (itemsToAdd == null)
                 {
                     addedItems = added;
@@ -197,7 +200,7 @@ namespace PlayniteInsightsExporter.Lib
             {
                 var lod_syncing_games = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
                 bool result = false;
-                var progressResult = PlayniteApi.Dialogs.ActivateGlobalProgress(async (progress) =>
+                var progressResult = PlayniteApi.DialogsActivateGlobalProgress(async (progress) =>
                 {
                     progress.IsIndeterminate = true;
                     progress.Text = lod_syncing_games;
@@ -252,8 +255,8 @@ namespace PlayniteInsightsExporter.Lib
             var lod_syncing_media_files = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
             var lod_progress_syncing_media_files = ResourceProvider.GetString("LOC_Progress_SyncingMediaFiles");
             var manifest = await WebServerService.GetManifestAsync();
-            var resolvedGameList = games ?? PlayniteApi.Database.Games;
-            PlayniteApi.Dialogs.ActivateGlobalProgress(async (progress) =>
+            var resolvedGameList = games ?? PlayniteApi.DatabaseGames();
+            PlayniteApi.DialogsActivateGlobalProgress(async (progress) =>
             {
                 progress.CurrentProgressValue = 0;
                 progress.ProgressMaxValue = resolvedGameList.Count();
@@ -272,7 +275,7 @@ namespace PlayniteInsightsExporter.Lib
                     progress.Text = progressText;
                     System.Threading.Thread.Sleep(60); // Give some time for UI to update
                     var gameId = game.Id.ToString();
-                    var mediaFolder = Path.Combine(LibraryFilesDir, gameId);
+                    var mediaFolder = Fs.PathCombine(LibraryFilesDir, gameId);
                     string contentHash = HashService.HashFolderContents(mediaFolder);
                     if (string.IsNullOrEmpty(contentHash))
                     {
@@ -306,7 +309,7 @@ namespace PlayniteInsightsExporter.Lib
                     }
                     using (var content = new MultipartFormDataContent())
                     {
-                        if (Directory.Exists(mediaFolder) == false)
+                        if (Fs.DirectoryExists(mediaFolder) == false)
                         {
                             Logger.Warn($"Game library files directory not found: {mediaFolder}");
                             progress.CurrentProgressValue++;
@@ -314,10 +317,10 @@ namespace PlayniteInsightsExporter.Lib
                         }
                         content.Add(new StringContent(gameId), "gameId");
                         content.Add(new StringContent(contentHash), "contentHash");
-                        foreach (var file in Directory.GetFiles(mediaFolder))
+                        foreach (var file in Fs.DirectoryGetFiles(mediaFolder))
                         {
-                            var fileContent = new StreamContent(File.OpenRead(file));
-                            var fileName = Path.GetFileName(file);
+                            var fileContent = new StreamContent(Fs.FileOpenRead(file));
+                            var fileName = Fs.PathGetFileName(file);
                             fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
                             content.Add(fileContent, "files", fileName);
                         }

@@ -1,51 +1,39 @@
-﻿using Newtonsoft.Json;
-using Playnite.SDK;
-using PlayniteInsightsExporter.Lib.Models;
+﻿using Core;
+using Core.Models;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PlayniteInsightsExporter.Lib
+namespace Infra
 {
-    public interface IPlayniteInsightsWebServerService
-    {
-        Task<bool> Post(string endpoint, HttpContent content);
-        Task<bool> PostJson(string endpoint, object data);
-        Task<PlayniteLibraryManifest> GetManifestAsync();
-    }
-
     public class PlayniteInsightsWebServerService : IPlayniteInsightsWebServerService
     {
-        private readonly PlayniteInsightsExporter Plugin;
-        private readonly PlayniteInsightsExporterSettings Settings;
-        private readonly ILogger Logger;
+        private readonly string WebAppURL;
+        private readonly IAppLogger Logger;
 
         public PlayniteInsightsWebServerService(
-            PlayniteInsightsExporter Plugin, 
-            PlayniteInsightsExporterSettings Settings,
-            ILogger Logger) 
+            string WebAppURL,
+            IAppLogger Logger)
         {
-            this.Plugin = Plugin;
-            this.Settings = Settings;
+            this.WebAppURL = WebAppURL;
             this.Logger = Logger;
         }
 
         private string GetWebAppURL(string endpoint = "")
         {
-            string locServerURLNotSet = ResourceProvider.GetString("LOCServerURLNotSet");
-            if (string.IsNullOrEmpty(Settings.WebAppURL))
+            if (string.IsNullOrEmpty(WebAppURL))
             {
-                throw new InvalidOperationException(locServerURLNotSet);
+                throw new InvalidOperationException("Invalid WebAppURL");
             }
             if (string.IsNullOrEmpty(endpoint))
             {
-                return Settings.WebAppURL;
+                return WebAppURL;
             }
-            return $"{Settings.WebAppURL.TrimEnd('/')}/{endpoint.TrimStart('/')}";
+            return $"{WebAppURL.TrimEnd('/')}/{endpoint.TrimStart('/')}";
         }
 
         public async Task<bool> Post(string endpoint, HttpContent content)
@@ -77,10 +65,11 @@ namespace PlayniteInsightsExporter.Lib
             try
             {
                 using (var jsonContent = new StringContent(
-                    JsonConvert.SerializeObject(data), 
-                    Encoding.UTF8, 
+                    JsonConvert.SerializeObject(data),
+                    Encoding.UTF8,
                     "application/json")
-                ) {
+                )
+                {
                     return await Post(endpoint, jsonContent);
                 }
             }

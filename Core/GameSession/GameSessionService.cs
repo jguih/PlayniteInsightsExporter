@@ -1,19 +1,14 @@
-﻿using Newtonsoft.Json;
-using PlayniteInsightsExporter.Lib.Models;
+﻿using Core.Models;
+using Newtonsoft.Json;
 using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
-namespace PlayniteInsightsExporter.Lib
+namespace Core
 {
-    public interface ISessionTrackingService
-    {
-        Task<bool> OpenSession(string gameId);
-        Task<bool> CloseSession(string gameId, ulong duration);
-        Task<bool> Sync();
-    }
-
-    public class SessionTrackingService : ISessionTrackingService
+    public class GameSessionService : IGameSessionService
     {
         private IPlayniteInsightsExporterContext PluginContext { get; set; }
         private IAppLogger Logger { get; set; }
@@ -28,7 +23,7 @@ namespace PlayniteInsightsExporter.Lib
         private static readonly int DELETE_FILES_OLDER_THAN_DAYS = 14;
         private static readonly int STALE_AFTER_HOURS = 48;
 
-        public SessionTrackingService(
+        public GameSessionService(
             IPlayniteInsightsExporterContext PluginContext,
             IAppLogger Logger,
             IHashService HashService,
@@ -47,7 +42,7 @@ namespace PlayniteInsightsExporter.Lib
         {
             get
             {
-                var path = Path.Combine(PluginContext.CtxGetExtensionDataFolderPath(), "sessions");
+                var path = Fs.PathCombine(PluginContext.CtxGetExtensionDataFolderPath(), "sessions");
                 if (!Fs.DirectoryExists(path))
                 {
                     Fs.DirectoryCreate(path);
@@ -58,26 +53,26 @@ namespace PlayniteInsightsExporter.Lib
 
         private string GetSessionFilePath(string gameId)
         {
-            return Path.Combine(SessionsFolderPath, 
+            return Fs.PathCombine(SessionsFolderPath,
                 $"{gameId}{IN_PROGRESS_SUFFIX}{SESSION_FILE_EXTENSION}");
         }
 
         private string GetStaleSessionFilePath(string sessionId)
         {
-            return Path.Combine(SessionsFolderPath, 
+            return Fs.PathCombine(SessionsFolderPath,
                 $"{sessionId}{STALE_SUFFIX}{SESSION_FILE_EXTENSION}");
         }
 
         private string GetCompletedSessionFilePath(string sessionId)
         {
-            return Path.Combine(SessionsFolderPath, 
+            return Fs.PathCombine(SessionsFolderPath,
                 $"{sessionId}{COMPLETED_SUFFIX}{SESSION_FILE_EXTENSION}");
         }
 
         private async Task<bool> SendOpenSessionAsync(GameSession session)
         {
             return await WebAppService.PostJson(
-                WebAppEndpoints.OpenSession, 
+                WebAppEndpoints.OpenSession,
                 session);
         }
 
@@ -103,7 +98,7 @@ namespace PlayniteInsightsExporter.Lib
                         // Mark existing session as stale
                         existingSession.Status = GameSession.STATUS_STALE;
                         Fs.FileWriteAllText(
-                            GetStaleSessionFilePath(existingSession.SessionId), 
+                            GetStaleSessionFilePath(existingSession.SessionId),
                             JsonConvert.SerializeObject(existingSession));
                     }
                     Fs.FileDelete(sessionFilePath);
@@ -119,7 +114,8 @@ namespace PlayniteInsightsExporter.Lib
                 };
                 Fs.FileWriteAllText(sessionFilePath, JsonConvert.SerializeObject(session));
                 return await SendOpenSessionAsync(session);
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Logger.Error(ex, $"Failed to create session for game {gameId}.");
                 return false;
