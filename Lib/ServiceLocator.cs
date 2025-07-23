@@ -18,7 +18,7 @@ namespace PlayniteInsightsExporter.Lib
         public LibExporter LibExporter { get; }
         public IHashService HashService { get; }
         public IFileSystemService FileSystemService { get; }
-        public IGameSessionService SessionTrackingService { get; }
+        public IGameSessionService GameSessionService { get; }
 
         public ServiceLocator(
             PlayniteInsightsExporter plugin, 
@@ -40,7 +40,7 @@ namespace PlayniteInsightsExporter.Lib
                 HashService, 
                 libDir, 
                 FileSystemService);
-            SessionTrackingService = new GameSessionService(
+            GameSessionService = new GameSessionService(
                 plugin, 
                 AppLogger, 
                 HashService,

@@ -13,18 +13,18 @@ namespace Core
         /// </summary>
         /// <param name="gameId"></param>
         /// <returns></returns>
-        Task<bool> OpenSession(string gameId);
+        Task<bool> OpenSession(string gameId, DateTime now);
         /// <summary>
         /// Closes a game session.
         /// </summary>
         /// <param name="gameId"></param>
         /// <param name="duration"></param>
         /// <returns></returns>
-        Task<bool> CloseSession(string gameId, ulong duration);
+        Task<bool> CloseSession(string gameId, ulong duration, DateTime now);
         /// <summary>
         /// Synchronizes remaining session data with the server.
         /// </summary>
         /// <returns></returns>
-        Task<bool> Sync();
+        Task<bool> Sync(DateTime now);
     }
 }

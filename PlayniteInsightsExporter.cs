@@ -21,7 +21,7 @@ namespace PlayniteInsightsExporter
         private static readonly ILogger logger = LogManager.GetLogger();
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
         private readonly LibExporter LibExporter;
-        private readonly IGameSessionService SessionTrackingService;
+        private readonly IGameSessionService GameSessionService;
 
         public readonly string Name = "Playnite Insights Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
@@ -39,7 +39,7 @@ namespace PlayniteInsightsExporter
                 logger, 
                 Settings.Settings);
             LibExporter = locator.LibExporter;
-            SessionTrackingService = locator.SessionTrackingService;
+            GameSessionService = locator.GameSessionService;
 
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
             PlayniteApi.Database.Games.ItemUpdated += OnItemUpdated;
@@ -124,7 +124,7 @@ namespace PlayniteInsightsExporter
             {
                 return;
             }
-            await SessionTrackingService.OpenSession(args.Game.Id.ToString());
+            await GameSessionService.OpenSession(args.Game.Id.ToString(), DateTime.UtcNow);
         }
 
         public override void OnGameStarting(OnGameStartingEventArgs args)
@@ -138,7 +138,8 @@ namespace PlayniteInsightsExporter
             {
                 return;
             }
-            await SessionTrackingService.CloseSession(args.Game.Id.ToString(), args.ElapsedSeconds);
+            var now = DateTime.UtcNow;
+            await GameSessionService.CloseSession(args.Game.Id.ToString(), args.ElapsedSeconds, now);
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             List<Game> games = new List<Game>() { args.Game };
             var result = await LibExporter.RunLibrarySyncAsync(itemsToUpdate: games);
@@ -203,7 +204,7 @@ namespace PlayniteInsightsExporter
             {
                 await LibExporter.RunMediaFilesSyncAsync();
             }
-            if(!(await SessionTrackingService.Sync()))
+            if(!await GameSessionService.Sync(DateTime.UtcNow))
             {
                 var loc_failed_sync_sessions = ResourceProvider.GetString("LOC_Failed_SyncSessions");
                 PlayniteApi.Notifications.Add(

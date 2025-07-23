@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace Core
         private IHashService HashService { get; set; }
         private IPlayniteInsightsWebServerService WebAppService { get; set; }
         private IFileSystemService Fs { get; set; }
+        private string SessionsFolderPath { get; set; }
 
         private static readonly string IN_PROGRESS_SUFFIX = "-in-progress";
         private static readonly string COMPLETED_SUFFIX = "-complete";
@@ -35,19 +37,13 @@ namespace Core
             this.Logger = Logger;
             this.HashService = HashService;
             this.WebAppService = WebAppService;
-            this.Fs = FileSystemService;
-        }
+            Fs = FileSystemService;
+            SessionsFolderPath = Fs.PathCombine(
+                PluginContext.CtxGetExtensionDataFolderPath(), "sessions");
 
-        private string SessionsFolderPath
-        {
-            get
+            if (!Fs.DirectoryExists(SessionsFolderPath))
             {
-                var path = Fs.PathCombine(PluginContext.CtxGetExtensionDataFolderPath(), "sessions");
-                if (!Fs.DirectoryExists(path))
-                {
-                    Fs.DirectoryCreate(path);
-                }
-                return path;
+                Fs.DirectoryCreate(SessionsFolderPath);
             }
         }
 
@@ -83,11 +79,55 @@ namespace Core
                 session);
         }
 
-        public async Task<bool> OpenSession(string gameId)
+        private bool ShouldClose(DateTime now, GameSession session)
+        {
+            var sessionAge = now - session.StartTime;
+            return sessionAge <= TimeSpan.FromHours(3);
+        }
+
+        private bool ShouldDelete(DateTime now, GameSession session)
+        {
+            var sessionAge = now - session.StartTime;
+            return sessionAge.TotalDays > DELETE_FILES_OLDER_THAN_DAYS;
+        }
+
+        private bool ShouldStale(DateTime now, GameSession session)
+        {
+            var sessionAge = now - session.StartTime;
+            return sessionAge.TotalHours > STALE_AFTER_HOURS;
+        }
+
+        private async Task CloseAndSendSession(GameSession session, ulong duration, DateTime now)
+        {
+            session.EndTime = now;
+            session.Duration = duration;
+            session.Status = GameSession.STATUS_COMPLETE;
+            var result = await SendCloseSessionAsync(session);
+            if (!result)
+            {
+                // Mark session as completed so it can be collected later
+                Fs.FileWriteAllText(
+                    GetCompletedSessionFilePath(session.SessionId),
+                    JsonConvert.SerializeObject(session));
+            }
+        }
+
+        private async Task StaleAndSendSession(GameSession session)
+        {
+            session.Status = GameSession.STATUS_STALE;
+            var result = await SendCloseSessionAsync(session);
+            if (!result)
+            {
+                Fs.FileWriteAllText(
+                    GetStaleSessionFilePath(session.SessionId),
+                    JsonConvert.SerializeObject(session));
+            }
+        }
+
+        public async Task<bool> OpenSession(string gameId, DateTime now)
         {
             try
             {
-                var now = DateTime.UtcNow;
                 var sessionFilePath = GetSessionFilePath(gameId);
                 if (Fs.FileExists(sessionFilePath))
                 {
@@ -95,11 +135,16 @@ namespace Core
                     var existingSession = JsonConvert.DeserializeObject<GameSession>(existingJson);
                     if (existingSession != null && existingSession.IsValidInProgressSession())
                     {
-                        // Mark existing session as stale
-                        existingSession.Status = GameSession.STATUS_STALE;
-                        Fs.FileWriteAllText(
-                            GetStaleSessionFilePath(existingSession.SessionId),
-                            JsonConvert.SerializeObject(existingSession));
+                        if (ShouldClose(now, existingSession))
+                        {
+                            // Close session if it is 3 hours old or less
+                            var duration = (ulong)(now - existingSession.StartTime).TotalSeconds;
+                            await CloseAndSendSession(existingSession, duration, now);
+                        }
+                        else // Mark existing session as stale
+                        {
+                            await StaleAndSendSession(existingSession);
+                        }
                     }
                     Fs.FileDelete(sessionFilePath);
                 }
@@ -122,7 +167,7 @@ namespace Core
             }
         }
 
-        public async Task<bool> CloseSession(string gameId, ulong duration)
+        public async Task<bool> CloseSession(string gameId, ulong duration, DateTime now)
         {
             try
             {
@@ -140,17 +185,7 @@ namespace Core
                     Fs.FileDelete(sessionFilePath);
                     return false;
                 }
-                session.EndTime = DateTime.UtcNow;
-                session.Duration = duration;
-                session.Status = GameSession.STATUS_COMPLETE;
-                var result = await SendCloseSessionAsync(session);
-                if (result == false)
-                {
-                    // Mark session as completed so it can be collected later
-                    Fs.FileWriteAllText(
-                        GetCompletedSessionFilePath(session.SessionId),
-                        JsonConvert.SerializeObject(session));
-                }
+                await CloseAndSendSession(session, duration, now);
                 Fs.FileDelete(sessionFilePath);
                 return true;
             }
@@ -161,7 +196,7 @@ namespace Core
             }
         }
 
-        public async Task<bool> Sync()
+        public async Task<bool> Sync(DateTime now)
         {
             Logger.Debug("Syncing remaining sessions with web app.");
             try
@@ -178,20 +213,10 @@ namespace Core
                         continue;
                     }
                     var createdTime = Fs.FileGetCreationTimeUtc(file);
-                    var shouldDelete = (DateTime.UtcNow - createdTime).TotalDays > DELETE_FILES_OLDER_THAN_DAYS;
-                    var shouldStale = (DateTime.UtcNow - createdTime).TotalHours > STALE_AFTER_HOURS;
                     if (session.Status == GameSession.STATUS_IN_PROGRESS)
                     {
-                        if (!shouldStale) continue;
-                        session.Status = GameSession.STATUS_STALE;
-                        var result = await SendCloseSessionAsync(session);
-                        if (!result)
-                        {
-                            Logger.Info($"Failed to sync in-progress session {session.SessionId} that became stale (older than {STALE_AFTER_HOURS} hours). Will mark it as stale and retry on next library sync.");
-                            Fs.FileWriteAllText(
-                                GetStaleSessionFilePath(session.SessionId),
-                                JsonConvert.SerializeObject(session));
-                        }
+                        if (!ShouldStale(now, session)) continue;
+                        await StaleAndSendSession(session);
                         Fs.FileDelete(file);
                         continue;
                     }
@@ -203,7 +228,7 @@ namespace Core
                             Fs.FileDelete(file);
                             Logger.Info(file + " deleted after successful sync.");
                         }
-                        else if (shouldDelete)
+                        else if (ShouldDelete(now, session))
                         {
                             Fs.FileDelete(file);
                             Logger.Info(file + " deleted after being stale for too long.");
@@ -222,7 +247,7 @@ namespace Core
                             Fs.FileDelete(file);
                             Logger.Info(file + " deleted after successful sync.");
                         }
-                        else if (shouldDelete)
+                        else if (ShouldDelete(now, session))
                         {
                             Fs.FileDelete(file);
                             Logger.Info(file + " deleted after being stale for too long.");
