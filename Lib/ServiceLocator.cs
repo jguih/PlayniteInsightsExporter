@@ -40,12 +40,18 @@ namespace PlayniteInsightsExporter.Lib
                 HashService, 
                 libDir, 
                 FileSystemService);
+
+            var gameSessionConfig = new GameSessionConfig
+            {
+                SESSIONS_DIR_PATH = Path.Combine(plugin.GetPluginUserDataPath(), "sessions"),
+            };
             GameSessionService = new GameSessionService(
                 plugin, 
                 AppLogger, 
                 HashService,
                 WebServerService,
-                FileSystemService);
+                FileSystemService,
+                gameSessionConfig);
         }
     }
 }

@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GameSession\GameSessionConfig.cs" />
     <Compile Include="IAppLogger.cs" />
     <Compile Include="GameSession\GameSessionService.cs" />
     <Compile Include="IFileSystemService.cs" />

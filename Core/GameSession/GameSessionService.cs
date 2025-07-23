@@ -17,29 +17,24 @@ namespace Core
         private IPlayniteInsightsWebServerService WebAppService { get; set; }
         private IFileSystemService Fs { get; set; }
         private string SessionsFolderPath { get; set; }
-
-        private static readonly string IN_PROGRESS_SUFFIX = "-in-progress";
-        private static readonly string COMPLETED_SUFFIX = "-complete";
-        private static readonly string STALE_SUFFIX = "-stale";
-        private static readonly string SESSION_FILE_EXTENSION = ".json";
-        private static readonly int DELETE_FILES_OLDER_THAN_DAYS = 14;
-        private static readonly int STALE_AFTER_HOURS = 48;
+        private GameSessionConfig Config { get; }
 
         public GameSessionService(
             IPlayniteInsightsExporterContext PluginContext,
             IAppLogger Logger,
             IHashService HashService,
             IPlayniteInsightsWebServerService WebAppService,
-            IFileSystemService FileSystemService
+            IFileSystemService FileSystemService,
+            GameSessionConfig Config
         )
         {
             this.PluginContext = PluginContext;
             this.Logger = Logger;
             this.HashService = HashService;
             this.WebAppService = WebAppService;
+            this.Config = Config;
             Fs = FileSystemService;
-            SessionsFolderPath = Fs.PathCombine(
-                PluginContext.CtxGetExtensionDataFolderPath(), "sessions");
+            SessionsFolderPath = Config.SESSIONS_DIR_PATH;
 
             if (!Fs.DirectoryExists(SessionsFolderPath))
             {
@@ -50,19 +45,19 @@ namespace Core
         private string GetSessionFilePath(string gameId)
         {
             return Fs.PathCombine(SessionsFolderPath,
-                $"{gameId}{IN_PROGRESS_SUFFIX}{SESSION_FILE_EXTENSION}");
+                $"{gameId}{Config.IN_PROGRESS_SUFFIX}{Config.SESSION_FILE_EXTENSION}");
         }
 
         private string GetStaleSessionFilePath(string sessionId)
         {
             return Fs.PathCombine(SessionsFolderPath,
-                $"{sessionId}{STALE_SUFFIX}{SESSION_FILE_EXTENSION}");
+                $"{sessionId}{Config.STALE_SUFFIX}{Config.SESSION_FILE_EXTENSION}");
         }
 
         private string GetCompletedSessionFilePath(string sessionId)
         {
             return Fs.PathCombine(SessionsFolderPath,
-                $"{sessionId}{COMPLETED_SUFFIX}{SESSION_FILE_EXTENSION}");
+                $"{sessionId}{Config.COMPLETED_SUFFIX}{Config.SESSION_FILE_EXTENSION}");
         }
 
         private async Task<bool> SendOpenSessionAsync(GameSession session)
@@ -88,13 +83,13 @@ namespace Core
         private bool ShouldDelete(DateTime now, GameSession session)
         {
             var sessionAge = now - session.StartTime;
-            return sessionAge.TotalDays > DELETE_FILES_OLDER_THAN_DAYS;
+            return sessionAge.TotalDays > Config.DELETE_FILES_OLDER_THAN_DAYS;
         }
 
         private bool ShouldStale(DateTime now, GameSession session)
         {
             var sessionAge = now - session.StartTime;
-            return sessionAge.TotalHours > STALE_AFTER_HOURS;
+            return sessionAge.TotalHours > Config.STALE_AFTER_HOURS;
         }
 
         private async Task CloseAndSendSession(GameSession session, ulong duration, DateTime now)
@@ -201,7 +196,7 @@ namespace Core
             Logger.Debug("Syncing remaining sessions with web app.");
             try
             {
-                var pattern = $"*{SESSION_FILE_EXTENSION}";
+                var pattern = $"*{Config.SESSION_FILE_EXTENSION}";
                 foreach (var file in Fs.DirectoryGetFiles(SessionsFolderPath, pattern))
                 {
                     var contents = Fs.FileReadAllText(file);

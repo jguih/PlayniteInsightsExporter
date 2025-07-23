@@ -21,16 +21,22 @@ public class GameSessionServiceTests
         HashServiceMock = new Mock<IHashService>();
         WebServiceMock = new Mock<IPlayniteInsightsWebServerService>();
         FileSystemMock = new Mock<IFileSystemService>();
+        var gameSessionConfig = new GameSessionConfig
+        {
+            IN_PROGRESS_SUFFIX = "-in-progress",
+            COMPLETED_SUFFIX = "-completed",
+            STALE_SUFFIX = "-stale",
+            SESSION_FILE_EXTENSION = ".json",
+            DELETE_FILES_OLDER_THAN_DAYS = 14,
+            STALE_AFTER_HOURS = 48,
+            SESSIONS_DIR_PATH = "/testFolder/sessions"
+        };
 
-        var testParentFolder = "/testFolder";
         FileSystemMock
             .Setup(fs => fs.PathCombine(It.IsAny<string[]>()))
             .Returns((string[] paths) => Path.Combine(paths));
-        PluginCtxMock
-            .Setup(ctx => ctx.CtxGetExtensionDataFolderPath())
-            .Returns(testParentFolder);
         FileSystemMock
-            .Setup(fs => fs.DirectoryExists(Path.Combine(testParentFolder, "sessions")))
+            .Setup(fs => fs.DirectoryExists(gameSessionConfig.SESSIONS_DIR_PATH))
             .Returns(true);
 
         SessionsService = new GameSessionService(
@@ -38,7 +44,8 @@ public class GameSessionServiceTests
             LoggerMock.Object,
             HashServiceMock.Object,
             WebServiceMock.Object,
-            FileSystemMock.Object
+            FileSystemMock.Object,
+            gameSessionConfig
         );
     }
 
