@@ -2,9 +2,11 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <sys:String x:Key="LOC_Loading_SyncClientServer">Syncing library with server...</sys:String>
-    <sys:String x:Key="LOC_Failed_SyncClientServer">Syncing library with server failed. Please check extension logs.</sys:String>
-    <sys:String x:Key="LOC_Failed_SyncMediaFiles">Syncing media files with server failed. Please check extension logs.</sys:String>
+    <sys:String x:Key="LOC_Failed_SyncClientServer">Syncing library with Playnite Insights server failed.</sys:String>
+    <sys:String x:Key="LOC_Failed_SyncMediaFiles">Syncing media files with Playnite Insights server failed.</sys:String>
+    <sys:String x:Key="LOC_Failed_SyncSessions">Syncing game sessions with Playnite Insights server failed.</sys:String>
     <sys:String x:Key="LOC_Success_SyncClientServer">Successfully synced library with web server.</sys:String>
+    
     <!-- Labels -->
     <sys:String x:Key="LOC_Label_WebServerURL">Playnite Insights Web Server URL</sys:String>
     <sys:String x:Key="LOC_Label_EnableLibrarySyncOnUpdate">Sync games database with server on library update</sys:String>

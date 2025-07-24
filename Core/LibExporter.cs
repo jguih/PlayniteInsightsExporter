@@ -1,10 +1,10 @@
-﻿using Newtonsoft.Json;
+﻿using Core;
+using Core.Models;
+using Newtonsoft.Json;
 using Playnite.SDK;
 using Playnite.SDK.Models;
-using PlayniteInsightsExporter.Lib.Models;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -15,25 +15,31 @@ namespace PlayniteInsightsExporter.Lib
 {
     public class LibExporter
     {
-        private readonly PlayniteInsightsExporter Plugin;
-        private readonly IPlayniteAPI PlayniteApi;
-        private readonly PlayniteInsightsWebServerService WebServerService;
-        private readonly HashService HashService;
-        private readonly ILogger Logger;
+        private readonly IPlayniteProgressService ProgressService;
+        private readonly IPlayniteGameRepository PlayniteGameRepository;
+        private readonly IPlayniteInsightsWebServerService WebServerService;
+        private readonly IHashService HashService;
+        private readonly IAppLogger Logger;
+        private readonly IFileSystemService Fs;
         public string LibraryFilesDir { get; }
 
         public LibExporter(
-            PlayniteInsightsExporter Plugin,
-            PlayniteInsightsWebServerService WebServerService,
-            ILogger Logger
+            IPlayniteProgressService ProgressService,
+            IPlayniteGameRepository PlayniteGameRepository,
+        IPlayniteInsightsWebServerService WebServerService,
+            IAppLogger Logger,
+            IHashService HashService,
+            string LibraryFilesDir,
+            IFileSystemService FileSystemService
         )
         {
-            this.Plugin = Plugin;
-            this.PlayniteApi = Plugin.PlayniteApi;
-            this.LibraryFilesDir = Path.Combine(PlayniteApi.Paths.ConfigurationPath, "library", "files");
+            this.ProgressService = ProgressService;
+            this.PlayniteGameRepository = PlayniteGameRepository;
             this.WebServerService = WebServerService;
             this.Logger = Logger;
-            HashService = new HashService(Logger);
+            this.HashService = HashService;
+            this.LibraryFilesDir = LibraryFilesDir;
+            Fs = FileSystemService;
         }
 
         private object GetGameMetadata(Game g, string contentHash)
@@ -60,13 +66,6 @@ namespace PlayniteInsightsExporter.Lib
             };
         }
 
-        private List<string> GetGamesIdList()
-        {
-            return PlayniteApi.Database.Games
-                .Select(g => g.Id.ToString())
-                .ToList();
-        }
-
         private string CommandToJsonString(SyncGameListCommand command)
         {
             try
@@ -88,7 +87,7 @@ namespace PlayniteInsightsExporter.Lib
             var mediaExistsFor = manifest?.mediaExistsFor?
                 .Select((mef) => mef.gameId)
                 .ToList() ?? new List<string>();
-            var gamesIdList = GetGamesIdList();
+            var gamesIdList = PlayniteGameRepository.GetIdList();
             var itemsToRemove = new List<string>();
             // Remove games that are removed from library but still present in the manifest
             foreach (var gameId in mediaExistsFor)
@@ -133,12 +132,7 @@ namespace PlayniteInsightsExporter.Lib
             return (itemsToAdd, itemsToUpdate);
         }
 
-        /// <summary>
-        /// Syncs the entire library database with the server
-        /// </summary>
-        /// <returns></returns>
-        public async Task<bool> RunLibrarySyncAsync(
-            bool showProgress = false,
+        private async Task<bool> _RunLibrarySyncAsync(
             IEnumerable<Game> itemsToAdd = null,
             IEnumerable<Game> itemsToUpdate = null,
             IEnumerable<Game> itemsToRemove = null
@@ -157,7 +151,7 @@ namespace PlayniteInsightsExporter.Lib
             }
             if (itemsToUpdate == null || itemsToAdd == null)
             {
-                var (added, updated) = GetItemsToAddAndUpdate(manifest, PlayniteApi.Database.Games);
+                var (added, updated) = GetItemsToAddAndUpdate(manifest, PlayniteGameRepository.GetAll());
                 if (itemsToAdd == null)
                 {
                     addedItems = added;
@@ -182,33 +176,44 @@ namespace PlayniteInsightsExporter.Lib
             if (!removedItems.Any() && !addedItems.Any() && !updatedItems.Any()) return true;
             var syncGameListCommand = new SyncGameListCommand(addedItems, removedItems, updatedItems);
             string json = CommandToJsonString(syncGameListCommand);
-            if (showProgress)
-            {
-                var lod_syncing_games = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
-                var progressResult = PlayniteApi.Dialogs.ActivateGlobalProgress(async (progress) =>
-                {
-                    progress.IsIndeterminate = true;
-                    progress.Text = lod_syncing_games;
-                    using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
-                    {
-                        var result = await WebServerService.Post(endpoint: WebAppEndpoints.SyncGames, content);
-                        if (result == false)
-                        {
-                            throw new Exception("Failed to sync games with server.");
-                        }
-                    }
-                }, new GlobalProgressOptions(lod_syncing_games, true));
-                if (progressResult.Error != null)
-                {
-                    Logger.Error(progressResult.Error, "Failed to sync games with server.");
-                    return false;
-                }
-                return true;
-            }
             using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
             {
-                return await WebServerService.Post(endpoint: WebAppEndpoints.SyncGames, content: content); 
+                return await WebServerService.Post(endpoint: WebAppEndpoints.SyncGames, content: content);
             }
+        }
+
+        /// <summary>
+        /// Syncs the entire library database with the server
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> RunLibrarySyncAsync(
+            bool showProgress = false,
+            IEnumerable<Game> itemsToAdd = null,
+            IEnumerable<Game> itemsToUpdate = null,
+            IEnumerable<Game> itemsToRemove = null
+        ) {
+            if (showProgress)
+            {
+                var message = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
+                return ProgressService.ActivateGlobalProgress(
+                    message,
+                    false,
+                    async (progress) =>
+                    {
+                        progress.IsIndeterminate = true;
+                        return await _RunLibrarySyncAsync(
+                            itemsToAdd: itemsToAdd,
+                            itemsToUpdate: itemsToUpdate,
+                            itemsToRemove: itemsToRemove
+                        );
+                    }
+                );
+            }
+            return await _RunLibrarySyncAsync(
+                itemsToAdd: itemsToAdd,
+                itemsToUpdate: itemsToUpdate,
+                itemsToRemove: itemsToRemove
+            );
         }
 
         /// <summary>
@@ -242,87 +247,92 @@ namespace PlayniteInsightsExporter.Lib
             var lod_syncing_media_files = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
             var lod_progress_syncing_media_files = ResourceProvider.GetString("LOC_Progress_SyncingMediaFiles");
             var manifest = await WebServerService.GetManifestAsync();
-            var resolvedGameList = games ?? PlayniteApi.Database.Games;
-            PlayniteApi.Dialogs.ActivateGlobalProgress(async (progress) =>
-            {
-                progress.CurrentProgressValue = 0;
-                progress.ProgressMaxValue = resolvedGameList.Count();
-                progress.IsIndeterminate = false;
-                foreach (var game in resolvedGameList)
-                {   
-                    if (progress.CancelToken.IsCancellationRequested)
-                    {
-                        Logger.Info("Media files sync cancelled by user.");
-                        return;
-                    }
-                    var progressText = lod_progress_syncing_media_files
-                        .Replace("{{current}}", (progress.CurrentProgressValue + 1).ToString())
-                        .Replace("{{total}}", (progress.ProgressMaxValue).ToString())
-                        .Replace("{{gameName}}", game.Name);
-                    progress.Text = progressText;
-                    System.Threading.Thread.Sleep(60); // Give some time for UI to update
-                    var gameId = game.Id.ToString();
-                    var mediaFolder = Path.Combine(LibraryFilesDir, gameId);
-                    string contentHash = HashService.HashFolderContents(mediaFolder);
-                    if (string.IsNullOrEmpty(contentHash))
-                    {
-                        Logger.Warn($"Failed to create library files content hash for game with id {gameId}. If this game does not have any media files, you can safely ignore this warning.");
-                        progress.CurrentProgressValue++;
-                        continue;
-                    }
-                    if (manifest != null)
-                    {
-                        // If game not present in manifest, skip sending media files
-                        var gameInLibrary = manifest?.gamesInLibrary?
-                            .Where((gil) => gil.gameId == gameId)
-                            .FirstOrDefault() ?? null;
-                        if (gameInLibrary == null)
+            var resolvedGameList = games ?? PlayniteGameRepository.GetAll();
+            ProgressService.ActivateGlobalProgress(
+                lod_syncing_media_files,
+                true, 
+                async (progress) =>
+                {
+                    progress.CurrentProgressValue = 0;
+                    progress.ProgressMaxValue = resolvedGameList.Count();
+                    progress.IsIndeterminate = false;
+                    foreach (var game in resolvedGameList)
+                    {   
+                        if (progress.CancelToken.IsCancellationRequested)
                         {
+                            Logger.Info("Media files sync cancelled by user.");
+                            return true;
+                        }
+                        var progressText = lod_progress_syncing_media_files
+                            .Replace("{{current}}", (progress.CurrentProgressValue + 1).ToString())
+                            .Replace("{{total}}", (progress.ProgressMaxValue).ToString())
+                            .Replace("{{gameName}}", game.Name);
+                        progress.Text = progressText;
+                        System.Threading.Thread.Sleep(60); // Give some time for UI to update
+                        var gameId = game.Id.ToString();
+                        var mediaFolder = Fs.PathCombine(LibraryFilesDir, gameId);
+                        string contentHash = HashService.HashFolderContents(mediaFolder);
+                        if (string.IsNullOrEmpty(contentHash))
+                        {
+                            Logger.Warn($"Failed to create library files content hash for game with id {gameId}. If this game does not have any media files, you can safely ignore this warning.");
                             progress.CurrentProgressValue++;
                             continue;
                         }
-                        var mediaExistsForEntry = manifest?.mediaExistsFor?
-                            .Where(m => m.gameId == gameId)
-                            .FirstOrDefault() ?? null;
-                        // Compare generated hash with manifest's hash
-                        if (mediaExistsForEntry != null)
+                        if (manifest != null)
                         {
-                            if (mediaExistsForEntry.contentHash == contentHash)
+                            // If game not present in manifest, skip sending media files
+                            var gameInLibrary = manifest?.gamesInLibrary?
+                                .Where((gil) => gil.gameId == gameId)
+                                .FirstOrDefault() ?? null;
+                            if (gameInLibrary == null)
                             {
                                 progress.CurrentProgressValue++;
                                 continue;
                             }
+                            var mediaExistsForEntry = manifest?.mediaExistsFor?
+                                .Where(m => m.gameId == gameId)
+                                .FirstOrDefault() ?? null;
+                            // Compare generated hash with manifest's hash
+                            if (mediaExistsForEntry != null)
+                            {
+                                if (mediaExistsForEntry.contentHash == contentHash)
+                                {
+                                    progress.CurrentProgressValue++;
+                                    continue;
+                                }
+                            }
                         }
+                        using (var content = new MultipartFormDataContent())
+                        {
+                            if (Fs.DirectoryExists(mediaFolder) == false)
+                            {
+                                Logger.Warn($"Game library files directory not found: {mediaFolder}");
+                                progress.CurrentProgressValue++;
+                                continue;
+                            }
+                            content.Add(new StringContent(gameId), "gameId");
+                            content.Add(new StringContent(contentHash), "contentHash");
+                            foreach (var file in Fs.DirectoryGetFiles(mediaFolder))
+                            {
+                                var fileContent = new StreamContent(Fs.FileOpenRead(file));
+                                var fileName = Fs.PathGetFileName(file);
+                                fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                                content.Add(fileContent, "files", fileName);
+                            }
+                            var result = await WebServerService
+                                .Post(endpoint: WebAppEndpoints.SyncFiles, content: content);
+                            if (result == false)
+                            {
+                                Logger.Warn($"Request to sync library files for {gameId} failed");
+                                progress.CurrentProgressValue++;
+                                continue;
+                            }
+                        }
+                        progress.CurrentProgressValue++;
                     }
-                    using (var content = new MultipartFormDataContent())
-                    {
-                        if (Directory.Exists(mediaFolder) == false)
-                        {
-                            Logger.Warn($"Game library files directory not found: {mediaFolder}");
-                            progress.CurrentProgressValue++;
-                            continue;
-                        }
-                        content.Add(new StringContent(gameId), "gameId");
-                        content.Add(new StringContent(contentHash), "contentHash");
-                        foreach (var file in Directory.GetFiles(mediaFolder))
-                        {
-                            var fileContent = new StreamContent(File.OpenRead(file));
-                            var fileName = Path.GetFileName(file);
-                            fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                            content.Add(fileContent, "files", fileName);
-                        }
-                        var result = await WebServerService
-                            .Post(endpoint: WebAppEndpoints.SyncFiles, content: content);
-                        if (result == false)
-                        {
-                            Logger.Warn($"Request to sync library files for {gameId} failed");
-                            progress.CurrentProgressValue++;
-                            continue;
-                        }
-                    }
-                    progress.CurrentProgressValue++;
+                    return true;
                 }
-            }, new GlobalProgressOptions(lod_syncing_media_files, true));
+            );
         }
     }
 }

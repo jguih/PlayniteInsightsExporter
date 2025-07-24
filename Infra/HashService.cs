@@ -1,20 +1,22 @@
-﻿using Playnite.SDK;
+﻿using Core;
+using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Windows.Documents;
+using System.Threading.Tasks;
 
-namespace PlayniteInsightsExporter.Lib
+namespace Infra
 {
-    class HashService
+    public class HashService : IHashService
     {
-        private readonly ILogger Logger;
+        private readonly IAppLogger Logger;
 
-        public HashService(ILogger logger)
+        public HashService(IAppLogger logger)
         {
             Logger = logger;
         }
@@ -43,7 +45,7 @@ namespace PlayniteInsightsExporter.Lib
                     var bytes = Encoding.UTF8.GetBytes(stringRecord);
                     return BitConverter
                         .ToString(sha256.ComputeHash(bytes))
-                        .Replace("-","")
+                        .Replace("-", "")
                         .ToLowerInvariant();
                 }
             }
@@ -58,19 +60,19 @@ namespace PlayniteInsightsExporter.Lib
         {
             try
             {
-                using(var sha256 = SHA256.Create())
+                using (var sha256 = SHA256.Create())
                 {
-                    var developers = game.Developers != null ? 
+                    var developers = game.Developers != null ?
                         string.Join(",", game.Developers?.Select(d => d.Name)) : "";
-                    var genres = game.Genres != null ? 
+                    var genres = game.Genres != null ?
                         string.Join(",", game.Genres?.Select(g => g.Name)) : "";
-                    var tags = game.Tags != null ? 
+                    var tags = game.Tags != null ?
                         string.Join(",", game.Tags?.Select(t => t.Name)) : "";
-                    var categories = game.Categories != null ? 
+                    var categories = game.Categories != null ?
                         string.Join(",", game.Categories?.Select(c => c.Name)) : "";
-                    var features = game.Features != null ? 
+                    var features = game.Features != null ?
                         string.Join(",", game.Features?.Select(f => f.Name)) : "";
-                    var publishers = game.Publishers != null ? 
+                    var publishers = game.Publishers != null ?
                         string.Join(",", game.Publishers?.Select(p => p.Name)) : "";
                     var platforms = game.Platforms != null ?
                         string.Join(",", game.Platforms?.Select(p => p.Name)) : "";
@@ -114,6 +116,29 @@ namespace PlayniteInsightsExporter.Lib
             catch (Exception e)
             {
                 Logger.Error(e, $"Failed to create hash for game {game.Name}");
+                return string.Empty;
+            }
+        }
+
+        public string GetHashForGameSession(string gameId, DateTime startTime)
+        {
+            try
+            {
+                using (var sha256 = SHA256.Create())
+                {
+                    var metadata = $"{gameId}|" +
+                        $"{startTime.ToString(CultureInfo.InvariantCulture)}";
+                    var bytes = Encoding.UTF8.GetBytes(metadata);
+                    var hash = sha256.ComputeHash(bytes);
+                    return BitConverter
+                        .ToString(hash)
+                        .Replace("-", "")
+                        .ToLowerInvariant();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e, $"Failed to create hash for game session with game Id: {gameId}");
                 return string.Empty;
             }
         }
