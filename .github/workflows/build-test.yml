@@ -15,8 +15,6 @@ jobs:
 
       - name: setup-msbuild
         uses: microsoft/setup-msbuild@v2
-        with:
-          vs-version: '2022'
 
       - name: Restore NuGet packages
         run: nuget restore PlayniteInsightsExporter.sln
