@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup MSBuild
+      - name: setup-msbuild
         uses: microsoft/setup-msbuild@v2
         with:
           vs-version: '2022'
