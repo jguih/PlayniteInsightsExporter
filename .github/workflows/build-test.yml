@@ -13,13 +13,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: setup-msbuild
+      - name: Setup MSbuild
         uses: microsoft/setup-msbuild@v2
 
       - name: Restore NuGet packages
         run: nuget restore PlayniteInsightsExporter.sln
 
-      - name: Build with MSBuild
+      - name: Build Core
+        run: dotnet build .\Core\Core.csproj
+
+      - name: Build Infra
+        run: dotnet build .\Infra\Infra.csproj
+
+      - name: Build Tests
+        run: dotnet build .\Tests\Tests.csproj
+
+      - name: Build Exporter
         run: msbuild PlayniteInsightsExporter.csproj /p:Configuration=Release
 
       - name: Upload Build Artifact
