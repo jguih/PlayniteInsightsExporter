@@ -1,12 +1,14 @@
-﻿using Playnite.SDK;
+﻿using Core;
+using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteInsightsExporter.Lib;
-using PlayniteInsightsExporter.Lib.Models;
+using PlayniteInsightsExporter.Lib.Logger;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,12 +16,12 @@ using System.Windows.Controls;
 
 namespace PlayniteInsightsExporter
 {
-    public class PlayniteInsightsExporter : GenericPlugin
+    public class PlayniteInsightsExporter : GenericPlugin, IPlayniteInsightsExporterContext
     {
         private static readonly ILogger logger = LogManager.GetLogger();
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
         private readonly LibExporter LibExporter;
-        private readonly PlayniteInsightsWebServerService WebServerService;
+        private readonly IGameSessionService GameSessionService;
 
         public readonly string Name = "Playnite Insights Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
@@ -31,8 +33,14 @@ namespace PlayniteInsightsExporter
             {
                 HasSettings = true
             };
-            WebServerService = new PlayniteInsightsWebServerService(this, Settings.Settings, logger);
-            LibExporter = new LibExporter(this, WebServerService, logger);
+
+            var locator = new ServiceLocator(
+                this, 
+                logger, 
+                Settings.Settings);
+            LibExporter = locator.LibExporter;
+            GameSessionService = locator.GameSessionService;
+
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
             PlayniteApi.Database.Games.ItemUpdated += OnItemUpdated;
         }
@@ -110,9 +118,13 @@ namespace PlayniteInsightsExporter
             }
         }
 
-        public override void OnGameStarted(OnGameStartedEventArgs args)
+        public override async void OnGameStarted(OnGameStartedEventArgs args)
         {
-            // Add code to be executed when game is started running.
+            if (args == null || args.Game == null)
+            {
+                return;
+            }
+            await GameSessionService.OpenSession(args.Game.Id.ToString(), DateTime.UtcNow);
         }
 
         public override void OnGameStarting(OnGameStartingEventArgs args)
@@ -122,20 +134,22 @@ namespace PlayniteInsightsExporter
 
         public override async void OnGameStopped(OnGameStoppedEventArgs args)
         {
-            // Add code to be executed when game is stopping.
-            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-            if (args.Game != null)
+            if (args == null || args.Game == null)
             {
-                List<Game> games = new List<Game>() { args.Game };
-                var result = await LibExporter.RunLibrarySyncAsync(true, itemsToUpdate: games);
-                if (result == false)
-                {
-                    PlayniteApi.Notifications.Add(
-                        Name,
-                        loc_failed_syncClientServer,
-                        NotificationType.Error);
-                    return;
-                }
+                return;
+            }
+            var now = DateTime.UtcNow;
+            await GameSessionService.CloseSession(args.Game.Id.ToString(), args.ElapsedSeconds, now);
+            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+            List<Game> games = new List<Game>() { args.Game };
+            var result = await LibExporter.RunLibrarySyncAsync(itemsToUpdate: games);
+            if (result == false)
+            {
+                PlayniteApi.Notifications.Add(
+                    Name,
+                    loc_failed_syncClientServer,
+                    NotificationType.Error);
+                return;
             }
         }
 
@@ -167,16 +181,17 @@ namespace PlayniteInsightsExporter
         {
             // Add code to be executed when Playnite is shutting down.
             PlayniteApi.Database.Games.ItemCollectionChanged -= OnItemCollectionChanged;
+            PlayniteApi.Database.Games.ItemUpdated -= OnItemUpdated;
         }
 
         public override async void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
-            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             if (Settings?.Settings?.EnableLibrarySyncOnUpdate == true)
             {
                 var result = await LibExporter.RunLibrarySyncAsync();
                 if (result == false)
                 {
+                    var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
                     PlayniteApi.Notifications.Add(
                         new NotificationMessage(
                             $"{Name} Error",
@@ -188,6 +203,16 @@ namespace PlayniteInsightsExporter
             if (Settings?.Settings?.EnableMediaFilesSyncOnUpdate == true)
             {
                 await LibExporter.RunMediaFilesSyncAsync();
+            }
+            if(!await GameSessionService.Sync(DateTime.UtcNow))
+            {
+                var loc_failed_sync_sessions = ResourceProvider.GetString("LOC_Failed_SyncSessions");
+                PlayniteApi.Notifications.Add(
+                        new NotificationMessage(
+                            $"{Name} Error",
+                            $"{loc_failed_sync_sessions}",
+                            NotificationType.Error)
+                        );
             }
         }
 
@@ -223,6 +248,11 @@ namespace PlayniteInsightsExporter
                     PlayniteApi.Dialogs.ShowMessage(loc_success_syncClientServer);
                 }
             };
+        }
+
+        public string CtxGetExtensionDataFolderPath()
+        {
+            return GetPluginUserDataPath();
         }
     }
 }

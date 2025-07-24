@@ -1,0 +1,42 @@
+name: Build Playnite Extension
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSbuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore PlayniteInsightsExporter.sln
+
+      - name: Build Core
+        run: dotnet build .\Core\Core.csproj
+
+      - name: Build Infra
+        run: dotnet build .\Infra\Infra.csproj
+
+      - name: Build Tests
+        run: dotnet build .\Tests\Tests.csproj
+
+      - name: Run Tests
+        run: dotnet test --no-build
+  
+      - name: Build Exporter
+        run: msbuild PlayniteInsightsExporter.csproj /p:Configuration=Release
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PlayniteExtension
+          path: |
+            bin\Release\

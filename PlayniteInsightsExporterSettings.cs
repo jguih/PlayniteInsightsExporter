@@ -1,10 +1,10 @@
-﻿using Newtonsoft.Json;
+﻿using Core;
+using Newtonsoft.Json;
 using Playnite.SDK;
 using Playnite.SDK.Data;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteInsightsExporter.Lib;
-using PlayniteInsightsExporter.Lib.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -43,7 +43,7 @@ namespace PlayniteInsightsExporter
         private PlayniteInsightsExporterSettings editingClone { get; set; }
         private PlayniteInsightsExporterSettings settings;
         private readonly LibExporter LibExporter;
-        private readonly PlayniteInsightsWebServerService WebServerService;
+        private readonly IPlayniteInsightsWebServerService WebServerService;
 
         public PlayniteInsightsExporterSettings Settings
         {
@@ -74,8 +74,9 @@ namespace PlayniteInsightsExporter
             {
                 Settings = new PlayniteInsightsExporterSettings();
             }
-            WebServerService = new PlayniteInsightsWebServerService(plugin, Settings, Logger);
-            LibExporter = new LibExporter(plugin, WebServerService, Logger);
+            var serviceLocalor = new ServiceLocator(plugin, Logger, Settings);
+            LibExporter = serviceLocalor.LibExporter;
+            WebServerService = serviceLocalor.WebServerService;
         }
 
         public void BeginEdit()
