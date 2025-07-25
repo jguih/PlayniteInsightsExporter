@@ -78,7 +78,7 @@ namespace Core
         {
             session.EndTime = now;
             session.Duration = duration;
-            session.Status = GameSession.STATUS_COMPLETE;
+            session.Status = GameSession.STATUS_CLOSED;
             var result = await SendCloseSessionAsync(session);
             if (!result)
             {
@@ -220,7 +220,7 @@ namespace Core
                         Fs.FileDelete(file);
                         continue;
                     }
-                    if (session.Status == GameSession.STATUS_COMPLETE)
+                    if (session.Status == GameSession.STATUS_CLOSED)
                     {
                         var result = await SendCloseSessionAsync(session);
                         if (result)

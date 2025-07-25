@@ -86,7 +86,7 @@ public class GameSessionServiceTests
         FileSystemMock
            .Verify(fs => fs.FileWriteAllText(
                 It.Is<string>(s => s.Contains(sessionId)),
-                It.Is<string>(s => s.Contains(GameSession.STATUS_COMPLETE))
+                It.Is<string>(s => s.Contains(GameSession.STATUS_CLOSED))
                 ), Times.Once);
         FileSystemMock
             .Verify(fs => fs.FileDelete(

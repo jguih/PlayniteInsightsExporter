@@ -97,7 +97,7 @@ public class GameSessionServiceOfflineTests : IDisposable
         Assert.NotNull(session);
         Assert.Equal(gameId, session.GameId);
         Assert.Equal(sessionId, session.SessionId);
-        Assert.Equal(GameSession.STATUS_COMPLETE, session.Status);
+        Assert.Equal(GameSession.STATUS_CLOSED, session.Status);
         Assert.Equal(now, session.StartTime);
         Assert.Equal(endTime, session.EndTime);
         Assert.Equal(duration, session.Duration);
@@ -171,7 +171,7 @@ public class GameSessionServiceOfflineTests : IDisposable
         Assert.Equal(gameId, closedSession.GameId);
         Assert.Equal(closedSessionId, closedSession.SessionId);
         Assert.Equal(now, closedSession.StartTime);
-        Assert.Equal(GameSession.STATUS_COMPLETE, closedSession.Status);
+        Assert.Equal(GameSession.STATUS_CLOSED, closedSession.Status);
         Assert.Equal(now.AddHours(hoursAfter), closedSession.EndTime);
         Assert.Equal(duration, closedSession.Duration);
         Assert.True(File.Exists(inProgressFilePath), "In-progress session file should exist.");
@@ -216,9 +216,49 @@ public class GameSessionServiceOfflineTests : IDisposable
         Assert.Equal(GameSession.STATUS_STALE, staleSession.Status);
     }
 
+    /// <summary>
+    /// Stale and closed sessions older than 14 days (default value) or invalid should be deleted during sync.
+    /// </summary>
     [Fact]
-    public async Task OnSync_WhenCloseSessionIsTooOld_DeleteFile()
+    public async Task OnSync_WhenSessionIsTooOldOrInvalid_DeleteFile()
     {
-
+        // Arrange
+        var now = DateTime.UtcNow;
+        var startTime = DateTime.UtcNow.AddDays(-15);
+        GameSession staleSession = new()
+        {
+            GameId = Guid.NewGuid().ToString(),
+            SessionId = Guid.NewGuid().ToString(),
+            StartTime = startTime,
+            Status = GameSession.STATUS_STALE,
+        };
+        var staleFilePath = SessionsService.GetStaleSessionFilePath(staleSession.SessionId);
+        File.WriteAllText(staleFilePath, JsonConvert.SerializeObject(staleSession));
+        GameSession closedSession = new()
+        {
+            GameId = Guid.NewGuid().ToString(),
+            SessionId = Guid.NewGuid().ToString(),
+            StartTime = startTime,
+            EndTime = startTime.AddHours(1),
+            Duration = 3600,
+            Status = GameSession.STATUS_CLOSED,
+        };
+        var closedFilePath = SessionsService.GetClosedSessionFilePath(closedSession.SessionId);
+        File.WriteAllText(closedFilePath, JsonConvert.SerializeObject(closedSession));
+        var invalidSession = new GameSession
+        {
+            GameId = string.Empty, // Invalid game ID
+            SessionId = string.Empty, // Invalid session ID
+            StartTime = startTime,
+            Status = "invalid_status" // Invalid status
+        };
+        var invalidFilePath = SessionsService.GetSessionFilePath(invalidSession.GameId);
+        File.WriteAllText(invalidFilePath, JsonConvert.SerializeObject(invalidSession));
+        // Act
+        await SessionsService.Sync(now);
+        // Assert
+        Assert.False(File.Exists(staleFilePath), "Old stale session file should be deleted after sync.");
+        Assert.False(File.Exists(closedFilePath), "Old closed session file should be deleted after sync.");
+        Assert.False(File.Exists(invalidFilePath), "Invalid session file should be deleted after sync.");
     }
 }

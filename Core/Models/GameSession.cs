@@ -16,7 +16,7 @@ namespace Core.Models
         public ulong? Duration { get; set; }
 
         public static string STATUS_IN_PROGRESS = "in_progress";
-        public static string STATUS_COMPLETE = "complete";
+        public static string STATUS_CLOSED = "complete";
         public static string STATUS_STALE = "stale";
 
         public GameSession() { }
@@ -43,14 +43,14 @@ namespace Core.Models
                    !string.IsNullOrEmpty(GameId) &&
                    StartTime != null &&
                    (Status == STATUS_IN_PROGRESS || 
-                   Status == STATUS_COMPLETE || 
+                   Status == STATUS_CLOSED || 
                    Status == STATUS_STALE);
         }
 
-        public bool IsValidCompleteSession()
+        public bool IsValidClosedSession()
         {
             return IsValid() && 
-                Status == STATUS_COMPLETE && 
+                Status == STATUS_CLOSED && 
                 EndTime.HasValue && 
                 Duration.HasValue;
         }
