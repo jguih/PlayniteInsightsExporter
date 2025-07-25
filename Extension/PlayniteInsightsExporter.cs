@@ -54,11 +54,19 @@ namespace PlayniteInsightsExporter
                 {
                     var oldGame = game.OldData;
                     var newGame = game.NewData;
-                    if (oldGame == null) continue;
-                    await LibExporter.RunLibrarySyncAsync(
+                    var result = await LibExporter.RunLibrarySyncAsync(
                         true, 
                         itemsToAdd: new List<Game>(),
-                        itemsToUpdate: new List<Game> { newGame });
+                        itemsToUpdate: new List<Game> { newGame },
+                        itemsToRemove: new List<Game>());
+                    if (result == false)
+                    {
+                        PlayniteApi.Notifications.Add(
+                            Name,
+                            loc_failed_syncClientServer,
+                            NotificationType.Error);
+                        return;
+                    }
                     if (oldGame.CoverImage != newGame.CoverImage ||
                         oldGame.BackgroundImage != newGame.BackgroundImage ||
                         oldGame.Icon != newGame.Icon)
@@ -74,7 +82,11 @@ namespace PlayniteInsightsExporter
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             if (e.AddedItems.Count() > 0)
             {
-                var result = await LibExporter.RunLibrarySyncAsync(true, itemsToAdd: e.AddedItems);
+                var result = await LibExporter.RunLibrarySyncAsync(
+                    true, 
+                    itemsToAdd: e.AddedItems,
+                    itemsToUpdate: new List<Game>(),
+                    itemsToRemove: new List<Game>());
                 if (result == false)
                 {
                     PlayniteApi.Notifications.Add(
@@ -87,7 +99,11 @@ namespace PlayniteInsightsExporter
             }
             if (e.RemovedItems.Count() > 0)
             {
-                var result = await LibExporter.RunLibrarySyncAsync(true, itemsToRemove: e.RemovedItems);
+                var result = await LibExporter.RunLibrarySyncAsync(
+                    true, 
+                    itemsToAdd: new List<Game>(),
+                    itemsToUpdate: new List<Game>(),
+                    itemsToRemove: e.RemovedItems);
                 if (result == false)
                 {
                     PlayniteApi.Notifications.Add(
@@ -105,7 +121,11 @@ namespace PlayniteInsightsExporter
             if (args.Game != null)
             {
                 List<Game> games = new List<Game>() { args.Game };
-                var result = await LibExporter.RunLibrarySyncAsync(true, itemsToUpdate: games);
+                var result = await LibExporter.RunLibrarySyncAsync(
+                    true, 
+                    itemsToAdd: new List<Game>(),
+                    itemsToUpdate: games, 
+                    itemsToRemove: new List<Game>());
                 if (result == false)
                 {
                     PlayniteApi.Notifications.Add(
@@ -142,7 +162,11 @@ namespace PlayniteInsightsExporter
             await GameSessionService.CloseSession(args.Game.Id.ToString(), args.ElapsedSeconds, now);
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             List<Game> games = new List<Game>() { args.Game };
-            var result = await LibExporter.RunLibrarySyncAsync(itemsToUpdate: games);
+            var result = await LibExporter.RunLibrarySyncAsync(
+                false,
+                itemsToAdd: new List<Game>(),
+                itemsToUpdate: games,
+                itemsToRemove: new List<Game>());
             if (result == false)
             {
                 PlayniteApi.Notifications.Add(
