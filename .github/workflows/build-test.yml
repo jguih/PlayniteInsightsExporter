@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2022
+    runs-on: windows-latest
 
     steps:
       - name: Checkout repository
@@ -32,11 +32,11 @@ jobs:
         run: dotnet test --no-build
   
       - name: Build Exporter
-        run: msbuild PlayniteInsightsExporter.csproj /p:Configuration=Release
+        run: msbuild .\Extension\PlayniteInsightsExporter.csproj /p:Configuration=Release
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PlayniteExtension
+          name: PlayniteInsightsExporter
           path: |
-            bin\Release\
+            Dist
