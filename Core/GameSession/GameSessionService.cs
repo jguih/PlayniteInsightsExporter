@@ -42,24 +42,6 @@ namespace Core
             }
         }
 
-        private string GetSessionFilePath(string gameId)
-        {
-            return Fs.PathCombine(SessionsFolderPath,
-                $"{gameId}{Config.IN_PROGRESS_SUFFIX}{Config.SESSION_FILE_EXTENSION}");
-        }
-
-        private string GetStaleSessionFilePath(string sessionId)
-        {
-            return Fs.PathCombine(SessionsFolderPath,
-                $"{sessionId}{Config.STALE_SUFFIX}{Config.SESSION_FILE_EXTENSION}");
-        }
-
-        private string GetCompletedSessionFilePath(string sessionId)
-        {
-            return Fs.PathCombine(SessionsFolderPath,
-                $"{sessionId}{Config.COMPLETED_SUFFIX}{Config.SESSION_FILE_EXTENSION}");
-        }
-
         private async Task<bool> SendOpenSessionAsync(GameSession session)
         {
             return await WebAppService.PostJson(
@@ -102,7 +84,7 @@ namespace Core
             {
                 // Mark session as completed so it can be collected later
                 Fs.FileWriteAllText(
-                    GetCompletedSessionFilePath(session.SessionId),
+                    GetClosedSessionFilePath(session.SessionId),
                     JsonConvert.SerializeObject(session));
             }
         }
@@ -117,6 +99,29 @@ namespace Core
                     GetStaleSessionFilePath(session.SessionId),
                     JsonConvert.SerializeObject(session));
             }
+        }
+
+        public string GetSessionId(string gameId, DateTime now)
+        {
+            return HashService.GetHashForGameSession(gameId, now);
+        }
+
+        public string GetSessionFilePath(string gameId)
+        {
+            return Fs.PathCombine(SessionsFolderPath,
+                $"{gameId}{Config.IN_PROGRESS_SUFFIX}{Config.SESSION_FILE_EXTENSION}");
+        }
+
+        public string GetStaleSessionFilePath(string sessionId)
+        {
+            return Fs.PathCombine(SessionsFolderPath,
+                $"{sessionId}{Config.STALE_SUFFIX}{Config.SESSION_FILE_EXTENSION}");
+        }
+
+        public string GetClosedSessionFilePath(string sessionId)
+        {
+            return Fs.PathCombine(SessionsFolderPath,
+                $"{sessionId}{Config.COMPLETED_SUFFIX}{Config.SESSION_FILE_EXTENSION}");
         }
 
         public async Task<bool> OpenSession(string gameId, DateTime now)
@@ -144,7 +149,7 @@ namespace Core
                     Fs.FileDelete(sessionFilePath);
                 }
                 // Create new session
-                var sessionId = HashService.GetHashForGameSession(gameId, now);
+                var sessionId = GetSessionId(gameId, now);
                 var session = new GameSession()
                 {
                     GameId = gameId,
