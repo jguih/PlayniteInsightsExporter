@@ -25,6 +25,11 @@ namespace Core
         /// Synchronizes remaining session data with the server.
         /// </summary>
         /// <returns></returns>
-        Task<bool> Sync(DateTime now);
+        Task<bool> SyncAsync(DateTime now);
+        /// <summary>
+        /// Synchronizes remaining session data with the server. No global progress dialog is shown.
+        /// </summary>
+        /// <returns></returns>
+        bool Sync(DateTime now);
     }
 }

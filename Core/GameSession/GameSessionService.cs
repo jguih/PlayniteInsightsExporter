@@ -1,5 +1,6 @@
 ﻿using Core.Models;
 using Newtonsoft.Json;
+using Playnite.SDK;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,6 +19,7 @@ namespace Core
         private IFileSystemService Fs { get; set; }
         private string SessionsFolderPath { get; set; }
         private GameSessionConfig Config { get; }
+        private IPlayniteProgressService ProgressService { get; set; }
 
         public GameSessionService(
             IPlayniteInsightsExporterContext PluginContext,
@@ -25,7 +27,8 @@ namespace Core
             IHashService HashService,
             IPlayniteInsightsWebServerService WebAppService,
             IFileSystemService FileSystemService,
-            GameSessionConfig Config
+            GameSessionConfig Config,
+            IPlayniteProgressService ProgressService
         )
         {
             this.PluginContext = PluginContext;
@@ -33,6 +36,7 @@ namespace Core
             this.HashService = HashService;
             this.WebAppService = WebAppService;
             this.Config = Config;
+            this.ProgressService = ProgressService;
             Fs = FileSystemService;
             SessionsFolderPath = Config.SESSIONS_DIR_PATH;
 
@@ -121,7 +125,7 @@ namespace Core
         public string GetClosedSessionFilePath(string sessionId)
         {
             return Fs.PathCombine(SessionsFolderPath,
-                $"{sessionId}{Config.COMPLETED_SUFFIX}{Config.SESSION_FILE_EXTENSION}");
+                $"{sessionId}{Config.CLOSED_SUFFIX}{Config.SESSION_FILE_EXTENSION}");
         }
 
         public async Task<bool> OpenSession(string gameId, DateTime now)
@@ -196,7 +200,7 @@ namespace Core
             }
         }
 
-        public async Task<bool> Sync(DateTime now)
+        public async Task<bool> SyncAsync(DateTime now)
         {
             Logger.Debug("Syncing remaining sessions with web app.");
             try
@@ -269,6 +273,20 @@ namespace Core
                 Logger.Error(ex, "Failed to sync sessions.");
                 return false;
             }
+        }
+
+        public bool Sync(DateTime now)
+        {
+            var message = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
+            return ProgressService.ActivateGlobalProgress(
+                message, 
+                false, 
+                async (progress) =>
+                {
+                    progress.IsIndeterminate = true;
+                    return await SyncAsync(now);
+                }
+            );
         }
     }
 }

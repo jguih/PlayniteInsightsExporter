@@ -30,6 +30,7 @@ public class GameSessionServiceOfflineTests : IDisposable
         {
             SESSIONS_DIR_PATH = SessionsDirPath
         };
+        var progressService = new Mock<IPlayniteProgressService>();
 
         WebServiceMock
             .Setup(ws => ws.PostJson(It.IsAny<string>(), It.IsAny<object>()))
@@ -41,7 +42,8 @@ public class GameSessionServiceOfflineTests : IDisposable
             hashService,
             WebServiceMock.Object,
             fileSystem,
-            config
+            config,
+            progressService.Object
         );
     }
 
@@ -203,7 +205,7 @@ public class GameSessionServiceOfflineTests : IDisposable
         File.WriteAllText(sessionFilePath, JsonConvert.SerializeObject(session));
         var staleFilePath = SessionsService.GetStaleSessionFilePath(session.SessionId);
         // Act
-        await SessionsService.Sync(now);
+        await SessionsService.SyncAsync(now);
         // Assert
         Assert.False(File.Exists(sessionFilePath));
         Assert.True(File.Exists(staleFilePath));
@@ -255,7 +257,7 @@ public class GameSessionServiceOfflineTests : IDisposable
         var invalidFilePath = SessionsService.GetSessionFilePath(invalidSession.GameId);
         File.WriteAllText(invalidFilePath, JsonConvert.SerializeObject(invalidSession));
         // Act
-        await SessionsService.Sync(now);
+        await SessionsService.SyncAsync(now);
         // Assert
         Assert.False(File.Exists(staleFilePath), "Old stale session file should be deleted after sync.");
         Assert.False(File.Exists(closedFilePath), "Old closed session file should be deleted after sync.");

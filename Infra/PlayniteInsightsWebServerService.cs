@@ -12,28 +12,29 @@ namespace Infra
 {
     public class PlayniteInsightsWebServerService : IPlayniteInsightsWebServerService
     {
-        private readonly string WebAppURL;
+        private readonly IPlayniteInsightsExporterContext PluginCtx;
         private readonly IAppLogger Logger;
 
         public PlayniteInsightsWebServerService(
-            string WebAppURL,
+            IPlayniteInsightsExporterContext PluginCtx,
             IAppLogger Logger)
         {
-            this.WebAppURL = WebAppURL;
             this.Logger = Logger;
+            this.PluginCtx = PluginCtx;
         }
 
         private string GetWebAppURL(string endpoint = "")
         {
-            if (string.IsNullOrEmpty(WebAppURL))
+            var webAppUrl = PluginCtx.CtxGetWebServerURL();
+            if (string.IsNullOrEmpty(webAppUrl))
             {
-                throw new InvalidOperationException("Invalid WebAppURL");
+                throw new InvalidOperationException("Playnite Insights Web Server URL must not be empty.");
             }
             if (string.IsNullOrEmpty(endpoint))
             {
-                return WebAppURL;
+                return webAppUrl;
             }
-            return $"{WebAppURL.TrimEnd('/')}/{endpoint.TrimStart('/')}";
+            return $"{webAppUrl.TrimEnd('/')}/{endpoint.TrimStart('/')}";
         }
 
         public async Task<bool> Post(string endpoint, HttpContent content)

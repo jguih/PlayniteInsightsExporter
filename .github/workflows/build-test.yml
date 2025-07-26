@@ -25,14 +25,14 @@ jobs:
       - name: Build Infra
         run: dotnet build .\Infra\Infra.csproj
 
+      - name: Build Exporter
+        run: msbuild .\Extension\PlayniteInsightsExporter.csproj /p:Configuration=Release
+
       - name: Build Tests
         run: dotnet build .\Tests\Tests.csproj
 
       - name: Run Tests
         run: dotnet test --no-build
-  
-      - name: Build Exporter
-        run: msbuild .\Extension\PlayniteInsightsExporter.csproj /p:Configuration=Release
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4

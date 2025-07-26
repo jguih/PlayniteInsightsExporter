@@ -9,7 +9,7 @@ namespace Core
     public class GameSessionConfig
     {
         public string IN_PROGRESS_SUFFIX { get; set; } = "-in-progress";
-        public string COMPLETED_SUFFIX { get; set; } = "-completed";
+        public string CLOSED_SUFFIX { get; set; } = "-closed";
         public string STALE_SUFFIX { get; set; } = "-stale";
         public string SESSION_FILE_EXTENSION { get; set; } = ".json";
         public int DELETE_FILES_OLDER_THAN_DAYS { get; set; } = 14;
