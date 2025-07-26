@@ -8,18 +8,20 @@ namespace Core.Models
 {
     public class SyncGameListCommand
     {
-        public List<object> AddedItems { get; } = new List<object>();
-        public List<string> RemovedItems { get; } = new List<string>();
-        public List<object> UpdatedItems { get; } = new List<object>();
+        public List<PlayniteGameDTO> AddedItems { get; set; } = new List<PlayniteGameDTO>();
+        public List<string> RemovedItems { get; set; } = new List<string>();
+        public List<PlayniteGameDTO> UpdatedItems { get; set; } = new List<PlayniteGameDTO>();
 
+
+        public SyncGameListCommand() { }
         public SyncGameListCommand(
-            List<object> AddedItems,
+            List<PlayniteGameDTO> AddedItems,
             List<string> RemovedItems,
-            List<object> UpdatedItems) 
+            List<PlayniteGameDTO> UpdatedItems) 
         {
-            this.AddedItems = AddedItems ?? new List<object>();
+            this.AddedItems = AddedItems ?? new List<PlayniteGameDTO>();
             this.RemovedItems = RemovedItems ?? new List<string>();
-            this.UpdatedItems = UpdatedItems ?? new List<object>();
+            this.UpdatedItems = UpdatedItems ?? new List<PlayniteGameDTO>();
         }
     }
 }

@@ -17,6 +17,7 @@ public class GameSessionServiceTests
     private Mock<IPlayniteInsightsWebServerService> WebServiceMock { get; }
     private Mock<IFileSystemService> FileSystemMock { get; }
     private GameSessionService SessionsService { get; set; }
+    private Mock<IPlayniteProgressService> ProgressService { get; set; }
 
     public GameSessionServiceTests()
     {
@@ -29,6 +30,7 @@ public class GameSessionServiceTests
         {
             SESSIONS_DIR_PATH = "/testFolder/sessions"
         };
+        ProgressService = new Mock<IPlayniteProgressService>();
 
         FileSystemMock
             .Setup(fs => fs.PathCombine(It.IsAny<string[]>()))
@@ -49,7 +51,8 @@ public class GameSessionServiceTests
             HashServiceMock.Object,
             WebServiceMock.Object,
             FileSystemMock.Object,
-            gameSessionConfig
+            gameSessionConfig,
+            ProgressService.Object
         );
     }
 

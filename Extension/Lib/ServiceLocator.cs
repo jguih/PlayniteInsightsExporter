@@ -51,7 +51,8 @@ namespace PlayniteInsightsExporter.Lib
                 HashService,
                 WebServerService,
                 FileSystemService,
-                gameSessionConfig);
+                gameSessionConfig,
+                progressService);
         }
     }
 }

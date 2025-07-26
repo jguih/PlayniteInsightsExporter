@@ -21,7 +21,7 @@ namespace PlayniteInsightsExporter
     {
         private string webAppURL = string.Empty;
         private bool enableLibrarySyncOnUpdate = true;
-        private bool enableMediaFilesSyncOnUpdate = false;
+        private bool enableMediaFilesSyncOnUpdate = true;
         public string WebAppURL { get => webAppURL; set => SetValue(ref webAppURL, value); }
         public bool EnableLibrarySyncOnUpdate { 
             get => enableLibrarySyncOnUpdate; 
@@ -108,19 +108,19 @@ namespace PlayniteInsightsExporter
             return true;
         }
 
-        public async void OnExportLibrary()
+        public void OnExportLibrary()
         {
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
-            var result = await LibExporter.RunLibrarySyncAsync(true);
-            if (result == false)
+            var libSyncResult = LibExporter.RunLibrarySync();
+            var mediaSyncResult = LibExporter.RunMediaFilesSync();
+            if (libSyncResult == false || mediaSyncResult == false)
             {
                 PlayniteApi.Dialogs.ShowErrorMessage(
                         loc_failed_syncClientServer, 
                         Plugin.Name);
                 return;
             }
-            await LibExporter.RunMediaFilesSyncAsync();
             PlayniteApi.Dialogs.ShowMessage(loc_success_syncClientServer);
         }
     }
