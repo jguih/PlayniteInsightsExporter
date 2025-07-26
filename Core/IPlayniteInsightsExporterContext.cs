@@ -9,5 +9,6 @@ namespace Core
     public interface IPlayniteInsightsExporterContext
     {
         string CtxGetExtensionDataFolderPath();
+        string CtxGetWebServerURL();
     }
 }

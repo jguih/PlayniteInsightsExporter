@@ -278,5 +278,10 @@ namespace PlayniteInsightsExporter
         {
             return GetPluginUserDataPath();
         }
+
+        public string CtxGetWebServerURL()
+        {
+            return Settings?.Settings?.WebAppURL ?? string.Empty;
+        }
     }
 }

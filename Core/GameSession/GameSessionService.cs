@@ -121,7 +121,7 @@ namespace Core
         public string GetClosedSessionFilePath(string sessionId)
         {
             return Fs.PathCombine(SessionsFolderPath,
-                $"{sessionId}{Config.COMPLETED_SUFFIX}{Config.SESSION_FILE_EXTENSION}");
+                $"{sessionId}{Config.CLOSED_SUFFIX}{Config.SESSION_FILE_EXTENSION}");
         }
 
         public async Task<bool> OpenSession(string gameId, DateTime now)

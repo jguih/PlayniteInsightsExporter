@@ -16,7 +16,7 @@ namespace Core.Models
         public ulong? Duration { get; set; }
 
         public static string STATUS_IN_PROGRESS = "in_progress";
-        public static string STATUS_CLOSED = "complete";
+        public static string STATUS_CLOSED = "closed";
         public static string STATUS_STALE = "stale";
 
         public GameSession() { }

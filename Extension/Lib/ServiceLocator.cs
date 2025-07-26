@@ -30,7 +30,7 @@ namespace PlayniteInsightsExporter.Lib
             IPlayniteProgressService progressService = new PlayniteProgressService(plugin.PlayniteApi, AppLogger);
             IPlayniteGameRepository gameRepository = new PlayniteGameRepository(plugin.PlayniteApi, AppLogger);
             FileSystemService = new FileSystemService();
-            WebServerService = new PlayniteInsightsWebServerService(settings.WebAppURL, AppLogger);
+            WebServerService = new PlayniteInsightsWebServerService(plugin, AppLogger);
             HashService = new HashService(AppLogger);
             LibExporter = new LibExporter(
                 progressService, 

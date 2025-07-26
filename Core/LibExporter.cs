@@ -67,31 +67,19 @@ namespace PlayniteInsightsExporter.Lib
             };
         }
 
-        private string CommandToJsonString(SyncGameListCommand command)
-        {
-            try
-            {
-                return JsonConvert.SerializeObject(command, Formatting.Indented);
-            }
-            catch (Exception)
-            {
-                return "[]";
-            }
-        }
-
         /// <summary>
         /// Compares the server's manifest with the current list of games and returns a list of games that should be removed from the server.
         /// </summary>
         /// <returns>List of game IDs</returns>
-        private List<string> GetItemsToRemove(PlayniteLibraryManifest manifest)
+        private IEnumerable<string> GetItemsToRemove(PlayniteLibraryManifest manifest)
         {
-            var mediaExistsFor = manifest?.mediaExistsFor?
-                .Select((mef) => mef.gameId)
+            var gameInLibrary = manifest?.gamesInLibrary?
+                .Select((gil) => gil.gameId)
                 .ToList() ?? new List<string>();
             var gamesIdList = PlayniteGameRepository.GetIdList();
             var itemsToRemove = new List<string>();
             // Remove games that are removed from library but still present in the manifest
-            foreach (var gameId in mediaExistsFor)
+            foreach (var gameId in gameInLibrary)
             {
                 if (!gamesIdList.Contains(gameId))
                 {
@@ -168,51 +156,71 @@ namespace PlayniteInsightsExporter.Lib
             IEnumerable<Game> itemsToRemove = null
         ) {
             var manifest = await WebServerService.GetManifestAsync();
-            IEnumerable<string> removedItems = new List<string>();
-            IEnumerable<object> updatedItems = new List<object>();
-            IEnumerable<object> addedItems = new List<object>();
+            IEnumerable<string> resolvedGamesToRemove = new List<string>();
+            IEnumerable<object> resolvedGamesToUpdate = new List<object>();
+            IEnumerable<object> resolvedGamesToAdd = new List<object>();
+            IEnumerable<object> libAddedGames = null;
+            IEnumerable<object> libUpdatedGames = null;
             if (itemsToRemove == null)
             {
-                removedItems = GetItemsToRemove(manifest);
+                resolvedGamesToRemove = GetItemsToRemove(manifest);
             }
             else
             {
-                removedItems = itemsToRemove.Select(g => g.Id.ToString()).ToList();
+                resolvedGamesToRemove = itemsToRemove.Select(g => g.Id.ToString()).ToList();
             }
-            if (itemsToUpdate == null || itemsToAdd == null)
+            if (itemsToUpdate == null)
             {
-                var (added, updated) = GetGameMetadataToAddAndUpdate(
-                    manifest, PlayniteGameRepository.GetAll());
-                if (itemsToAdd == null)
+                if (libUpdatedGames == null)
                 {
-                    addedItems = added;
+                    var (added, updated) = GetGameMetadataToAddAndUpdate(
+                        manifest, PlayniteGameRepository.GetAll());
+                    libUpdatedGames = updated;
+                    libAddedGames = added;
                 }
-                else
-                {
-                    addedItems = itemsToAdd
+                resolvedGamesToUpdate = libUpdatedGames;
+            } 
+            else
+            {
+                resolvedGamesToUpdate = itemsToUpdate
                         .Select(g => GetGameMetadata(g, HashService.GetHashFromPlayniteGame(g)))
                         .ToList();
-                }
-                if (itemsToUpdate == null)
-                {
-                    updatedItems = updated;
-                }
-                else
-                {
-                    updatedItems = itemsToUpdate
-                        .Select(g => GetGameMetadata(g, HashService.GetHashFromPlayniteGame(g)))
-                        .ToList();
-                }
             }
-            if (!removedItems.Any() && !addedItems.Any() && !updatedItems.Any()) return true;
+            if (itemsToAdd == null)
+            {
+                if (libAddedGames == null)
+                {
+                    var (added, updated) = GetGameMetadataToAddAndUpdate(
+                        manifest, PlayniteGameRepository.GetAll());
+                    libUpdatedGames = updated;
+                    libAddedGames = added;
+                }
+                resolvedGamesToAdd = libAddedGames;
+            }
+            else
+            {
+                resolvedGamesToAdd = itemsToAdd
+                    .Select(g => GetGameMetadata(g, HashService.GetHashFromPlayniteGame(g)))
+                    .ToList();
+            }
+            if (!resolvedGamesToRemove.Any() 
+                && !resolvedGamesToAdd.Any() 
+                && !resolvedGamesToUpdate.Any()) 
+                return true;
             var syncGameListCommand = new SyncGameListCommand(
-                addedItems.ToList(), removedItems.ToList(), updatedItems.ToList());
+                resolvedGamesToAdd.ToList(), 
+                resolvedGamesToRemove.ToList(), 
+                resolvedGamesToUpdate.ToList());
             return await WebServerService.PostJson(endpoint: WebAppEndpoints.SyncGames, syncGameListCommand);
         }
 
         /// <summary>
-        /// Syncs the entire library database with the server
+        /// Syncs games with the server.
         /// </summary>
+        /// <param name="showProgress">Whether to show global progress.</param>
+        /// <param name="itemsToAdd">List of games to add. If null, it'll check the entire database for new games.</param>
+        /// <param name="itemsToUpdate">List of games to update. If null, it'll check the entire database for updated games.</param>
+        /// <param name="itemsToRemove">List of games to remove. If null, it'll check the entire database for removed games.</param>
         /// <returns></returns>
         public async Task<bool> RunLibrarySyncAsync(
             bool showProgress = false,
@@ -247,7 +255,7 @@ namespace PlayniteInsightsExporter.Lib
         /// <summary>
         /// Syncs a list of games with the server
         /// </summary>
-        /// <param name="itemsToSync"></param>
+        /// <param name="itemsToSync">List o games to sync. New, updated and removed games will be derived from this list.</param>
         /// <returns></returns>
         public async Task<bool> RunGameListSyncAsync(List<Game> itemsToSync)
         {
