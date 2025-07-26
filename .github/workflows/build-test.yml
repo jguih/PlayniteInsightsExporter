@@ -26,7 +26,7 @@ jobs:
         run: dotnet build .\Infra\Infra.csproj
 
       - name: Build Exporter
-        run: msbuild .\Extension\PlayniteInsightsExporter.csproj /p:Configuration=Release
+        run: msbuild .\Extension\PlayniteInsightsExporter.csproj /p:Configuration=Debug
 
       - name: Build Tests
         run: dotnet build .\Tests\Tests.csproj
