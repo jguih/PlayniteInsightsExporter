@@ -19,32 +19,34 @@ namespace PlayniteInsightsExporter.Lib
         public IHashService HashService { get; }
         public IFileSystemService FileSystemService { get; }
         public IGameSessionService GameSessionService { get; }
+        public IPlayniteProgressService ProgressService { get; }
+        public IPlayniteGameRepository GameRepository { get; }
 
         public ServiceLocator(
             PlayniteInsightsExporter plugin, 
             ILogger logger,
             PlayniteInsightsExporterSettings settings
         ) {
-            AppLogger = new PlayniteLogger(logger);
             var libDir = Path.Combine(plugin.PlayniteApi.Paths.ConfigurationPath, "library", "files");
-            IPlayniteProgressService progressService = new PlayniteProgressService(plugin.PlayniteApi, AppLogger);
-            IPlayniteGameRepository gameRepository = new PlayniteGameRepository(plugin.PlayniteApi, AppLogger);
+            var gameSessionConfig = new GameSessionConfig
+            {
+                SESSIONS_DIR_PATH = Path.Combine(plugin.GetPluginUserDataPath(), "sessions"),
+            };
+
+            AppLogger = new PlayniteLogger(logger);
+            ProgressService = new PlayniteProgressService(plugin.PlayniteApi, AppLogger);
+            GameRepository = new PlayniteGameRepository(plugin.PlayniteApi, AppLogger);
             FileSystemService = new FileSystemService();
             WebServerService = new PlayniteInsightsWebServerService(plugin, AppLogger);
             HashService = new HashService(AppLogger);
             LibExporter = new LibExporter(
-                progressService, 
-                gameRepository,
+                ProgressService, 
+                GameRepository,
                 WebServerService, 
                 AppLogger, 
                 HashService, 
                 libDir, 
                 FileSystemService);
-
-            var gameSessionConfig = new GameSessionConfig
-            {
-                SESSIONS_DIR_PATH = Path.Combine(plugin.GetPluginUserDataPath(), "sessions"),
-            };
             GameSessionService = new GameSessionService(
                 plugin, 
                 AppLogger, 
@@ -52,7 +54,7 @@ namespace PlayniteInsightsExporter.Lib
                 WebServerService,
                 FileSystemService,
                 gameSessionConfig,
-                progressService);
+                ProgressService);
         }
     }
 }

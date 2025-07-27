@@ -133,6 +133,7 @@ namespace Core
             List<Game> itemsToRemove = null
         )
         {
+            Logger.Debug($"Starting library sync.");
             PlayniteLibraryManifest manifest = null;
             List<PlayniteGameDTO> libAddedGames = null;
             List<PlayniteGameDTO> libUpdatedGames = null;
@@ -143,6 +144,11 @@ namespace Core
 
             if ((itemsToAdd == null || itemsToUpdate == null) && (libAddedGames == null || libUpdatedGames == null))
             {
+                if (manifest == null)
+                {
+                    Logger.Error(null, "Failed to get manifest from the server. Cannot sync library.");
+                    return false;
+                }
                 var (added, updated) = GetGamesToAddAndUpdateFromLibrary(manifest);
                 libAddedGames = added;
                 libUpdatedGames = updated;
@@ -161,7 +167,14 @@ namespace Core
                 : libAddedGames;
 
             if (!resolvedGamesToRemove.Any() && !resolvedGamesToAdd.Any() && !resolvedGamesToUpdate.Any())
+            {
+                Logger.Info("No games to sync. Library is already up-to-date.");
                 return true;
+            }
+
+            Logger.Debug($"Games to remove: {resolvedGamesToRemove.Count}. " +
+                $"Games to add: {resolvedGamesToAdd.Count}. " +
+                $"Games to update: {resolvedGamesToUpdate.Count}.");
 
             var syncGameListCommand = new SyncGameListCommand(
                 resolvedGamesToAdd,
@@ -169,10 +182,35 @@ namespace Core
                 resolvedGamesToUpdate
             );
 
-            return await WebServerService.PostJson(
+            var result = await WebServerService.PostJson(
                 endpoint: WebAppEndpoints.SyncGames,
                 syncGameListCommand
             );
+
+            if (result == false)
+            {
+                Logger.Error(null, "Failed to sync game list with the server.");
+            }
+
+            return result;
+        }
+
+        private HttpContent GetGameMediaHttpContent(
+            string gameId, 
+            string contentHash,
+            string mediaFolderPath
+        ) {
+            var content = new MultipartFormDataContent();
+            content.Add(new StringContent(gameId), "gameId");
+            content.Add(new StringContent(contentHash), "contentHash");
+            foreach (var file in Fs.DirectoryGetFiles(mediaFolderPath))
+            {
+                var fileContent = new StreamContent(Fs.FileOpenRead(file));
+                var fileName = Fs.PathGetFileName(file);
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                content.Add(fileContent, "files", fileName);
+            }
+            return content;
         }
 
         private async Task<bool> _RunMediaFilesSync(
@@ -182,12 +220,16 @@ namespace Core
             CancellationToken cancellationToken = default
         )
         {
+            Logger.Debug($"Starting library media files sync for {games.Count()} games.");
+            var skipped = 0;
+            var sent = 0;
+            var failed = 0;
             var manifest = await WebServerService.GetManifestAsync();
             foreach (var game in games)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    Logger.Info("Media files sync cancelled by user.");
+                    Logger.Info("Library media files sync cancelled by user.");
                     return true;
                 }
                 OnEvery?.Invoke(game);
@@ -196,8 +238,8 @@ namespace Core
                 string contentHash = HashService.HashFolderContents(mediaFolder);
                 if (string.IsNullOrEmpty(contentHash))
                 {
-                    Logger.Warn($"Failed to create library files content hash for game with id {gameId}. If this game does not have any media files, you can safely ignore this warning.");
                     OnContinue?.Invoke();
+                    skipped++;
                     continue;
                 }
                 if (manifest != null)
@@ -209,6 +251,7 @@ namespace Core
                     if (gameInLibrary == null)
                     {
                         OnContinue?.Invoke();
+                        skipped++;
                         continue;
                     }
                     var mediaExistsForEntry = manifest?.mediaExistsFor?
@@ -220,38 +263,32 @@ namespace Core
                         if (mediaExistsForEntry.contentHash == contentHash)
                         {
                             OnContinue?.Invoke();
+                            skipped++;
                             continue;
                         }
                     }
                 }
-                using (var content = new MultipartFormDataContent())
-                {
-                    if (Fs.DirectoryExists(mediaFolder) == false)
-                    {
-                        Logger.Warn($"Game library files directory not found: {mediaFolder}");
-                        OnContinue?.Invoke();
-                        continue;
-                    }
-                    content.Add(new StringContent(gameId), "gameId");
-                    content.Add(new StringContent(contentHash), "contentHash");
-                    foreach (var file in Fs.DirectoryGetFiles(mediaFolder))
-                    {
-                        var fileContent = new StreamContent(Fs.FileOpenRead(file));
-                        var fileName = Fs.PathGetFileName(file);
-                        fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                        content.Add(fileContent, "files", fileName);
-                    }
-                    var result = await WebServerService
-                        .Post(endpoint: WebAppEndpoints.SyncFiles, content: content);
+                using (var content = GetGameMediaHttpContent(
+                    gameId: gameId,
+                    contentHash: contentHash,
+                    mediaFolderPath: mediaFolder
+                )) {  
+                    var result = await WebServerService.Post(
+                        endpoint: WebAppEndpoints.SyncFiles, 
+                        content: content
+                    );
                     if (result == false)
                     {
-                        Logger.Warn($"Request to sync library files for {gameId} failed");
+                        Logger.Error(null, $"Request to sync library media files for {gameId} failed");
                         OnContinue?.Invoke();
+                        failed++;
                         continue;
                     }
                 }
+                sent++;
                 OnContinue?.Invoke();
             }
+            Logger.Info($"Library media files sync completed. Sent: {sent}, Skipped: {skipped}, Failed: {failed}. Total games processed: {games.Count()}.");
             return true;
         }
 

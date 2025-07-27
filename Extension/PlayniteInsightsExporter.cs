@@ -22,7 +22,8 @@ namespace PlayniteInsightsExporter
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
         private readonly LibExporter LibExporter;
         private readonly IGameSessionService GameSessionService;
-
+        private readonly IPlayniteProgressService ProgressService;
+        private readonly IPlayniteInsightsWebServerService WebServerService;
         public readonly string Name = "Playnite Insights Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
 
@@ -35,65 +36,75 @@ namespace PlayniteInsightsExporter
             };
 
             var locator = new ServiceLocator(
-                this, 
-                logger, 
+                this,
+                logger,
                 Settings.Settings);
             LibExporter = locator.LibExporter;
             GameSessionService = locator.GameSessionService;
+            ProgressService = locator.ProgressService;
+            WebServerService = locator.WebServerService;
 
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
         }
 
         private void OnItemCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> e)
         {
-            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-            if (e.AddedItems.Count() > 0)
+            _ = Task.Run(async () =>
             {
-                var libSyncResult = LibExporter.RunLibrarySync(
-                    itemsToAdd: e.AddedItems,
-                    itemsToUpdate: new List<Game>(),
-                    itemsToRemove: new List<Game>());
-                var mediaSyncResult = LibExporter.RunMediaFilesSync(e.AddedItems);
-                if (libSyncResult == false || mediaSyncResult == false)
+                if (e.AddedItems.Any())
                 {
-                    PlayniteApi.Notifications.Add(
-                        Name,
-                        loc_failed_syncClientServer,
-                        NotificationType.Error);
-                    return;
+                    try
+                    {
+                        var syncResult = await LibExporter.RunLibrarySyncAsync(
+                            itemsToAdd: e.AddedItems,
+                            itemsToUpdate: new List<Game>(),
+                            itemsToRemove: new List<Game>());
+                        if (syncResult == true)
+                            await LibExporter.RunMediaFilesSyncAsync(e.AddedItems);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, "Failed to sync added items in Playnite Insights Exporter.");
+                    }
                 }
-            }
-            if (e.RemovedItems.Count() > 0)
-            {
-                var result = LibExporter.RunLibrarySync(
-                    itemsToAdd: new List<Game>(),
-                    itemsToUpdate: new List<Game>(),
-                    itemsToRemove: e.RemovedItems);
-                if (result == false)
+                if (e.RemovedItems.Any())
                 {
-                    PlayniteApi.Notifications.Add(
-                        Name,
-                        loc_failed_syncClientServer,
-                        NotificationType.Error);
-                    return;
+                    try
+                    {
+                        await LibExporter.RunLibrarySyncAsync(
+                            itemsToAdd: new List<Game>(),
+                            itemsToUpdate: new List<Game>(),
+                            itemsToRemove: e.RemovedItems);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, "Failed to sync removed items in Playnite Insights Exporter.");
+                    }
                 }
-            }
+            });
         }
 
         public override void OnGameInstalled(OnGameInstalledEventArgs args)
         {
-            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-            if (args.Game != null)
+            if (args == null || args.Game == null)
             {
-                var _ = Task.Run(async () =>
+                return;
+            }
+            _ = Task.Run(async () =>
+            {
+                try
                 {
                     await LibExporter.RunLibrarySyncAsync(
                         itemsToAdd: new List<Game>(),
-                        itemsToUpdate: new List<Game>() { args.Game }, 
+                        itemsToUpdate: new List<Game>() { args.Game },
                         itemsToRemove: new List<Game>()
                     );
-                });
-            }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to sync installed game in Playnite Insights Exporter.");
+                }
+            });
         }
 
         public override void OnGameStarted(OnGameStartedEventArgs args)
@@ -104,12 +115,19 @@ namespace PlayniteInsightsExporter
             }
             _ = Task.Run(async () =>
             {
-                await GameSessionService.OpenSession(args.Game.Id.ToString(), DateTime.UtcNow);
-                await LibExporter.RunLibrarySyncAsync(
-                        itemsToAdd: new List<Game>(),
-                        itemsToUpdate: new List<Game>() { args.Game },
-                        itemsToRemove: new List<Game>()
-                );
+                try
+                {
+                    await GameSessionService.OpenSession(args.Game.Id.ToString(), DateTime.UtcNow);
+                    await LibExporter.RunLibrarySyncAsync(
+                            itemsToAdd: new List<Game>(),
+                            itemsToUpdate: new List<Game>() { args.Game },
+                            itemsToRemove: new List<Game>()
+                    );
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to sync started game in Playnite Insights Exporter.");
+                }
             });
         }
 
@@ -126,29 +144,44 @@ namespace PlayniteInsightsExporter
             }
             _ = Task.Run(async () =>
             {
-                var now = DateTime.UtcNow;
-                await GameSessionService.CloseSession(args.Game.Id.ToString(), args.ElapsedSeconds, now);
-                await LibExporter.RunLibrarySyncAsync(
-                    itemsToAdd: new List<Game>(),
-                    itemsToUpdate: new List<Game>() { args.Game },
-                    itemsToRemove: new List<Game>()
-                );
+                try
+                {
+                    var now = DateTime.UtcNow;
+                    await GameSessionService.CloseSession(args.Game.Id.ToString(), args.ElapsedSeconds, now);
+                    await LibExporter.RunLibrarySyncAsync(
+                        itemsToAdd: new List<Game>(),
+                        itemsToUpdate: new List<Game>() { args.Game },
+                        itemsToRemove: new List<Game>()
+                    );
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to sync stopped game in Playnite Insights Exporter.");
+                }
             });
         }
 
         public override void OnGameUninstalled(OnGameUninstalledEventArgs args)
         {
-            if (args.Game != null)
+            if (args == null || args.Game == null)
             {
-                _ = Task.Run(async () =>
+                return;
+            }
+            _ = Task.Run(async () =>
+            {
+                try
                 {
                     await LibExporter.RunLibrarySyncAsync(
                         itemsToAdd: new List<Game>(),
                         itemsToUpdate: new List<Game>() { args.Game },
                         itemsToRemove: new List<Game>()
                     );
-                });
-            }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to sync uninstalled game in Playnite Insights Exporter.");
+                }
+            });
         }
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
@@ -160,36 +193,68 @@ namespace PlayniteInsightsExporter
         {
             // Add code to be executed when Playnite is shutting down.
             PlayniteApi.Database.Games.ItemCollectionChanged -= OnItemCollectionChanged;
-            //PlayniteApi.Database.Games.ItemUpdated -= OnItemUpdated;
         }
 
         public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
-            bool libSyncResult = false;
-            if (Settings?.Settings?.EnableLibrarySyncOnUpdate == true)
-            {
-                libSyncResult = LibExporter.RunLibrarySync();
-                if (libSyncResult == false)
+            bool isServerHealthy = ProgressService.ActivateGlobalProgress(
+                "Checking Playnite Insights Web Server health...",
+                false,
+                async (progress) =>
                 {
-                    var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-                    PlayniteApi.Notifications.Add(
-                        new NotificationMessage(
-                            $"{Name} Error",
-                            $"{loc_failed_syncClientServer}",
-                            NotificationType.Error)
-                        );
+                    progress.IsIndeterminate = true;
+                    return await WebServerService.IsHealthy();
                 }
+            );
+            if (isServerHealthy == false)
+            {
+                var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+                PlayniteApi.Notifications.Add(
+                    new NotificationMessage(
+                        $"{Name} Error",
+                        $"{loc_failed_syncClientServer}",
+                        NotificationType.Error)
+                    );
+                return;
             }
-            if (Settings?.Settings?.EnableMediaFilesSyncOnUpdate == true && libSyncResult == true)
+            if (Settings?.Settings?.EnableLibrarySyncOnUpdate == true)
             {
                 _ = Task.Run(async () =>
                 {
-                    await LibExporter.RunMediaFilesSyncAsync();
+                    try
+                    {
+                        await LibExporter.RunLibrarySyncAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, "Failed to sync library in Playnite Insights Exporter.");
+                    }
+                });
+            }
+            if (Settings?.Settings?.EnableMediaFilesSyncOnUpdate == true)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await LibExporter.RunMediaFilesSyncAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Error(ex, "Failed to sync media files in Playnite Insights Exporter.");
+                    }
                 });
             }
             _ = Task.Run(async () =>
             {
-                await GameSessionService.SyncAsync(DateTime.UtcNow);
+                try
+                {
+                    await GameSessionService.SyncAsync(DateTime.UtcNow);
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to sync game sessions in Playnite Insights Exporter.");
+                }
             });
         }
 
@@ -215,9 +280,12 @@ namespace PlayniteInsightsExporter
                 Action = (_args) =>
                 {
                     var games = _args.Games;
-                    var libSyncResult = LibExporter.RunGameListSync(games);
-                    var mediaSyncResult = LibExporter.RunMediaFilesSync(games);
-                    if (libSyncResult == false || mediaSyncResult == false)
+                    if (!LibExporter.RunGameListSync(games))
+                    {
+                        PlayniteApi.Dialogs.ShowErrorMessage(loc_failed_syncClientServer, Name);
+                        return;
+                    }
+                    if (!LibExporter.RunMediaFilesSync(games))
                     {
                         PlayniteApi.Dialogs.ShowErrorMessage(loc_failed_syncClientServer, Name);
                         return;

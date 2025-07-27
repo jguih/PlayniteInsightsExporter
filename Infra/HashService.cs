@@ -23,12 +23,30 @@ namespace Infra
 
         public string HashFolderContents(string dir)
         {
+            if(string.IsNullOrEmpty(dir))
+            {
+                Logger.Warn("Attempted to create hash for null or empty directory path.");
+                return string.Empty;
+            }
+
             try
             {
+                if (!Directory.Exists(dir))
+                {
+                    Logger.Warn($"Attempted to create hash for non-existent game media folder: {dir}. Ignore this warning if this game does not contain any media files");
+                    return string.Empty;
+                }
+
                 var files = Directory.GetFiles(dir)
                     .Select(Path.GetFileName)
                     .OrderBy(n => n, StringComparer.Ordinal)
                     .ToList();
+
+                if (!files.Any())
+                {
+                    Logger.Warn($"No files found in game media directory: {dir}. Returning empty hash.");
+                    return string.Empty;
+                }
 
                 using (var sha256 = SHA256.Create())
                 {

@@ -13,5 +13,6 @@ namespace Core.Models
         public const string SyncManifest = "/api/sync/manifest";
         public const string OpenSession = "/api/session/open";
         public const string CloseSession = "/api/session/close";
+        public const string HealthCheck = "/api/health";
     }
 }

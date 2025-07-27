@@ -13,5 +13,6 @@ namespace Core
         Task<bool> Post(string endpoint, HttpContent content);
         Task<bool> PostJson(string endpoint, object data);
         Task<PlayniteLibraryManifest> GetManifestAsync();
+        Task<bool> IsHealthy();
     }
 }

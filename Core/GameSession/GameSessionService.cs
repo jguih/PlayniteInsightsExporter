@@ -202,7 +202,7 @@ namespace Core
 
         public async Task<bool> SyncAsync(DateTime now)
         {
-            Logger.Debug("Syncing remaining sessions with web app.");
+            Logger.Debug("Syncing remaining sessions.");
             try
             {
                 var pattern = $"*{Config.SESSION_FILE_EXTENSION}";
@@ -227,7 +227,7 @@ namespace Core
                     if (session.Status == GameSession.STATUS_CLOSED)
                     {
                         var result = await SendCloseSessionAsync(session);
-                        if (result)
+                        if (result == true)
                         {
                             Fs.FileDelete(file);
                             Logger.Info(file + " deleted after successful sync.");
@@ -246,7 +246,7 @@ namespace Core
                     if (session.Status == GameSession.STATUS_STALE)
                     {
                         var result = await SendCloseSessionAsync(session);
-                        if (result)
+                        if (result == true)
                         {
                             Fs.FileDelete(file);
                             Logger.Info(file + " deleted after successful sync.");
@@ -265,7 +265,7 @@ namespace Core
                     Logger.Warn($"Session {session.SessionId} has an unknown status '{session.Status}' and will be deleted.");
                     Fs.FileDelete(file);
                 }
-                Logger.Info("Sessions sync completed successfully.");
+                Logger.Info("Sessions sync completed.");
                 return true;
             }
             catch (Exception ex)

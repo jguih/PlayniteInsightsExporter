@@ -103,5 +103,28 @@ namespace Infra
                 return null;
             }
         }
+
+        public async Task<bool> IsHealthy()
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                using (var request = new HttpRequestMessage(
+                    HttpMethod.Get, 
+                    GetWebAppURL(WebAppEndpoints.HealthCheck)
+                )) {
+                    request.Headers.Add("Origin", GetWebAppURL());
+                    request.Headers.Add("Referer", GetWebAppURL());
+                    var response = await client.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+                    return true;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Error(e, "Health check failed");
+                return false;
+            }
+        }
     }
 }

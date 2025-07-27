@@ -112,9 +112,14 @@ namespace PlayniteInsightsExporter
         {
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
-            var libSyncResult = LibExporter.RunLibrarySync();
-            var mediaSyncResult = LibExporter.RunMediaFilesSync();
-            if (libSyncResult == false || mediaSyncResult == false)
+            if (!LibExporter.RunLibrarySync())
+            {
+                PlayniteApi.Dialogs.ShowErrorMessage(
+                        loc_failed_syncClientServer, 
+                        Plugin.Name);
+                return;
+            }
+            if (!LibExporter.RunMediaFilesSync())
             {
                 PlayniteApi.Dialogs.ShowErrorMessage(
                         loc_failed_syncClientServer, 
