@@ -171,7 +171,7 @@ public class GameSessionServiceTests
         WebServiceMock
             .Verify(ws => ws.PostJson(
                 WebAppEndpoints.OpenSession,
-                It.Is<GameSession>(gs => gs.GameId == gameId)
+                It.Is<OpenSessionCommand>(gs => gs.GameId == gameId)
             ), Times.Once);
     }
 
@@ -190,7 +190,7 @@ public class GameSessionServiceTests
         var result = await SessionsService.CloseSession(gameId, duration, now);
         // Assert
         Assert.False(result);
-        WebServiceMock.Verify(ws => ws.PostJson(WebAppEndpoints.CloseSession, It.IsAny<object>()), Times.Never);
+        WebServiceMock.Verify(ws => ws.PostJson(WebAppEndpoints.CloseSession, It.Is<CloseSessionCommand>(s => s.GameId == gameId)), Times.Never);
     }
 
     [Fact]

@@ -61,7 +61,10 @@
     <Compile Include="IPlayniteInsightsWebServerService.cs" />
     <Compile Include="LibExporter\ILibExporter.cs" />
     <Compile Include="LibExporter\LibExporter.cs" />
+    <Compile Include="Models\BaseCommand.cs" />
+    <Compile Include="Models\CloseSessionCommand.cs" />
     <Compile Include="Models\GameSession.cs" />
+    <Compile Include="Models\OpenSessionCommand.cs" />
     <Compile Include="Models\PlayniteGameDTO.cs" />
     <Compile Include="Models\PlayniteLibraryManifest.cs" />
     <Compile Include="Models\SyncGameListCommand.cs" />
