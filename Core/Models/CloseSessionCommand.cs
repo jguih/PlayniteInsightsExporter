@@ -19,7 +19,7 @@ namespace Core.Models
 
         public static CloseSessionCommand FromSession(GameSession session)
         {
-            if (session == null || !session.IsValidClosedSession())
+            if (session == null)
             {
                 return null;
             }

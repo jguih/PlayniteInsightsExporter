@@ -1,2 +1,2 @@
 .\build.ps1
-~\AppData\Local\Playnite\Toolbox.exe pack ".\Extension\bin\Debug\" ".\Dist"
+~\AppData\Local\Playnite\Toolbox.exe pack ".\Extension\bin\Debug\" "Y:\PlayniteInsightsExporter\Dist"
