@@ -8,7 +8,13 @@ namespace Core
 {
     public interface IPlayniteInsightsExporterContext
     {
-        string CtxGetExtensionDataFolderPath();
-        string CtxGetWebServerURL();
+        string GetExtensionDataFolderPath();
+        string GetWebServerURL();
+        /// <summary>
+        /// Gets the ShareX executable path
+        /// </summary>
+        /// <exception cref="InvalidOperationException">When ShareX executable path is null or empty</exception>
+        /// <returns>ShareX executable path</returns>
+        string GetShareXExePath();
     }
 }

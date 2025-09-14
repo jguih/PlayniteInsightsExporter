@@ -59,6 +59,7 @@
     <Compile Include="IPlayniteProgressService.cs" />
     <Compile Include="IPlayniteInsightsExporterContext.cs" />
     <Compile Include="IPlayniteInsightsWebServerService.cs" />
+    <Compile Include="IShareXService.cs" />
     <Compile Include="LibExporter\ILibExporter.cs" />
     <Compile Include="LibExporter\LibExporter.cs" />
     <Compile Include="Models\BaseCommand.cs" />
@@ -72,6 +73,8 @@
     <Compile Include="Models\WebAppEndpoints.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="GameSession\IGameSessionService.cs" />
+    <Compile Include="Screencapture\IScreenCaptureService.cs" />
+    <Compile Include="Screencapture\ScreenCaptureService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -295,14 +295,22 @@ namespace PlayniteInsightsExporter
             };
         }
 
-        public string CtxGetExtensionDataFolderPath()
+        public string GetExtensionDataFolderPath()
         {
             return GetPluginUserDataPath();
         }
 
-        public string CtxGetWebServerURL()
+        public string GetWebServerURL()
         {
             return Settings?.Settings?.WebAppURL ?? string.Empty;
+        }
+
+        public string GetShareXExePath()
+        {
+            var path = Settings?.Settings?.ShareXExePath ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(path))
+                throw new InvalidOperationException("ShareX executable path is not set in settings.");
+            return path;
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Core;
+using Core.Screencapture;
 using Infra;
 using Playnite.SDK;
 using PlayniteInsightsExporter.Lib.Logger;
@@ -21,6 +22,7 @@ namespace PlayniteInsightsExporter.Lib
         public IGameSessionService GameSessionService { get; }
         public IPlayniteProgressService ProgressService { get; }
         public IPlayniteGameRepository GameRepository { get; }
+        public IScreenCaptureService ScreenCaptureService { get; }
 
         public ServiceLocator(
             PlayniteInsightsExporter plugin, 
@@ -32,6 +34,7 @@ namespace PlayniteInsightsExporter.Lib
             {
                 SESSIONS_DIR_PATH = Path.Combine(plugin.GetPluginUserDataPath(), "sessions"),
             };
+            var shareXService = new ShareXService(plugin);
 
             AppLogger = new PlayniteLogger(logger);
             ProgressService = new PlayniteProgressService(plugin.PlayniteApi, AppLogger);
@@ -55,6 +58,7 @@ namespace PlayniteInsightsExporter.Lib
                 FileSystemService,
                 gameSessionConfig,
                 ProgressService);
+            ScreenCaptureService = new ScreenCaptureService(shareXService);
         }
     }
 }

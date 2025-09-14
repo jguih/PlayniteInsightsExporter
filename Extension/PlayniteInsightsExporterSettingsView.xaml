@@ -24,5 +24,26 @@
             Command="{Binding Settings.ExportLibraryButton}"
             Margin="0,0,0,12"
             HorizontalAlignment="Left"/>
+        <Button 
+            Content="Take Screenshot" 
+            Width="150" 
+            Command="{Binding Settings.TakeScreenshot}"
+            Margin="0,0,0,12"
+            HorizontalAlignment="Left"/>
+        <StackPanel>
+            <TextBlock Text="ShareX executable path" Margin="0,0,0,12"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                <TextBox 
+                    x:Name="ExePathTextBox" 
+                    Width="300" 
+                    Text="{Binding Settings.ShareXExePath}"
+                />
+                <Button 
+                    Content="Browse..." 
+                    Command="{Binding Settings.BrowseShareXPath}" 
+                    Margin="5,0,0,0"
+                />
+            </StackPanel>
+        </StackPanel>
     </StackPanel>
 </UserControl>

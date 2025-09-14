@@ -1,4 +1,5 @@
 ﻿using Core;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using Playnite.SDK;
 using Playnite.SDK.Data;
@@ -22,6 +23,8 @@ namespace PlayniteInsightsExporter
         private string webAppURL = string.Empty;
         private bool enableLibrarySyncOnUpdate = true;
         private bool enableMediaFilesSyncOnUpdate = true;
+        private string shareXExePath = string.Empty;
+
         public string WebAppURL { get => webAppURL; set => SetValue(ref webAppURL, value); }
         public bool EnableLibrarySyncOnUpdate { 
             get => enableLibrarySyncOnUpdate; 
@@ -31,9 +34,18 @@ namespace PlayniteInsightsExporter
             get => enableMediaFilesSyncOnUpdate; 
             set => SetValue(ref enableMediaFilesSyncOnUpdate, value);
         }
+        public string ShareXExePath { 
+            get => shareXExePath; 
+            set => SetValue(ref shareXExePath, value); 
+        }
 
         [DontSerialize]
         public RelayCommand ExportLibraryButton { get; set; }
+        [DontSerialize]
+        public RelayCommand TakeScreenshot { get; set; }
+        [DontSerialize]
+        public RelayCommand BrowseShareXPath { get; set; }
+
     }
 
     public class PlayniteInsightsExporterSettingsViewModel : ObservableObject, ISettings
@@ -42,8 +54,7 @@ namespace PlayniteInsightsExporter
         private readonly IPlayniteAPI PlayniteApi;
         private PlayniteInsightsExporterSettings editingClone { get; set; }
         private PlayniteInsightsExporterSettings settings;
-        private readonly LibExporter LibExporter;
-        private readonly IPlayniteInsightsWebServerService WebServerService;
+        private readonly ServiceLocator ServiceLocator;
 
         public PlayniteInsightsExporterSettings Settings
         {
@@ -52,6 +63,8 @@ namespace PlayniteInsightsExporter
             {
                 settings = value;
                 settings.ExportLibraryButton = new RelayCommand(() => OnExportLibrary());
+                settings.TakeScreenshot = new RelayCommand(() => OnTakeScreenshot());
+                settings.BrowseShareXPath = new RelayCommand(() => OnBrowseShareXPath());
                 OnPropertyChanged();
             }
         }
@@ -74,9 +87,7 @@ namespace PlayniteInsightsExporter
             {
                 Settings = new PlayniteInsightsExporterSettings();
             }
-            var serviceLocalor = new ServiceLocator(plugin, Logger, Settings);
-            LibExporter = serviceLocalor.LibExporter;
-            WebServerService = serviceLocalor.WebServerService;
+            ServiceLocator = new ServiceLocator(plugin, Logger, Settings);
         }
 
         public void BeginEdit()
@@ -112,14 +123,14 @@ namespace PlayniteInsightsExporter
         {
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
-            if (!LibExporter.RunLibrarySync())
+            if (!ServiceLocator.LibExporter.RunLibrarySync())
             {
                 PlayniteApi.Dialogs.ShowErrorMessage(
                         loc_failed_syncClientServer, 
                         Plugin.Name);
                 return;
             }
-            if (!LibExporter.RunMediaFilesSync())
+            if (!ServiceLocator.LibExporter.RunMediaFilesSync())
             {
                 PlayniteApi.Dialogs.ShowErrorMessage(
                         loc_failed_syncClientServer, 
@@ -127,6 +138,33 @@ namespace PlayniteInsightsExporter
                 return;
             }
             PlayniteApi.Dialogs.ShowMessage(loc_success_syncClientServer);
+        }
+
+        public void OnTakeScreenshot()
+        {
+            try
+            {
+                ServiceLocator.ScreenCaptureService.TakeScreenshot();
+            }
+            catch (Exception) 
+            {
+                PlayniteApi.Dialogs.ShowErrorMessage("Failed to take screenshot", Plugin.Name);
+            }
+        }
+
+        public void OnBrowseShareXPath() 
+        {
+            var dialog = new OpenFileDialog
+            {
+                Filter = "Executable files (*.exe)|*.exe|All files (*.*)|*.*",
+                Title = "Select ShareX Executable"
+            };
+
+            bool? result = dialog.ShowDialog();
+            if (result == true)
+            {
+                Settings.ShareXExePath = dialog.FileName;
+            }
         }
     }
 }
