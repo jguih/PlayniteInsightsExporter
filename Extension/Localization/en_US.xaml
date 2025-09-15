@@ -13,6 +13,22 @@
     <sys:String x:Key="LOC_Label_EnableMediaFilesSyncOnUpdate">Sync library media files with server on library update</sys:String>
     <sys:String x:Key="LOC_Label_ManualSync">Run Manual Sync</sys:String>
     <sys:String x:Key="LOC_Label_MenuItem_ManualSync">Playnite Insights Manual Sync</sys:String>
+    <sys:String x:Key="LOC_Label_ShareX_Executable_Path">ShareX executable path</sys:String>
+    <sys:String x:Key="LOC_Label_PlayAtlasServer_PubKey_Path">PlayAtlas Server public key path</sys:String>
+    <sys:String x:Key="LOC_Label_Browse">Browse</sys:String>
+    <sys:String x:Key="LOC_Label_HttpServer_Port">Port: </sys:String>
+    <sys:String x:Key="LOC_Label_HttpServer_Start_On_App_Startup">Start Server on Application Startup</sys:String>
+    <sys:String x:Key="LOC_Label_HttpServer_Reserve_Port">Reserve Port</sys:String>
+    <sys:String x:Key="LOC_Label_HttpServer_Start_Server">Start Server</sys:String>
+    <sys:String x:Key="LOC_Label_HttpServer_Stop_Server">Stop Server</sys:String>
+    <sys:String x:Key="LOC_Label_HttpServer_Server_Is_Running_Status_Text">Server is running and listening on port {{port}}</sys:String>
+    <sys:String x:Key="LOC_Label_HttpServer_Server_Is_Not_Running_Status_Text">Server is not running</sys:String>
+    <sys:String x:Key="LOC_Label_HttpServer_Get_Pub_File_Command">Run this command in the Docker host to copy the server's public key file:</sys:String>
+
+    <!-- Failure -->
+    <sys:String x:Key="LOC_Label_HttpServer_Failed_To_Start">Failed to start HTTP server. The chosen port should be reserved for current user. Check extension logs.</sys:String>
+    <sys:String x:Key="LOC_Label_HttpServer_Failed_To_Stop">Failed to stop HTTP server. Check extension logs.</sys:String>
+    
     <!--Progress-->
     <sys:String x:Key="LOC_Progress_SyncingMediaFiles">Syncing media files {{current}} of {{total}}: {{gameName}}</sys:String>
 </ResourceDictionary>

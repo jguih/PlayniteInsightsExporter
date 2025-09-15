@@ -23,11 +23,11 @@ namespace PlayniteInsightsExporter.Lib
         public IPlayniteProgressService ProgressService { get; }
         public IPlayniteGameRepository GameRepository { get; }
         public IScreenCaptureService ScreenCaptureService { get; }
+        public HttpServer HttpServer { get; }
 
         public ServiceLocator(
             PlayniteInsightsExporter plugin, 
-            ILogger logger,
-            PlayniteInsightsExporterSettings settings
+            ILogger logger
         ) {
             var libDir = Path.Combine(plugin.PlayniteApi.Paths.ConfigurationPath, "library", "files");
             var gameSessionConfig = new GameSessionConfig
@@ -59,6 +59,7 @@ namespace PlayniteInsightsExporter.Lib
                 gameSessionConfig,
                 ProgressService);
             ScreenCaptureService = new ScreenCaptureService(shareXService);
+            HttpServer = new HttpServer(plugin);
         }
     }
 }

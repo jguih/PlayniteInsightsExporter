@@ -16,5 +16,7 @@ namespace Core
         /// <exception cref="InvalidOperationException">When ShareX executable path is null or empty</exception>
         /// <returns>ShareX executable path</returns>
         string GetShareXExePath();
+        string GetWebServerPublicKeyPath();
+        string GetHttpServerPort();
     }
 }
