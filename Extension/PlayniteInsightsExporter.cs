@@ -22,7 +22,7 @@ namespace PlayniteInsightsExporter
         private static readonly ILogger logger = LogManager.GetLogger();
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
         private readonly ServiceLocator locator;
-        public readonly string Name = "Playnite Insights Exporter";
+        public readonly string Name = "PlayAtlas Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
 
         public PlayniteInsightsExporter(IPlayniteAPI api) : base(api)
