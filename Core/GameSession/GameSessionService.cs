@@ -48,16 +48,18 @@ namespace Core
 
         private async Task<bool> SendOpenSessionAsync(GameSession session)
         {
+            var command = OpenSessionCommand.FromSession(session);
             return await WebAppService.PostJson(
                 WebAppEndpoints.OpenSession,
-                session);
+                command);
         }
 
         private async Task<bool> SendCloseSessionAsync(GameSession session)
         {
+            var command = CloseSessionCommand.FromSession(session);
             return await WebAppService.PostJson(
                 WebAppEndpoints.CloseSession,
-                session);
+                command);
         }
 
         private bool ShouldClose(DateTime now, GameSession session)

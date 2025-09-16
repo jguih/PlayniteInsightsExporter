@@ -25,7 +25,7 @@ namespace Infra
 
         private string GetWebAppURL(string endpoint = "")
         {
-            var webAppUrl = PluginCtx.CtxGetWebServerURL();
+            var webAppUrl = PluginCtx.GetWebServerURL();
             if (string.IsNullOrEmpty(webAppUrl))
             {
                 throw new InvalidOperationException("Playnite Insights Web Server URL must not be empty.");

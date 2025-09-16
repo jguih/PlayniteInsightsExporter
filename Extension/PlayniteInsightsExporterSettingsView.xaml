@@ -4,25 +4,143 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="400" d:DesignWidth="600">
-    <StackPanel Margin="12">
-        <StackPanel Margin="0,0,0,12">
-            <TextBlock Text="{DynamicResource LOC_Label_WebServerURL}" Margin="0,0,0,12"/>
-            <TextBox Text="{Binding Settings.WebAppURL}"/>
-        </StackPanel>
-        <StackPanel Margin="0,0,0,12">
-            <CheckBox Content="{DynamicResource LOC_Label_EnableLibrarySyncOnUpdate}"
+             d:DesignHeight="400" d:DesignWidth="600"
+             xmlns:converters="clr-namespace:PlayniteInsightsExporter.Lib.Converters">
+
+    <UserControl.Resources>
+        <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+    </UserControl.Resources>
+
+    <TabControl>
+        <TabItem Header="General">
+            <StackPanel Margin="12">
+                <StackPanel Margin="0,0,0,12">
+                    <TextBlock Text="{DynamicResource LOC_Label_WebServerURL}" Margin="0,0,0,12"/>
+                    <TextBox Text="{Binding Settings.WebAppURL}"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,0,12">
+                    <CheckBox Content="{DynamicResource LOC_Label_EnableLibrarySyncOnUpdate}"
                   IsChecked="{Binding Settings.EnableLibrarySyncOnUpdate}" />
-        </StackPanel>
-        <StackPanel Margin="0,0,0,12">
-            <CheckBox Content="{DynamicResource LOC_Label_EnableMediaFilesSyncOnUpdate}"
-          IsChecked="{Binding Settings.EnableMediaFilesSyncOnUpdate}" />
-        </StackPanel>
-        <Button 
-            Content="{DynamicResource LOC_Label_ManualSync}" 
-            Width="150" 
-            Command="{Binding Settings.ExportLibraryButton}"
-            Margin="0,0,0,12"
-            HorizontalAlignment="Left"/>
-    </StackPanel>
+                </StackPanel>
+                <StackPanel Margin="0,0,0,12">
+                    <CheckBox 
+                        Content="{DynamicResource LOC_Label_EnableMediaFilesSyncOnUpdate}"
+                        IsChecked="{Binding Settings.EnableMediaFilesSyncOnUpdate}" 
+                    />
+                </StackPanel>
+                <Button 
+                    Content="{DynamicResource LOC_Label_ManualSync}" 
+                    Width="150" 
+                    Command="{Binding Settings.ExportLibraryButton}"
+                    Margin="0,0,0,12"
+                    HorizontalAlignment="Left"/>
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource LOC_Label_ShareX_Executable_Path}" Margin="0,0,0,12"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                        <TextBox 
+                            x:Name="ExePathTextBox" 
+                            Width="300" 
+                            Text="{Binding Settings.ShareXExePath}"
+                        />
+                        <Button 
+                            Content="{DynamicResource LOC_Label_Browse}" 
+                            Command="{Binding Settings.BrowseShareXPath}" 
+                            Margin="5,0,0,0"
+                        />
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </TabItem>
+
+        <TabItem Header="HTTP Server">
+            <StackPanel Margin="12">
+                <StackPanel Margin="0,0,0,12">
+                    <CheckBox 
+                         Content="{DynamicResource LOC_Label_HttpServer_Start_On_App_Startup}"
+                         IsChecked="{Binding Settings.HttpServerStartOnStartUp}" 
+                    />
+                </StackPanel>
+                <StackPanel Margin="0,0,0,12" Orientation="Horizontal">
+                    <TextBlock Text="{DynamicResource LOC_Label_HttpServer_Port}" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding Settings.HttpServerPort}" Width="100"/>
+                </StackPanel>
+                <Button 
+                    Content="{DynamicResource LOC_Label_HttpServer_Reserve_Port}" 
+                    Width="150" 
+                    Command="{Binding Settings.HttpServerReservePort}"
+                    Margin="0,0,0,12"
+                    HorizontalAlignment="Left"
+                    IsEnabled="{Binding HttpServerRunning, Converter={StaticResource InverseBooleanConverter}}"
+                />
+                
+                <StackPanel Margin="0,0,0,12">
+                    <TextBlock FontWeight="Bold" Text="Important Notes:" Margin="0,0,0,6"/>
+                    <TextBlock Text="• Reserving the chosen port is required." TextWrapping="Wrap"/>
+                    <TextBlock Text="• The above button will run a command that reserves the chosen port." TextWrapping="Wrap"/>
+                    <TextBlock Text="• The command requires admin privileges and will prompt you." TextWrapping="Wrap"/>
+                    <TextBlock Text="• Privileges only last until the command exits." TextWrapping="Wrap"/>
+                    <TextBlock Text="• If you’re not comfortable granting privileges, you may reserve the chosen port manually by running in PowerShell:" TextWrapping="Wrap"/>
+                </StackPanel>
+                <TextBox Text="netsh http add urlacl url=http://+:YourChosenPort/ user=YourWindowsUsername"
+                     IsReadOnly="True"
+                     Margin="0,0,0,12"/>
+                
+                <StackPanel Margin="0,0,0,12">
+                    <TextBlock Text="• This extension does not manage or track your existing reservations. If you later stop using a reserved port, it is recommended to remove the reservation manually using:" TextWrapping="Wrap"/>
+                </StackPanel>
+                <TextBox Text="netsh http delete urlacl url=http://+:YourChosenPort/"
+                         IsReadOnly="True"
+                         Margin="0,0,0,12"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,12" >
+                    <Button 
+                        Content="{DynamicResource LOC_Label_HttpServer_Start_Server}" 
+                        Width="150" 
+                        Command="{Binding Settings.HttpServerStart}"
+                        Margin="0,0,12,0"
+                        IsEnabled="{Binding HttpServerRunning, Converter={StaticResource InverseBooleanConverter}}"
+                    />
+                    <Button 
+                        Content="{DynamicResource LOC_Label_HttpServer_Stop_Server}" 
+                        Width="150" 
+                        Command="{Binding Settings.HttpServerStop}"
+                        Margin="0,0,0,0"
+                        IsEnabled="{Binding HttpServerRunning}"
+                    />
+                </StackPanel>
+
+                <TextBlock Text="{Binding HttpServerStatusText}" Margin="0,0,0,0" VerticalAlignment="Center"/>
+                
+                <Separator Margin="0,12,0,12"/>
+
+                <StackPanel Margin="0,0,0,12">
+                    <TextBlock FontWeight="Bold" Text="Important Notes:" Margin="0,0,0,6"/>
+                    <TextBlock Text="• Make sure your computer's firewall allows traffic through the chosen port." TextWrapping="Wrap"/>
+                    <TextBlock Text="• Only your PlayAtlas server can communicate with this extension, since it must prove ownership of the private key." TextWrapping="Wrap"/>
+                    <TextBlock Text="• Opening a firewall port always carries some risk, but the above security measure reduces the chance of attackers reaching your Playnite library." TextWrapping="Wrap" />        
+                </StackPanel>
+
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource LOC_Label_PlayAtlasServer_PubKey_Path}" Margin="0,0,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,12">
+                        <TextBox
+                            Width="300" 
+                            Text="{Binding Settings.PlayAtlasServerPubKeyPath}"
+                        />
+                        <Button 
+                            Content="{DynamicResource LOC_Label_Browse}" 
+                            Command="{Binding Settings.BrowsePlayAtlasServerPubKey}" 
+                            Margin="12,0,0,0"
+                        />
+                    </StackPanel>
+                    <TextBlock Text="{DynamicResource LOC_Label_HttpServer_Get_Pub_File_Command}" Margin="0,0,0,12" />
+                    <TextBox 
+                             Text="docker cp play-atlas:/app/data/security/keys/public-key.der ."
+                             IsReadOnly="True"
+                             Margin="0,0,12,0"
+                    />
+                </StackPanel>
+            </StackPanel>
+        </TabItem>
+    </TabControl>
 </UserControl>

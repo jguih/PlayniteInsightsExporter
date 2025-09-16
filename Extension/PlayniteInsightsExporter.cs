@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using System.Windows.Shapes;
 
 namespace PlayniteInsightsExporter
 {
@@ -20,30 +21,18 @@ namespace PlayniteInsightsExporter
     {
         private static readonly ILogger logger = LogManager.GetLogger();
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
-        private readonly LibExporter LibExporter;
-        private readonly IGameSessionService GameSessionService;
-        private readonly IPlayniteProgressService ProgressService;
-        private readonly IPlayniteInsightsWebServerService WebServerService;
-        public readonly string Name = "Playnite Insights Exporter";
+        private readonly ServiceLocator locator;
+        public readonly string Name = "PlayAtlas Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
 
         public PlayniteInsightsExporter(IPlayniteAPI api) : base(api)
         {
-            Settings = new PlayniteInsightsExporterSettingsViewModel(this, logger);
+            locator = new ServiceLocator(this, logger);
+            Settings = new PlayniteInsightsExporterSettingsViewModel(this, logger, locator);
             Properties = new GenericPluginProperties
             {
                 HasSettings = true
             };
-
-            var locator = new ServiceLocator(
-                this,
-                logger,
-                Settings.Settings);
-            LibExporter = locator.LibExporter;
-            GameSessionService = locator.GameSessionService;
-            ProgressService = locator.ProgressService;
-            WebServerService = locator.WebServerService;
-
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
         }
 
@@ -55,12 +44,12 @@ namespace PlayniteInsightsExporter
                 {
                     try
                     {
-                        var syncResult = await LibExporter.RunLibrarySyncAsync(
+                        var syncResult = await locator.LibExporter.RunLibrarySyncAsync(
                             itemsToAdd: e.AddedItems,
                             itemsToUpdate: new List<Game>(),
                             itemsToRemove: new List<Game>());
                         if (syncResult == true)
-                            await LibExporter.RunMediaFilesSyncAsync(e.AddedItems);
+                            await locator.LibExporter.RunMediaFilesSyncAsync(e.AddedItems);
                     }
                     catch (Exception ex)
                     {
@@ -71,7 +60,7 @@ namespace PlayniteInsightsExporter
                 {
                     try
                     {
-                        await LibExporter.RunLibrarySyncAsync(
+                        await locator.LibExporter.RunLibrarySyncAsync(
                             itemsToAdd: new List<Game>(),
                             itemsToUpdate: new List<Game>(),
                             itemsToRemove: e.RemovedItems);
@@ -94,7 +83,7 @@ namespace PlayniteInsightsExporter
             {
                 try
                 {
-                    await LibExporter.RunLibrarySyncAsync(
+                    await locator.LibExporter.RunLibrarySyncAsync(
                         itemsToAdd: new List<Game>(),
                         itemsToUpdate: new List<Game>() { args.Game },
                         itemsToRemove: new List<Game>()
@@ -117,8 +106,8 @@ namespace PlayniteInsightsExporter
             {
                 try
                 {
-                    await GameSessionService.OpenSession(args.Game.Id.ToString(), DateTime.UtcNow);
-                    await LibExporter.RunLibrarySyncAsync(
+                    await locator.GameSessionService.OpenSession(args.Game.Id.ToString(), DateTime.UtcNow);
+                    await locator.LibExporter.RunLibrarySyncAsync(
                             itemsToAdd: new List<Game>(),
                             itemsToUpdate: new List<Game>() { args.Game },
                             itemsToRemove: new List<Game>()
@@ -147,8 +136,8 @@ namespace PlayniteInsightsExporter
                 try
                 {
                     var now = DateTime.UtcNow;
-                    await GameSessionService.CloseSession(args.Game.Id.ToString(), args.ElapsedSeconds, now);
-                    await LibExporter.RunLibrarySyncAsync(
+                    await locator.GameSessionService.CloseSession(args.Game.Id.ToString(), args.ElapsedSeconds, now);
+                    await locator.LibExporter.RunLibrarySyncAsync(
                         itemsToAdd: new List<Game>(),
                         itemsToUpdate: new List<Game>() { args.Game },
                         itemsToRemove: new List<Game>()
@@ -171,7 +160,7 @@ namespace PlayniteInsightsExporter
             {
                 try
                 {
-                    await LibExporter.RunLibrarySyncAsync(
+                    await locator.LibExporter.RunLibrarySyncAsync(
                         itemsToAdd: new List<Game>(),
                         itemsToUpdate: new List<Game>() { args.Game },
                         itemsToRemove: new List<Game>()
@@ -187,23 +176,52 @@ namespace PlayniteInsightsExporter
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
             // Add code to be executed when Playnite is started.
+            var shouldStartHttpServer = Settings?.Settings?.HttpServerStartOnStartUp ?? false;
+            if (shouldStartHttpServer)
+            {
+                try
+                {
+                    locator.HttpServer.Start();
+                }
+                catch (Exception)
+                {
+                    var LOC_Label_HttpServer_Failed_To_Start = ResourceProvider.GetString("LOC_Label_HttpServer_Failed_To_Start");
+                    PlayniteApi.Dialogs.ShowErrorMessage(
+                            LOC_Label_HttpServer_Failed_To_Start, Name);
+                }
+            }
         }
 
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
         {
             // Add code to be executed when Playnite is shutting down.
             PlayniteApi.Database.Games.ItemCollectionChanged -= OnItemCollectionChanged;
+            var shouldStopHttpServer = Settings?.HttpServerRunning ?? false;
+            if (shouldStopHttpServer)
+            {
+                try
+                {
+                    locator.HttpServer.Stop();
+                }
+                catch (Exception)
+                {
+                    var LOC_Label_HttpServer_Failed_To_Stop = ResourceProvider.GetString("LOC_Label_HttpServer_Failed_To_Stop");
+                    PlayniteApi.Dialogs.ShowErrorMessage(
+                        LOC_Label_HttpServer_Failed_To_Stop, Name);
+
+                }
+            }
         }
 
         public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
-            bool isServerHealthy = ProgressService.ActivateGlobalProgress(
+            bool isServerHealthy = locator.ProgressService.ActivateGlobalProgress(
                 "Checking Playnite Insights Web Server health...",
                 false,
                 async (progress) =>
                 {
                     progress.IsIndeterminate = true;
-                    return await WebServerService.IsHealthy();
+                    return await locator.WebServerService.IsHealthy();
                 }
             );
             if (isServerHealthy == false)
@@ -223,7 +241,7 @@ namespace PlayniteInsightsExporter
                 {
                     try
                     {
-                        await LibExporter.RunLibrarySyncAsync();
+                        await locator.LibExporter.RunLibrarySyncAsync();
                     }
                     catch (Exception ex)
                     {
@@ -237,7 +255,7 @@ namespace PlayniteInsightsExporter
                 {
                     try
                     {
-                        await LibExporter.RunMediaFilesSyncAsync();
+                        await locator.LibExporter.RunMediaFilesSyncAsync();
                     }
                     catch (Exception ex)
                     {
@@ -249,7 +267,7 @@ namespace PlayniteInsightsExporter
             {
                 try
                 {
-                    await GameSessionService.SyncAsync(DateTime.UtcNow);
+                    await locator.GameSessionService.SyncAsync(DateTime.UtcNow);
                 }
                 catch (Exception ex)
                 {
@@ -280,12 +298,12 @@ namespace PlayniteInsightsExporter
                 Action = (_args) =>
                 {
                     var games = _args.Games;
-                    if (!LibExporter.RunGameListSync(games))
+                    if (!locator.LibExporter.RunGameListSync(games))
                     {
                         PlayniteApi.Dialogs.ShowErrorMessage(loc_failed_syncClientServer, Name);
                         return;
                     }
-                    if (!LibExporter.RunMediaFilesSync(games))
+                    if (!locator.LibExporter.RunMediaFilesSync(games))
                     {
                         PlayniteApi.Dialogs.ShowErrorMessage(loc_failed_syncClientServer, Name);
                         return;
@@ -295,14 +313,41 @@ namespace PlayniteInsightsExporter
             };
         }
 
-        public string CtxGetExtensionDataFolderPath()
+        public string GetExtensionDataFolderPath()
         {
             return GetPluginUserDataPath();
         }
 
-        public string CtxGetWebServerURL()
+        public string GetWebServerURL()
         {
-            return Settings?.Settings?.WebAppURL ?? string.Empty;
+            var url = Settings?.Settings?.WebAppURL ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(url))
+                throw new InvalidOperationException("PlayAtlas server URL is not set in settings.");
+            return url;
+        }
+
+        public string GetShareXExePath()
+        {
+            var path = Settings?.Settings?.ShareXExePath ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(path))
+                throw new InvalidOperationException("ShareX executable path is not set in settings.");
+            return path;
+        }
+
+        public string GetWebServerPublicKeyPath()
+        {
+            var path = Settings?.Settings?.PlayAtlasServerPubKeyPath ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(path))
+                throw new InvalidOperationException("PlayAtlas server public key path is not set in settings.");
+            return path;
+        }
+
+        public string GetHttpServerPort()
+        {
+            var path = Settings?.Settings?.HttpServerPort ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(path))
+                throw new InvalidOperationException("HTTP server port is not set in settings.");
+            return path;
         }
     }
 }

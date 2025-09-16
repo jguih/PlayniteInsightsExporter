@@ -1,4 +1,6 @@
 ﻿using Core;
+using Infra;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 using Playnite.SDK;
 using Playnite.SDK.Data;
@@ -22,18 +24,55 @@ namespace PlayniteInsightsExporter
         private string webAppURL = string.Empty;
         private bool enableLibrarySyncOnUpdate = true;
         private bool enableMediaFilesSyncOnUpdate = true;
+        private string shareXExePath = string.Empty;
+        private string httpServerPort = string.Empty;
+        private bool httpServerStartOnStartUp = false;
+        private string playAtlasServerPubKeyPath = string.Empty;
+
         public string WebAppURL { get => webAppURL; set => SetValue(ref webAppURL, value); }
-        public bool EnableLibrarySyncOnUpdate { 
-            get => enableLibrarySyncOnUpdate; 
-            set => SetValue(ref enableLibrarySyncOnUpdate, value); 
+        public bool EnableLibrarySyncOnUpdate
+        {
+            get => enableLibrarySyncOnUpdate;
+            set => SetValue(ref enableLibrarySyncOnUpdate, value);
         }
-        public bool EnableMediaFilesSyncOnUpdate { 
-            get => enableMediaFilesSyncOnUpdate; 
+        public bool EnableMediaFilesSyncOnUpdate
+        {
+            get => enableMediaFilesSyncOnUpdate;
             set => SetValue(ref enableMediaFilesSyncOnUpdate, value);
+        }
+        public string ShareXExePath
+        {
+            get => shareXExePath;
+            set => SetValue(ref shareXExePath, value);
+        }
+        public string HttpServerPort 
+        { 
+            get => httpServerPort; 
+            set => SetValue(ref httpServerPort, value); 
+        }
+        public bool HttpServerStartOnStartUp
+        {
+            get => httpServerStartOnStartUp;
+            set => SetValue(ref httpServerStartOnStartUp, value);
+        }
+        public string PlayAtlasServerPubKeyPath
+        {
+            get => playAtlasServerPubKeyPath;
+            set => SetValue(ref  playAtlasServerPubKeyPath, value);
         }
 
         [DontSerialize]
         public RelayCommand ExportLibraryButton { get; set; }
+        [DontSerialize]
+        public RelayCommand BrowseShareXPath { get; set; }
+        [DontSerialize]
+        public RelayCommand HttpServerReservePort { get; set; }
+        [DontSerialize]
+        public RelayCommand HttpServerStart { get; set; }
+        [DontSerialize]
+        public RelayCommand HttpServerStop { get; set; }
+        [DontSerialize]
+        public RelayCommand BrowsePlayAtlasServerPubKey { get; set; }
     }
 
     public class PlayniteInsightsExporterSettingsViewModel : ObservableObject, ISettings
@@ -42,8 +81,9 @@ namespace PlayniteInsightsExporter
         private readonly IPlayniteAPI PlayniteApi;
         private PlayniteInsightsExporterSettings editingClone { get; set; }
         private PlayniteInsightsExporterSettings settings;
-        private readonly LibExporter LibExporter;
-        private readonly IPlayniteInsightsWebServerService WebServerService;
+        private readonly ServiceLocator ServiceLocator;
+        private string httpServerStatusText = string.Empty;
+        private bool httpServerRunning = false;
 
         public PlayniteInsightsExporterSettings Settings
         {
@@ -52,13 +92,38 @@ namespace PlayniteInsightsExporter
             {
                 settings = value;
                 settings.ExportLibraryButton = new RelayCommand(() => OnExportLibrary());
+                settings.BrowseShareXPath = new RelayCommand(() => OnBrowseShareXPath());
+                settings.HttpServerReservePort = new RelayCommand(() => OnHttpServerReservePort());
+                settings.HttpServerStart = new RelayCommand(() => OnHttpServerStart());
+                settings.HttpServerStop = new RelayCommand(() => OnHttpServerStop());
+                settings.BrowsePlayAtlasServerPubKey = new RelayCommand(() => OnBrowsePlayAtlasServerPubKey());
                 OnPropertyChanged();
+            }
+        }
+        public string HttpServerStatusText
+        {
+            get => httpServerStatusText;
+            set
+            {
+                httpServerStatusText = value;
+                OnPropertyChanged(nameof(HttpServerStatusText));
+            }
+        }
+
+        public bool HttpServerRunning
+        {
+            get => httpServerRunning;
+            set
+            {
+                httpServerRunning = value;
+                OnPropertyChanged(nameof(HttpServerRunning));
             }
         }
 
         public PlayniteInsightsExporterSettingsViewModel(
             PlayniteInsightsExporter plugin,
-            ILogger Logger)
+            ILogger Logger,
+            ServiceLocator locator)
         {
             // Injecting your plugin instance is required for Save/Load method because Playnite saves data to a location based on what plugin requested the operation.
             this.Plugin = plugin;
@@ -74,9 +139,25 @@ namespace PlayniteInsightsExporter
             {
                 Settings = new PlayniteInsightsExporterSettings();
             }
-            var serviceLocalor = new ServiceLocator(plugin, Logger, Settings);
-            LibExporter = serviceLocalor.LibExporter;
-            WebServerService = serviceLocalor.WebServerService;
+
+            ServiceLocator = locator;
+
+            var httpServer = locator.HttpServer;
+            var port = Settings.HttpServerPort;
+            var LOC_Label_HttpServer_Server_Is_Running_Status_Text = ResourceProvider.GetString("LOC_Label_HttpServer_Server_Is_Running_Status_Text");
+            var LOC_Label_HttpServer_Server_Is_Not_Running_Status_Text = ResourceProvider.GetString("LOC_Label_HttpServer_Server_Is_Not_Running_Status_Text");
+            HttpServerStatusText = LOC_Label_HttpServer_Server_Is_Not_Running_Status_Text;
+            httpServer.OnStart(() =>
+            {
+                HttpServerStatusText = LOC_Label_HttpServer_Server_Is_Running_Status_Text
+                    .Replace("{{port}}", port);
+                HttpServerRunning = true;
+            });
+            httpServer.OnStop(() =>
+            {
+                HttpServerStatusText = LOC_Label_HttpServer_Server_Is_Not_Running_Status_Text;
+                HttpServerRunning = false;
+            });
         }
 
         public void BeginEdit()
@@ -112,21 +193,100 @@ namespace PlayniteInsightsExporter
         {
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
-            if (!LibExporter.RunLibrarySync())
+            if (!ServiceLocator.LibExporter.RunLibrarySync())
             {
                 PlayniteApi.Dialogs.ShowErrorMessage(
-                        loc_failed_syncClientServer, 
+                        loc_failed_syncClientServer,
                         Plugin.Name);
                 return;
             }
-            if (!LibExporter.RunMediaFilesSync())
+            if (!ServiceLocator.LibExporter.RunMediaFilesSync())
             {
                 PlayniteApi.Dialogs.ShowErrorMessage(
-                        loc_failed_syncClientServer, 
+                        loc_failed_syncClientServer,
                         Plugin.Name);
                 return;
             }
             PlayniteApi.Dialogs.ShowMessage(loc_success_syncClientServer);
+        }
+
+        public void OnBrowseShareXPath()
+        {
+            var dialog = new OpenFileDialog
+            {
+                Filter = "Executable files (*.exe)|*.exe|All files (*.*)|*.*",
+                Title = "Select ShareX Executable"
+            };
+
+            bool? result = dialog.ShowDialog();
+            if (result == true)
+            {
+                Settings.ShareXExePath = dialog.FileName;
+            }
+        }
+
+        public void OnHttpServerReservePort()
+        {
+            var port = Settings?.HttpServerPort;
+
+            if (string.IsNullOrWhiteSpace(port))
+            {
+                PlayniteApi.Dialogs.ShowErrorMessage("Please, choose a port to reserve");
+                return;
+            }
+
+            var prefix = HttpServer.GetPrefix(port);
+            var psi = new ProcessStartInfo("netsh", $"http add urlacl url={prefix} user={Environment.UserName}")
+            {
+                Verb = "runas", // prompts for elevation
+                CreateNoWindow = true,
+                UseShellExecute = true
+            };
+            Process.Start(psi)?.WaitForExit();
+        }
+
+        public void OnHttpServerStart()
+        {
+            if (HttpServerRunning) return;
+            try
+            {
+                ServiceLocator.HttpServer.Start();
+            } catch (Exception)
+            {
+                var LOC_Label_HttpServer_Failed_To_Start = ResourceProvider.GetString("LOC_Label_HttpServer_Failed_To_Start");
+                PlayniteApi.Dialogs.ShowErrorMessage(
+                        LOC_Label_HttpServer_Failed_To_Start, Plugin.Name);
+            }
+        }
+
+        public void OnHttpServerStop()
+        {
+            if (!HttpServerRunning) return;
+            try
+            {
+                ServiceLocator.HttpServer.Stop();
+            }
+            catch (Exception)
+            {
+                var LOC_Label_HttpServer_Failed_To_Stop = ResourceProvider.GetString("LOC_Label_HttpServer_Failed_To_Stop");
+                PlayniteApi.Dialogs.ShowErrorMessage(
+                    LOC_Label_HttpServer_Failed_To_Stop, Plugin.Name);
+            }
+        }
+
+        public void OnBrowsePlayAtlasServerPubKey()
+        {
+            var dialog = new OpenFileDialog
+            {
+                Filter = "DER files (*.der)|*.der",
+                Title = "Select PlayAtlas Server public key file"
+            };
+
+            bool? result = dialog.ShowDialog();
+            if (result == true)
+            {
+                Settings.PlayAtlasServerPubKeyPath = dialog.FileName;
+            }
         }
     }
 }
