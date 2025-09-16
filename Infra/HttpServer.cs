@@ -1,4 +1,7 @@
 ﻿using Core;
+using Core.Models;
+using Core.Screencapture;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,12 +18,107 @@ namespace Infra
     {
         private readonly HttpListener _listener = new HttpListener();
         private readonly IPlayniteInsightsExporterContext Context;
+        private readonly IAppLogger Logger;
+        private readonly IScreenCaptureService ScreenCaptureService;
         private readonly List<Action> OnStartListeners = new List<Action>();
         private readonly List<Action> OnStopListeners = new List<Action>();
 
-        public HttpServer (IPlayniteInsightsExporterContext context)
+        public HttpServer(
+            IPlayniteInsightsExporterContext context,
+            IAppLogger logger,
+            IScreenCaptureService screenCaptureService
+        )
         {
             Context = context;
+            Logger = logger;
+            ScreenCaptureService = screenCaptureService;
+        }
+
+        private void HandleRequest(HttpListenerContext context)
+        {
+            string body;
+            using (var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding))
+            {
+                body = reader.ReadToEnd();
+            }
+
+            // Get signature from header
+            string signatureBase64 = context.Request.Headers["X-Signature"];
+            if (string.IsNullOrEmpty(signatureBase64))
+            {
+                context.Response.StatusCode = 400;
+                context.Response.Close();
+                return;
+            }
+
+            byte[] signature;
+            byte[] payloadBytes;
+            try
+            {
+                signature = Convert.FromBase64String(signatureBase64);
+                payloadBytes = Encoding.UTF8.GetBytes(body);
+            } catch (Exception)
+            {
+                context.Response.StatusCode = 400;
+                context.Response.Close();
+                return;
+            }
+
+            byte[] publicKeyDer = File.ReadAllBytes(Context.GetWebServerPublicKeyPath());
+
+            if (!SignatureVerifier.Verify(payloadBytes, signature, publicKeyDer))
+            {
+                context.Response.StatusCode = 403;
+                context.Response.Close();
+                return;
+            }
+
+            // Signature verified
+
+            HttpServerPayload payload = null;
+            try
+            {
+                payload = JsonConvert.DeserializeObject<HttpServerPayload>(body);
+            }
+            catch (Exception)
+            {
+                context.Response.StatusCode = 400;
+                context.Response.Close();
+                return;
+            }
+
+            try
+            {
+                HandlePayload(payload, context);
+                return;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"Error handling payload");
+                context.Response.StatusCode = 500;
+                context.Response.Close();
+                return;
+            }
+        }
+
+        private void HandlePayload(HttpServerPayload payload, HttpListenerContext context)
+        {
+            switch (payload.Action)
+            {
+                case "screenshot":
+                    {
+                        ScreenCaptureService.TakeScreenshot();
+                        context.Response.StatusCode = 200;
+                        context.Response.Close();
+                        break;
+                    }
+                default:
+                    {
+                        context.Response.StatusCode = 400;
+                        context.Response.Close();
+                        break;
+                    }
+            }
         }
 
         public static string GetPrefix(string port)
@@ -41,7 +139,7 @@ namespace Infra
         public void Start()
         {
             var port = Context.GetHttpServerPort();
-            var prefix = $"http://+:{port}/";
+            var prefix = GetPrefix(port);
 
             _listener.Prefixes.Add(prefix);
             _listener.Start();
@@ -51,7 +149,16 @@ namespace Infra
                 while (_listener.IsListening)
                 {
                     var context = await _listener.GetContextAsync();
-                    HandleRequest(context);
+                    try
+                    {
+                        HandleRequest(context);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error(ex, "Error handling request");
+                        context.Response.StatusCode = 500;
+                        context.Response.Close();
+                    }
                 }
             });
 
@@ -59,41 +166,6 @@ namespace Infra
             {
                 action();
             }
-        }
-
-        private void HandleRequest(HttpListenerContext context)
-        {
-            string body;
-            using (var reader = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding))
-            {
-                body = reader.ReadToEnd();
-            }
-
-            // Get signature from header
-            string signatureBase64 = context.Request.Headers["X-Signature"];
-            if (string.IsNullOrEmpty(signatureBase64))
-            {
-                context.Response.StatusCode = 400;
-                context.Response.Close();
-                return;
-            }
-
-            byte[] signature = Convert.FromBase64String(signatureBase64);
-            byte[] payloadBytes = Encoding.UTF8.GetBytes(body);
-            byte[] publicKeyDer = File.ReadAllBytes(Context.GetWebServerPublicKeyPath());
-
-            if (!SignatureVerifier.Verify(payloadBytes, signature, publicKeyDer))
-            {
-                context.Response.StatusCode = 403;
-                context.Response.Close();
-                return;
-            }
-
-            // Signature verified
-
-            byte[] responseBytes = Encoding.UTF8.GetBytes("OK");
-            context.Response.OutputStream.Write(responseBytes, 0, responseBytes.Length);
-            context.Response.Close();
         }
 
         public void OnStart(Action action)

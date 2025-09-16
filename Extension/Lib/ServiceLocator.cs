@@ -59,7 +59,7 @@ namespace PlayniteInsightsExporter.Lib
                 gameSessionConfig,
                 ProgressService);
             ScreenCaptureService = new ScreenCaptureService(shareXService);
-            HttpServer = new HttpServer(plugin);
+            HttpServer = new HttpServer(plugin, AppLogger, ScreenCaptureService);
         }
     }
 }

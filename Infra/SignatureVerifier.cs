@@ -15,13 +15,19 @@ namespace Infra
     {
         public static bool Verify(byte[] data, byte[] signature, byte[] publicKeyDer)
         {
-            AsymmetricKeyParameter pubKey = PublicKeyFactory.CreateKey(publicKeyDer);
+            try
+            {
+                AsymmetricKeyParameter pubKey = PublicKeyFactory.CreateKey(publicKeyDer);
 
-            ISigner verifier = SignerUtilities.GetSigner("SHA256withRSA");
-            verifier.Init(false, pubKey);
-            verifier.BlockUpdate(data, 0, data.Length);
+                ISigner verifier = SignerUtilities.GetSigner("SHA256withRSA");
+                verifier.Init(false, pubKey);
+                verifier.BlockUpdate(data, 0, data.Length);
 
-            return verifier.VerifySignature(signature);
+                return verifier.VerifySignature(signature);
+            } catch (Exception)
+            {
+                return false;
+            }
         }
     }
 }
