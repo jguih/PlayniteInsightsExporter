@@ -24,6 +24,7 @@ namespace PlayniteInsightsExporter.Lib
         public IPlayniteGameRepository GameRepository { get; }
         public IScreenCaptureService ScreenCaptureService { get; }
         public HttpServer HttpServer { get; }
+        public KeyManager KeyManager { get; }
 
         public ServiceLocator(
             PlayniteInsightsExporter plugin, 
@@ -34,6 +35,7 @@ namespace PlayniteInsightsExporter.Lib
             {
                 SESSIONS_DIR_PATH = Path.Combine(plugin.GetPluginUserDataPath(), "sessions"),
             };
+            var securityDir = Path.Combine(plugin.GetPluginUserDataPath(), "security");
             var shareXService = new ShareXService(plugin);
 
             AppLogger = new PlayniteLogger(logger);
@@ -60,6 +62,7 @@ namespace PlayniteInsightsExporter.Lib
                 ProgressService);
             ScreenCaptureService = new ScreenCaptureService(shareXService);
             HttpServer = new HttpServer(plugin, AppLogger, ScreenCaptureService);
+            KeyManager = new KeyManager(plugin);
         }
     }
 }

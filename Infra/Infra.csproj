@@ -55,6 +55,7 @@
   <ItemGroup>
     <Compile Include="FileSystemService.cs" />
     <Compile Include="HashService.cs" />
+    <Compile Include="KeyManager.cs" />
     <Compile Include="PlayniteGameRepository.cs" />
     <Compile Include="PlayniteInsightsWebServerService.cs" />
     <Compile Include="PlayniteProgressService.cs" />

@@ -196,6 +196,13 @@ namespace PlayniteInsightsExporter
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
             // Add code to be executed when Playnite is started.
+            try
+            {
+                locator.KeyManager.GetOrCreateKeyPair();
+            } catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to create asymmetric key pair");
+            }
             var shouldStartHttpServer = Settings?.Settings?.HttpServerStartOnStartUp ?? false;
             if (shouldStartHttpServer)
             {
