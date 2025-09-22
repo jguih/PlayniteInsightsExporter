@@ -53,6 +53,16 @@ namespace PlayniteInsightsExporter
                     }
                     catch (Exception ex)
                     {
+                        PlayniteApi.MainView.UIDispatcher.Invoke(() =>
+                        {
+                            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+                            PlayniteApi.Notifications.Add(
+                                new NotificationMessage(
+                                    $"{Name} Error",
+                                    $"{loc_failed_syncClientServer}",
+                                    NotificationType.Error)
+                                );
+                        });
                         logger.Error(ex, "Failed to sync added items in Playnite Insights Exporter.");
                     }
                 }
@@ -67,6 +77,16 @@ namespace PlayniteInsightsExporter
                     }
                     catch (Exception ex)
                     {
+                        PlayniteApi.MainView.UIDispatcher.Invoke(() =>
+                        {
+                            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+                            PlayniteApi.Notifications.Add(
+                                new NotificationMessage(
+                                    $"{Name} Error",
+                                    $"{loc_failed_syncClientServer}",
+                                    NotificationType.Error)
+                                );
+                        });
                         logger.Error(ex, "Failed to sync removed items in Playnite Insights Exporter.");
                     }
                 }
@@ -215,26 +235,6 @@ namespace PlayniteInsightsExporter
 
         public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
-            bool isServerHealthy = locator.ProgressService.ActivateGlobalProgress(
-                "Checking Playnite Insights Web Server health...",
-                false,
-                async (progress) =>
-                {
-                    progress.IsIndeterminate = true;
-                    return await locator.WebServerService.IsHealthy();
-                }
-            );
-            if (isServerHealthy == false)
-            {
-                var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-                PlayniteApi.Notifications.Add(
-                    new NotificationMessage(
-                        $"{Name} Error",
-                        $"{loc_failed_syncClientServer}",
-                        NotificationType.Error)
-                    );
-                return;
-            }
             if (Settings?.Settings?.EnableLibrarySyncOnUpdate == true)
             {
                 _ = Task.Run(async () =>

@@ -25,6 +25,8 @@ namespace Core.Models
         public string CoverImage { get; set; }
         public string Icon { get; set; }
         public string Description { get; set; }
+        public bool Hidden { get; set; }
+        public CompletionStatus CompletionStatus { get; set; }
         public string ContentHash { get; set; }
 
         public PlayniteGameDTO() { }

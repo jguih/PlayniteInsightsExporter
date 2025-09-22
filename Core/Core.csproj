@@ -69,6 +69,7 @@
     <Compile Include="Models\OpenSessionCommand.cs" />
     <Compile Include="Models\PlayniteGameDTO.cs" />
     <Compile Include="Models\PlayniteLibraryManifest.cs" />
+    <Compile Include="Models\RegisterExtensionCommand.cs" />
     <Compile Include="Models\SyncGameListCommand.cs" />
     <Compile Include="Models\ValidationResult.cs" />
     <Compile Include="Models\WebAppEndpoints.cs" />

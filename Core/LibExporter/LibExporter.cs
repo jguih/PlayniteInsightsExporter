@@ -313,6 +313,8 @@ namespace Core
                 CoverImage = g.CoverImage,
                 Icon = g.Icon,
                 Description = g.Description,
+                Hidden = g.Hidden,
+                CompletionStatus = g.CompletionStatus,
                 ContentHash = hash
             };
         }

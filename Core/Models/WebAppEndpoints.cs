@@ -8,11 +8,12 @@ namespace Core.Models
 {
     public class WebAppEndpoints
     {
-        public const string SyncGames = "/api/sync/games";
-        public const string SyncFiles = "/api/sync/files";
-        public const string SyncManifest = "/api/sync/manifest";
-        public const string OpenSession = "/api/session/open";
-        public const string CloseSession = "/api/session/close";
-        public const string HealthCheck = "/api/health";
+        public const string SyncGames = "/api/extension/sync/games";
+        public const string SyncFiles = "/api/extension/sync/files";
+        public const string SyncManifest = "/api/extension/sync/manifest";
+        public const string OpenSession = "/api/extension/session/open";
+        public const string CloseSession = "/api/extension/session/close";
+        public const string HealthCheck = "/api/extension/health";
+        public const string Register = "/api/extension/register";
     }
 }
