@@ -23,7 +23,7 @@ namespace Infra
 
         public string HashFolderContents(string dir)
         {
-            if(string.IsNullOrEmpty(dir))
+            if (string.IsNullOrEmpty(dir))
             {
                 Logger.Warn("Attempted to create hash for null or empty directory path.");
                 return string.Empty;
@@ -160,5 +160,16 @@ namespace Infra
                 return string.Empty;
             }
         }
+
+        public string ComputeSHA256HashString(string input)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                var bytes = Encoding.UTF8.GetBytes(input);
+                var hash = sha256.ComputeHash(bytes);
+                return Convert.ToBase64String(hash);
+            }
+        }
     }
 }
+

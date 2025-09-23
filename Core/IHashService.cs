@@ -12,5 +12,6 @@ namespace Core
         string HashFolderContents(string dir);
         string GetHashFromPlayniteGame(Game game);
         string GetHashForGameSession(string gameId, DateTime startTime);
+        string ComputeSHA256HashString(string input);
     }
 }
