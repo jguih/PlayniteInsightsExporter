@@ -12,9 +12,9 @@ namespace Tests.Unit;
 public class GameSessionServiceTests
 {
     private Mock<IAppLogger> LoggerMock { get; }
-    private Mock<IPlayniteInsightsExporterContext> PluginCtxMock { get; }
+    private Mock<IPlayAtlasExporterContext> PluginCtxMock { get; }
     private Mock<IHashService> HashServiceMock { get; }
-    private Mock<IPlayniteInsightsWebServerService> WebServiceMock { get; }
+    private Mock<IPlayAtlasWebServerService> WebServiceMock { get; }
     private Mock<IFileSystemService> FileSystemMock { get; }
     private GameSessionService SessionsService { get; set; }
     private Mock<IPlayniteProgressService> ProgressService { get; set; }
@@ -22,9 +22,9 @@ public class GameSessionServiceTests
     public GameSessionServiceTests()
     {
         LoggerMock = new Mock<IAppLogger>();
-        PluginCtxMock = new Mock<IPlayniteInsightsExporterContext>();
+        PluginCtxMock = new Mock<IPlayAtlasExporterContext>();
         HashServiceMock = new Mock<IHashService>();
-        WebServiceMock = new Mock<IPlayniteInsightsWebServerService>();
+        WebServiceMock = new Mock<IPlayAtlasWebServerService>();
         FileSystemMock = new Mock<IFileSystemService>();
         var gameSessionConfig = new GameSessionConfig
         {

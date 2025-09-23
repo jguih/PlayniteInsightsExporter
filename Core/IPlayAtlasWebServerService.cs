@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Core
 {
-    public interface IPlayniteInsightsWebServerService
+    public interface IPlayAtlasWebServerService
     {
         Task<bool> Post(string endpoint, HttpContent content);
         Task<bool> PostJson(string endpoint, object data);

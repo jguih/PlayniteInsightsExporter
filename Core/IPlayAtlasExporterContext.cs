@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Core
 {
-    public interface IPlayniteInsightsExporterContext
+    public interface IPlayAtlasExporterContext
     {
         string GetExtensionDataFolderPath();
         string GetWebServerURL();
@@ -18,5 +18,7 @@ namespace Core
         string GetShareXExePath();
         string GetWebServerPublicKeyPath();
         string GetHttpServerPort();
+        string GetExtensionVersion();
+        string GetExtensionId();
     }
 }

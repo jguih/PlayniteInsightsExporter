@@ -19,7 +19,7 @@ public class LibExporterTests
 {
     private Mock<IPlayniteProgressService> ProgressServiceMock { get; }
     private Mock<IPlayniteGameRepository> GameRepository { get; }
-    private Mock<IPlayniteInsightsWebServerService> WebServiceMock { get; }
+    private Mock<IPlayAtlasWebServerService> WebServiceMock { get; }
     private Mock<IFileSystemService> FsMock { get; }
     private Mock<IHashService> HashServiceMock { get; }
     private LibExporter LibExporter { get; set; }
@@ -29,7 +29,7 @@ public class LibExporterTests
     {
         ProgressServiceMock = new Mock<IPlayniteProgressService>();
         GameRepository = new Mock<IPlayniteGameRepository>();
-        WebServiceMock = new Mock<IPlayniteInsightsWebServerService>();
+        WebServiceMock = new Mock<IPlayAtlasWebServerService>();
         HashServiceMock = new Mock<IHashService>();
         FsMock = new Mock<IFileSystemService>();
 

@@ -1,4 +1,6 @@
 ﻿using Core;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.OpenSsl;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,12 +11,12 @@ using System.Threading.Tasks;
 
 namespace Infra
 {
-    public class KeyManager
+    public class KeyManager : IKeyManager
     {
         private const int KeySize = 2048;
         private readonly string keyFilePath;
 
-        public KeyManager(IPlayniteInsightsExporterContext plugin)
+        public KeyManager(IPlayAtlasExporterContext plugin)
         {
             var securityDir = Path.Combine(plugin.GetExtensionDataFolderPath(), "security");
 
@@ -41,6 +43,26 @@ namespace Infra
                 var xml = rsa.ToXmlString(true);
                 File.WriteAllText(keyFilePath, xml);
                 return rsa;
+            }
+        }
+
+        public string GetPublicKeyAsPem()
+        {
+            var rsa = GetOrCreateKeyPair();
+            var rsaParams = rsa.ExportParameters(false);
+
+            RsaKeyParameters bcKey = new RsaKeyParameters(
+                false, // public key only
+                new Org.BouncyCastle.Math.BigInteger(1, rsaParams.Modulus),
+                new Org.BouncyCastle.Math.BigInteger(1, rsaParams.Exponent)
+            );
+
+            using (var sw = new StringWriter())
+            {
+                var pemWriter = new PemWriter(sw);
+                pemWriter.WriteObject(bcKey);
+                pemWriter.Writer.Flush();
+                return sw.ToString();
             }
         }
     }

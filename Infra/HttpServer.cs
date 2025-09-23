@@ -17,14 +17,14 @@ namespace Infra
     public class HttpServer
     {
         private readonly HttpListener _listener = new HttpListener();
-        private readonly IPlayniteInsightsExporterContext Context;
+        private readonly IPlayAtlasExporterContext Context;
         private readonly IAppLogger Logger;
         private readonly IScreenCaptureService ScreenCaptureService;
         private readonly List<Action> OnStartListeners = new List<Action>();
         private readonly List<Action> OnStopListeners = new List<Action>();
 
         public HttpServer(
-            IPlayniteInsightsExporterContext context,
+            IPlayAtlasExporterContext context,
             IAppLogger logger,
             IScreenCaptureService screenCaptureService
         )

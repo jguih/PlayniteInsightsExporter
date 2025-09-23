@@ -19,7 +19,7 @@ namespace Core
     {
         private readonly IPlayniteProgressService ProgressService;
         private readonly IPlayniteGameRepository PlayniteGameRepository;
-        private readonly IPlayniteInsightsWebServerService WebServerService;
+        private readonly IPlayAtlasWebServerService WebServerService;
         private readonly IHashService HashService;
         private readonly IAppLogger Logger;
         private readonly IFileSystemService Fs;
@@ -28,7 +28,7 @@ namespace Core
         public LibExporter(
             IPlayniteProgressService ProgressService,
             IPlayniteGameRepository PlayniteGameRepository,
-        IPlayniteInsightsWebServerService WebServerService,
+        IPlayAtlasWebServerService WebServerService,
             IAppLogger Logger,
             IHashService HashService,
             string LibraryFilesDir,

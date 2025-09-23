@@ -50,15 +50,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ExtensionRegistration\ExtensionRegistrationService.cs" />
+    <Compile Include="ExtensionRegistration\IExtensionRegistrationService.cs" />
     <Compile Include="GameSession\GameSessionConfig.cs" />
     <Compile Include="IAppLogger.cs" />
     <Compile Include="GameSession\GameSessionService.cs" />
     <Compile Include="IFileSystemService.cs" />
     <Compile Include="IHashService.cs" />
+    <Compile Include="IKeyManager.cs" />
     <Compile Include="IPlayniteGameRepository.cs" />
     <Compile Include="IPlayniteProgressService.cs" />
-    <Compile Include="IPlayniteInsightsExporterContext.cs" />
-    <Compile Include="IPlayniteInsightsWebServerService.cs" />
+    <Compile Include="IPlayAtlasExporterContext.cs" />
+    <Compile Include="IPlayAtlasWebServerService.cs" />
     <Compile Include="IShareXService.cs" />
     <Compile Include="LibExporter\ILibExporter.cs" />
     <Compile Include="LibExporter\LibExporter.cs" />

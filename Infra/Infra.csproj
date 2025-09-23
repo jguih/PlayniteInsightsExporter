@@ -57,7 +57,7 @@
     <Compile Include="HashService.cs" />
     <Compile Include="KeyManager.cs" />
     <Compile Include="PlayniteGameRepository.cs" />
-    <Compile Include="PlayniteInsightsWebServerService.cs" />
+    <Compile Include="PlayAtlasWebServerService.cs" />
     <Compile Include="PlayniteProgressService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ShareXService.cs" />

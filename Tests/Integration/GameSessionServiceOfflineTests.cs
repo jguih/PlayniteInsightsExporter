@@ -13,17 +13,17 @@ namespace Tests.Integration;
 public class GameSessionServiceOfflineTests : IDisposable
 {
     private Mock<IAppLogger> LoggerMock { get; }
-    private Mock<IPlayniteInsightsExporterContext> PluginCtxMock { get; }
-    private Mock<IPlayniteInsightsWebServerService> WebServiceMock { get; }
+    private Mock<IPlayAtlasExporterContext> PluginCtxMock { get; }
+    private Mock<IPlayAtlasWebServerService> WebServiceMock { get; }
     private GameSessionService SessionsService { get; set; }
     private string SessionsDirPath { get; set; }
 
     public GameSessionServiceOfflineTests()
     {
         LoggerMock = new Mock<IAppLogger>();
-        PluginCtxMock = new Mock<IPlayniteInsightsExporterContext>();
+        PluginCtxMock = new Mock<IPlayAtlasExporterContext>();
         var hashService = new HashService(LoggerMock.Object);
-        WebServiceMock = new Mock<IPlayniteInsightsWebServerService>();
+        WebServiceMock = new Mock<IPlayAtlasWebServerService>();
         var fileSystem = new FileSystemService();
         SessionsDirPath = Path.GetTempPath() + $"{Guid.NewGuid()}-playnite-insights-sessions";
         var config = new GameSessionConfig

@@ -1,4 +1,5 @@
 ﻿using Core;
+using Core.ExtensionRegistration;
 using Core.Screencapture;
 using Infra;
 using Playnite.SDK;
@@ -15,7 +16,7 @@ namespace PlayniteInsightsExporter.Lib
     public class ServiceLocator
     {
         public IAppLogger AppLogger { get; }
-        public IPlayniteInsightsWebServerService WebServerService { get; }
+        public IPlayAtlasWebServerService WebServerService { get; }
         public LibExporter LibExporter { get; }
         public IHashService HashService { get; }
         public IFileSystemService FileSystemService { get; }
@@ -24,12 +25,14 @@ namespace PlayniteInsightsExporter.Lib
         public IPlayniteGameRepository GameRepository { get; }
         public IScreenCaptureService ScreenCaptureService { get; }
         public HttpServer HttpServer { get; }
-        public KeyManager KeyManager { get; }
+        public IKeyManager KeyManager { get; }
+        public IExtensionRegistrationService ExtensionRegistrationService { get; }
 
         public ServiceLocator(
-            PlayniteInsightsExporter plugin, 
+            PlayniteInsightsExporter plugin,
             ILogger logger
-        ) {
+        )
+        {
             var libDir = Path.Combine(plugin.PlayniteApi.Paths.ConfigurationPath, "library", "files");
             var gameSessionConfig = new GameSessionConfig
             {
@@ -42,19 +45,19 @@ namespace PlayniteInsightsExporter.Lib
             ProgressService = new PlayniteProgressService(plugin.PlayniteApi, AppLogger);
             GameRepository = new PlayniteGameRepository(plugin.PlayniteApi, AppLogger);
             FileSystemService = new FileSystemService();
-            WebServerService = new PlayniteInsightsWebServerService(plugin, AppLogger);
+            WebServerService = new PlayAtlasWebServerService(plugin, AppLogger);
             HashService = new HashService(AppLogger);
             LibExporter = new LibExporter(
-                ProgressService, 
+                ProgressService,
                 GameRepository,
-                WebServerService, 
-                AppLogger, 
-                HashService, 
-                libDir, 
+                WebServerService,
+                AppLogger,
+                HashService,
+                libDir,
                 FileSystemService);
             GameSessionService = new GameSessionService(
-                plugin, 
-                AppLogger, 
+                plugin,
+                AppLogger,
                 HashService,
                 WebServerService,
                 FileSystemService,
@@ -63,6 +66,7 @@ namespace PlayniteInsightsExporter.Lib
             ScreenCaptureService = new ScreenCaptureService(shareXService);
             HttpServer = new HttpServer(plugin, AppLogger, ScreenCaptureService);
             KeyManager = new KeyManager(plugin);
+            ExtensionRegistrationService = new ExtensionRegistrationService(KeyManager, WebServerService, plugin);
         }
     }
 }

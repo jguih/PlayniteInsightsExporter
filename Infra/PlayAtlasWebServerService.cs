@@ -10,13 +10,13 @@ using System.Threading.Tasks;
 
 namespace Infra
 {
-    public class PlayniteInsightsWebServerService : IPlayniteInsightsWebServerService
+    public class PlayAtlasWebServerService : IPlayAtlasWebServerService
     {
-        private readonly IPlayniteInsightsExporterContext PluginCtx;
+        private readonly IPlayAtlasExporterContext PluginCtx;
         private readonly IAppLogger Logger;
 
-        public PlayniteInsightsWebServerService(
-            IPlayniteInsightsExporterContext PluginCtx,
+        public PlayAtlasWebServerService(
+            IPlayAtlasExporterContext PluginCtx,
             IAppLogger Logger)
         {
             this.Logger = Logger;

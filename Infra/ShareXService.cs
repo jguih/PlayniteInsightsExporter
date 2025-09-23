@@ -10,9 +10,9 @@ namespace Infra
 {
     public class ShareXService : IShareXService
     {
-        private readonly IPlayniteInsightsExporterContext Ctx;
+        private readonly IPlayAtlasExporterContext Ctx;
 
-        public ShareXService(IPlayniteInsightsExporterContext Ctx)
+        public ShareXService(IPlayAtlasExporterContext Ctx)
         {
             this.Ctx = Ctx;
         }

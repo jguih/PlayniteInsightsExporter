@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
@@ -17,7 +18,7 @@ using System.Windows.Shapes;
 
 namespace PlayniteInsightsExporter
 {
-    public class PlayniteInsightsExporter : GenericPlugin, IPlayniteInsightsExporterContext
+    public class PlayniteInsightsExporter : GenericPlugin, IPlayAtlasExporterContext
     {
         private static readonly ILogger logger = LogManager.GetLogger();
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
@@ -242,6 +243,16 @@ namespace PlayniteInsightsExporter
 
         public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await locator.ExtensionRegistrationService.RegisterAsync();
+                }
+                catch (Exception)
+                {
+                }
+            });
             if (Settings?.Settings?.EnableLibrarySyncOnUpdate == true)
             {
                 _ = Task.Run(async () =>
@@ -355,6 +366,18 @@ namespace PlayniteInsightsExporter
             if (string.IsNullOrWhiteSpace(path))
                 throw new InvalidOperationException("HTTP server port is not set in settings.");
             return path;
+        }
+
+        public string GetExtensionVersion()
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            string version = assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? "Unknown";
+            return version;
+        }
+
+        public string GetExtensionId()
+        {
+            return Id.ToString();
         }
     }
 }

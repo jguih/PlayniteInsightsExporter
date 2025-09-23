@@ -12,20 +12,20 @@ namespace Core
 {
     public class GameSessionService : IGameSessionService
     {
-        private IPlayniteInsightsExporterContext PluginContext { get; set; }
+        private IPlayAtlasExporterContext PluginContext { get; set; }
         private IAppLogger Logger { get; set; }
         private IHashService HashService { get; set; }
-        private IPlayniteInsightsWebServerService WebAppService { get; set; }
+        private IPlayAtlasWebServerService WebAppService { get; set; }
         private IFileSystemService Fs { get; set; }
         private string SessionsFolderPath { get; set; }
         private GameSessionConfig Config { get; }
         private IPlayniteProgressService ProgressService { get; set; }
 
         public GameSessionService(
-            IPlayniteInsightsExporterContext PluginContext,
+            IPlayAtlasExporterContext PluginContext,
             IAppLogger Logger,
             IHashService HashService,
-            IPlayniteInsightsWebServerService WebAppService,
+            IPlayAtlasWebServerService WebAppService,
             IFileSystemService FileSystemService,
             GameSessionConfig Config,
             IPlayniteProgressService ProgressService
