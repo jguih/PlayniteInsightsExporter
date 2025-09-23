@@ -22,16 +22,19 @@ namespace Infra
         private readonly IScreenCaptureService ScreenCaptureService;
         private readonly List<Action> OnStartListeners = new List<Action>();
         private readonly List<Action> OnStopListeners = new List<Action>();
+        private readonly SignatureService SignatureService;
 
         public HttpServer(
             IPlayAtlasExporterContext context,
             IAppLogger logger,
-            IScreenCaptureService screenCaptureService
+            IScreenCaptureService screenCaptureService,
+            SignatureService signatureService
         )
         {
             Context = context;
             Logger = logger;
             ScreenCaptureService = screenCaptureService;
+            SignatureService = signatureService;
         }
 
         private void HandleRequest(HttpListenerContext context)
@@ -66,7 +69,7 @@ namespace Infra
 
             byte[] publicKeyDer = File.ReadAllBytes(Context.GetWebServerPublicKeyPath());
 
-            if (!SignatureVerifier.Verify(payloadBytes, signature, publicKeyDer))
+            if (!SignatureService.VerifyWebServerSignature(payloadBytes, signature, publicKeyDer))
             {
                 context.Response.StatusCode = 403;
                 context.Response.Close();

@@ -182,17 +182,17 @@ namespace Core
                 resolvedGamesToUpdate
             );
 
-            var result = await WebServerService.PostJson(
+            var response = await WebServerService.PostJson(
                 endpoint: WebAppEndpoints.SyncGames,
                 syncGameListCommand
             );
 
-            if (result == false)
+            if (!response.IsSuccessStatusCode)
             {
                 Logger.Error(null, "Failed to sync game list with the server.");
             }
 
-            return result;
+            return response.IsSuccessStatusCode;
         }
 
         private HttpContent GetGameMediaHttpContent(
@@ -277,7 +277,7 @@ namespace Core
                         endpoint: WebAppEndpoints.SyncFiles, 
                         content: content
                     );
-                    if (result == false)
+                    if (result == null)
                     {
                         Logger.Error(null, $"Request to sync library media files for {gameId} failed");
                         OnContinue?.Invoke();

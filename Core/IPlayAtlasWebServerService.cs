@@ -10,9 +10,9 @@ namespace Core
 {
     public interface IPlayAtlasWebServerService
     {
-        Task<bool> Post(string endpoint, HttpContent content);
-        Task<bool> PostJson(string endpoint, object data);
+        Task<HttpResponseMessage> Post(string endpoint, HttpContent content);
+        Task<HttpResponseMessage> PostJson(string endpoint, object data);
         Task<PlayniteLibraryManifest> GetManifestAsync();
-        Task<bool> IsHealthy();
+        Task<HttpResponseMessage> CheckHealth();
     }
 }

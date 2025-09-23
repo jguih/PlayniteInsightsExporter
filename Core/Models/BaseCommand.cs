@@ -9,6 +9,8 @@ namespace Core.Models
     public class BaseCommand
     {
         public DateTime ClientUtcNow { get; set; } = DateTime.UtcNow;
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public string ExtensionId { get; set; }
 
         public BaseCommand() { }
     }

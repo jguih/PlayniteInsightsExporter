@@ -12,20 +12,23 @@ namespace Infra
 {
     public class PlayAtlasWebServerService : IPlayAtlasWebServerService
     {
-        private readonly IPlayAtlasExporterContext PluginCtx;
-        private readonly IAppLogger Logger;
+        private readonly IPlayAtlasExporterContext plugin;
+        private readonly IAppLogger logger;
+        private readonly SignatureService signatureService;
 
         public PlayAtlasWebServerService(
-            IPlayAtlasExporterContext PluginCtx,
-            IAppLogger Logger)
-        {
-            this.Logger = Logger;
-            this.PluginCtx = PluginCtx;
+            IPlayAtlasExporterContext plugin,
+            IAppLogger logger,
+            SignatureService signatureService
+        ) {
+            this.logger = logger;
+            this.plugin = plugin;
+            this.signatureService = signatureService;
         }
 
         private string GetWebAppURL(string endpoint = "")
         {
-            var webAppUrl = PluginCtx.GetWebServerURL();
+            var webAppUrl = plugin.GetWebServerURL();
             if (string.IsNullOrEmpty(webAppUrl))
             {
                 throw new InvalidOperationException("Playnite Insights Web Server URL must not be empty.");
@@ -37,94 +40,73 @@ namespace Infra
             return $"{webAppUrl.TrimEnd('/')}/{endpoint.TrimStart('/')}";
         }
 
-        public async Task<bool> Post(string endpoint, HttpContent content)
+        public async Task<HttpResponseMessage> Post(string endpoint, HttpContent content)
         {
-            try
+            var contentBytes = await content.ReadAsByteArrayAsync();
+            string signatureBase64 = signatureService.Sign(contentBytes);
+            string timestamp = DateTime.UtcNow.ToString("o");
+            string extensionId = plugin.GetExtensionId();
+
+            using (var client = new HttpClient())
+            using (var request = new HttpRequestMessage(HttpMethod.Post, GetWebAppURL(endpoint)))
             {
-                // Create request
-                using (var client = new HttpClient())
-                using (var request = new HttpRequestMessage(HttpMethod.Post, GetWebAppURL(endpoint)))
-                {
-                    request.Content = content;
-                    request.Headers.Add("Origin", GetWebAppURL());
-                    request.Headers.Add("Referer", GetWebAppURL());
-                    var response = await client.SendAsync(request);
-                    var responseBody = await response.Content.ReadAsStringAsync();
-                    response.EnsureSuccessStatusCode();
-                    return true;
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e, $"POST request to {GetWebAppURL(endpoint)} failed");
-                return false;
+                request.Content = content;
+                request.Headers.Add("Origin", GetWebAppURL());
+                request.Headers.Add("Referer", GetWebAppURL());
+                request.Headers.Add("X-Signature", signatureBase64);
+                request.Headers.Add("X-Timestamp", timestamp);
+                request.Headers.Add("X-ExtensionId", extensionId);
+                var response = await client.SendAsync(request);
+                return response;
             }
         }
 
-        public async Task<bool> PostJson(string endpoint, object data)
+        public async Task<HttpResponseMessage> Get(string endpoint)
         {
-            try
+            string timestamp = DateTime.UtcNow.ToString("o");
+            string extensionId = plugin.GetExtensionId();
+            var canonicalString = $"GET|{endpoint}|{extensionId}|{timestamp}";
+            var contentBytes = Encoding.UTF8.GetBytes(canonicalString);
+            string signatureBase64 = signatureService.Sign(contentBytes);
+
+            using (var client = new HttpClient())
+            using (var request = new HttpRequestMessage(HttpMethod.Get, GetWebAppURL(endpoint)))
             {
-                using (var jsonContent = new StringContent(
-                    JsonConvert.SerializeObject(data),
-                    Encoding.UTF8,
-                    "application/json")
-                )
-                {
-                    return await Post(endpoint, jsonContent);
-                }
+                request.Headers.Add("Origin", GetWebAppURL());
+                request.Headers.Add("Referer", GetWebAppURL());
+                request.Headers.Add("X-Signature", signatureBase64);
+                request.Headers.Add("X-Timestamp", timestamp);
+                request.Headers.Add("X-ExtensionId", extensionId);
+                var response = await client.SendAsync(request);
+                return response;
             }
-            catch (Exception e)
+        }
+
+
+        public async Task<HttpResponseMessage> PostJson(string endpoint, object data)
+        {
+            using (var jsonContent = new StringContent(
+                JsonConvert.SerializeObject(data),
+                Encoding.UTF8,
+                "application/json")
+            )
             {
-                Logger.Error(e, $"Failed to serialize data for POST request to {GetWebAppURL(endpoint)}");
-                return false;
+                return await Post(endpoint, jsonContent);
             }
         }
 
         public async Task<PlayniteLibraryManifest> GetManifestAsync()
         {
-            try
-            {
-                using (var client = new HttpClient())
-                using (var request = new HttpRequestMessage(HttpMethod.Get, GetWebAppURL(WebAppEndpoints.SyncManifest)))
-                {
-                    request.Headers.Add("Origin", GetWebAppURL());
-                    request.Headers.Add("Referer", GetWebAppURL());
-                    var response = await client.SendAsync(request);
-                    var responseBody = await response.Content.ReadAsStringAsync();
-                    var manifest = JsonConvert.DeserializeObject<PlayniteLibraryManifest>(responseBody);
-                    response.EnsureSuccessStatusCode();
-                    return manifest;
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e, "Failed to get manifest file");
-                return null;
-            }
+            var response = await Get(WebAppEndpoints.SyncManifest);
+            response.EnsureSuccessStatusCode();
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var manifest = JsonConvert.DeserializeObject<PlayniteLibraryManifest>(responseBody);
+            return manifest;
         }
 
-        public async Task<bool> IsHealthy()
+        public async Task<HttpResponseMessage> CheckHealth()
         {
-            try
-            {
-                using (var client = new HttpClient())
-                using (var request = new HttpRequestMessage(
-                    HttpMethod.Get, 
-                    GetWebAppURL(WebAppEndpoints.HealthCheck)
-                )) {
-                    request.Headers.Add("Origin", GetWebAppURL());
-                    request.Headers.Add("Referer", GetWebAppURL());
-                    var response = await client.SendAsync(request);
-                    response.EnsureSuccessStatusCode();
-                    return true;
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.Error(e, "Health check failed");
-                return false;
-            }
+            return await Get(WebAppEndpoints.HealthCheck);
         }
     }
 }

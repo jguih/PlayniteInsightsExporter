@@ -197,13 +197,23 @@ namespace PlayniteInsightsExporter
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
             // Add code to be executed when Playnite is started.
-            try
+
+            _ = Task.Run(async () =>
             {
-                locator.KeyManager.GetOrCreateKeyPair();
-            } catch (Exception ex)
-            {
-                logger.Error(ex, "Failed to create asymmetric key pair");
-            }
+                try
+                {
+                    var response = await locator.WebServerService.CheckHealth();
+                    if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        await locator.ExtensionRegistrationService.RegisterAsync();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Error(ex, "Failed to register extension");
+                }
+            });
+
             var shouldStartHttpServer = Settings?.Settings?.HttpServerStartOnStartUp ?? false;
             if (shouldStartHttpServer)
             {
@@ -243,16 +253,6 @@ namespace PlayniteInsightsExporter
 
         public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await locator.ExtensionRegistrationService.RegisterAsync();
-                }
-                catch (Exception)
-                {
-                }
-            });
             if (Settings?.Settings?.EnableLibrarySyncOnUpdate == true)
             {
                 _ = Task.Run(async () =>

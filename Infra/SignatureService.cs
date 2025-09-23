@@ -11,9 +11,16 @@ using System.Threading.Tasks;
 
 namespace Infra
 {
-    internal class SignatureVerifier
+    public class SignatureService
     {
-        public static bool Verify(byte[] data, byte[] signature, byte[] publicKeyDer)
+        private readonly KeyManager keyManager;
+
+        public SignatureService(KeyManager keyManager)
+        {
+            this.keyManager = keyManager;
+        }
+
+        public bool VerifyWebServerSignature(byte[] data, byte[] signature, byte[] publicKeyDer)
         {
             try
             {
@@ -27,6 +34,16 @@ namespace Infra
             } catch (Exception)
             {
                 return false;
+            }
+        }
+
+        public string Sign(byte[] data)
+        {
+            using (var rsa = keyManager.GetOrCreateKeyPair())
+            {
+                byte[] signature = rsa.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+                return Convert.ToBase64String(signature);
             }
         }
     }

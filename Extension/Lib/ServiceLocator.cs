@@ -25,7 +25,6 @@ namespace PlayniteInsightsExporter.Lib
         public IPlayniteGameRepository GameRepository { get; }
         public IScreenCaptureService ScreenCaptureService { get; }
         public HttpServer HttpServer { get; }
-        public IKeyManager KeyManager { get; }
         public IExtensionRegistrationService ExtensionRegistrationService { get; }
 
         public ServiceLocator(
@@ -40,12 +39,14 @@ namespace PlayniteInsightsExporter.Lib
             };
             var securityDir = Path.Combine(plugin.GetPluginUserDataPath(), "security");
             var shareXService = new ShareXService(plugin);
+            var keyManager = new KeyManager(plugin);
+            var signatureService = new SignatureService(keyManager);
 
             AppLogger = new PlayniteLogger(logger);
             ProgressService = new PlayniteProgressService(plugin.PlayniteApi, AppLogger);
             GameRepository = new PlayniteGameRepository(plugin.PlayniteApi, AppLogger);
             FileSystemService = new FileSystemService();
-            WebServerService = new PlayAtlasWebServerService(plugin, AppLogger);
+            WebServerService = new PlayAtlasWebServerService(plugin, AppLogger, signatureService);
             HashService = new HashService(AppLogger);
             LibExporter = new LibExporter(
                 ProgressService,
@@ -64,9 +65,8 @@ namespace PlayniteInsightsExporter.Lib
                 gameSessionConfig,
                 ProgressService);
             ScreenCaptureService = new ScreenCaptureService(shareXService);
-            HttpServer = new HttpServer(plugin, AppLogger, ScreenCaptureService);
-            KeyManager = new KeyManager(plugin);
-            ExtensionRegistrationService = new ExtensionRegistrationService(KeyManager, WebServerService, plugin);
+            HttpServer = new HttpServer(plugin, AppLogger, ScreenCaptureService, signatureService);
+            ExtensionRegistrationService = new ExtensionRegistrationService(keyManager, WebServerService, plugin);
         }
     }
 }
