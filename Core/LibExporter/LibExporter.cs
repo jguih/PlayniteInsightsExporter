@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -195,14 +196,17 @@ namespace Core
             return response.IsSuccessStatusCode;
         }
 
-        private HttpContent GetGameMediaHttpContent(
-            string gameId, 
+        private HttpContent GetMediaFilesHttpContent(
+            string gameId,
             string contentHash,
             string mediaFolderPath
-        ) {
-            var content = new MultipartFormDataContent();
-            content.Add(new StringContent(gameId), "gameId");
-            content.Add(new StringContent(contentHash), "contentHash");
+        )
+        {
+            var content = new MultipartFormDataContent
+            {
+                { new StringContent(gameId), "gameId" },
+                { new StringContent(contentHash), "contentHash" }
+            };
             foreach (var file in Fs.DirectoryGetFiles(mediaFolderPath))
             {
                 var fileContent = new StreamContent(Fs.FileOpenRead(file));
@@ -211,6 +215,31 @@ namespace Core
                 content.Add(fileContent, "files", fileName);
             }
             return content;
+        }
+
+        private string ComputeMediaFilesCanonicalHash(
+            string gameId,
+            string contentHash,
+            string mediaFolderPath
+        ) {
+            using (var sha256 = SHA256.Create())
+            {
+                sha256.TransformBlock(Encoding.UTF8.GetBytes(gameId), 0, Encoding.UTF8.GetByteCount(gameId), null, 0);
+                sha256.TransformBlock(Encoding.UTF8.GetBytes(contentHash), 0, Encoding.UTF8.GetByteCount(contentHash), null, 0);
+
+                var files = Fs.DirectoryGetFiles(mediaFolderPath)
+                              .Select(f => new { Path = f, Name = Fs.PathGetFileName(f) })
+                              .OrderBy(f => f.Name, StringComparer.Ordinal);
+
+                foreach (var file in files)
+                {
+                    var bytes = Fs.FileReadAllBytes(file.Path);
+                    sha256.TransformBlock(bytes, 0, bytes.Length, null, 0);
+                }
+
+                sha256.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                return Convert.ToBase64String(sha256.Hash);
+            }
         }
 
         private async Task<bool> _RunMediaFilesSync(
@@ -268,14 +297,21 @@ namespace Core
                         }
                     }
                 }
-                using (var content = GetGameMediaHttpContent(
+                using (var content = GetMediaFilesHttpContent(
                     gameId: gameId,
                     contentHash: contentHash,
                     mediaFolderPath: mediaFolder
-                )) {  
+                ))
+                {
+                    var canonicalHash = ComputeMediaFilesCanonicalHash(
+                        gameId: gameId,
+                        contentHash: contentHash,
+                        mediaFolderPath: mediaFolder
+                    );
                     var result = await WebServerService.Post(
-                        endpoint: WebAppEndpoints.SyncFiles, 
-                        content: content
+                        endpoint: WebAppEndpoints.SyncFiles,
+                        content: content,
+                        contentHash: canonicalHash
                     );
                     if (result == null)
                     {
@@ -406,7 +442,8 @@ namespace Core
 
         public Task<bool> RunMediaFilesSyncAsync(
             IEnumerable<Game> games = null
-        ) {
+        )
+        {
             var resolvedGameList = games ?? PlayniteGameRepository.GetAll();
             return _RunMediaFilesSync(
                 games: resolvedGameList,

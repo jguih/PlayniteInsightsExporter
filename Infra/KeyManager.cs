@@ -18,7 +18,7 @@ namespace Infra
 
         public KeyManager(IPlayAtlasExporterContext plugin)
         {
-            var securityDir = Path.Combine(plugin.GetExtensionDataFolderPath(), "security");
+            var securityDir = plugin.GetSecurityDirectoryPath();
 
             if (!Directory.Exists(securityDir))
             {

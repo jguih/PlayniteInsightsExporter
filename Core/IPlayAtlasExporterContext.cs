@@ -20,5 +20,6 @@ namespace Core
         string GetHttpServerPort();
         string GetExtensionVersion();
         string GetExtensionId();
+        string GetSecurityDirectoryPath();
     }
 }

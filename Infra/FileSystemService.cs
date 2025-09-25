@@ -70,5 +70,10 @@ namespace Infra
         {
             return Path.GetFileName(path);
         }
+
+        public byte[] FileReadAllBytes(string path)
+        {
+            return File.ReadAllBytes(path);
+        }
     }
 }

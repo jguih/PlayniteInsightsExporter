@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace Core.Models
 {
-    public class BaseCommand
+    public class RegisterExtensionResponseDTO
     {
-        public DateTime ClientUtcNow { get; set; } = DateTime.UtcNow;
+        public string RegistrationId { get; set; }
 
-        public BaseCommand() { }
+        public RegisterExtensionResponseDTO() { }
     }
 }

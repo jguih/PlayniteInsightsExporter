@@ -143,12 +143,12 @@ namespace PlayniteInsightsExporter
             ServiceLocator = locator;
 
             var httpServer = locator.HttpServer;
-            var port = Settings.HttpServerPort;
             var LOC_Label_HttpServer_Server_Is_Running_Status_Text = ResourceProvider.GetString("LOC_Label_HttpServer_Server_Is_Running_Status_Text");
             var LOC_Label_HttpServer_Server_Is_Not_Running_Status_Text = ResourceProvider.GetString("LOC_Label_HttpServer_Server_Is_Not_Running_Status_Text");
             HttpServerStatusText = LOC_Label_HttpServer_Server_Is_Not_Running_Status_Text;
             httpServer.OnStart(() =>
             {
+                var port = Settings.HttpServerPort;
                 HttpServerStatusText = LOC_Label_HttpServer_Server_Is_Running_Status_Text
                     .Replace("{{port}}", port);
                 HttpServerRunning = true;

@@ -64,7 +64,7 @@ namespace PlayniteInsightsExporter
                                     NotificationType.Error)
                                 );
                         });
-                        logger.Error(ex, "Failed to sync added items in Playnite Insights Exporter.");
+                        logger.Error(ex, "Failed to sync added items with PlayAtlas Server.");
                     }
                 }
                 if (e.RemovedItems.Any())
@@ -88,7 +88,7 @@ namespace PlayniteInsightsExporter
                                     NotificationType.Error)
                                 );
                         });
-                        logger.Error(ex, "Failed to sync removed items in Playnite Insights Exporter.");
+                        logger.Error(ex, "Failed to sync removed items with PlayAtlas Server.");
                     }
                 }
             });
@@ -112,7 +112,17 @@ namespace PlayniteInsightsExporter
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, "Failed to sync installed game in Playnite Insights Exporter.");
+                    PlayniteApi.MainView.UIDispatcher.Invoke(() =>
+                    {
+                        var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+                        PlayniteApi.Notifications.Add(
+                            new NotificationMessage(
+                                $"{Name} Error",
+                                $"{loc_failed_syncClientServer}",
+                                NotificationType.Error)
+                            );
+                    });
+                    logger.Error(ex, "Failed to sync installed game with PlayAtlas Server.");
                 }
             });
         }
@@ -136,7 +146,17 @@ namespace PlayniteInsightsExporter
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, "Failed to sync started game in Playnite Insights Exporter.");
+                    PlayniteApi.MainView.UIDispatcher.Invoke(() =>
+                    {
+                        var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+                        PlayniteApi.Notifications.Add(
+                            new NotificationMessage(
+                                $"{Name} Error",
+                                $"{loc_failed_syncClientServer}",
+                                NotificationType.Error)
+                            );
+                    });
+                    logger.Error(ex, "Failed to sync started game with PlayAtlas server.");
                 }
             });
         }
@@ -166,7 +186,17 @@ namespace PlayniteInsightsExporter
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, "Failed to sync stopped game in Playnite Insights Exporter.");
+                    PlayniteApi.MainView.UIDispatcher.Invoke(() =>
+                    {
+                        var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+                        PlayniteApi.Notifications.Add(
+                            new NotificationMessage(
+                                $"{Name} Error",
+                                $"{loc_failed_syncClientServer}",
+                                NotificationType.Error)
+                            );
+                    });
+                    logger.Error(ex, "Failed to sync stopped game with PlayAtlas server.");
                 }
             });
         }
@@ -189,7 +219,17 @@ namespace PlayniteInsightsExporter
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, "Failed to sync uninstalled game in Playnite Insights Exporter.");
+                    PlayniteApi.MainView.UIDispatcher.Invoke(() =>
+                    {
+                        var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+                        PlayniteApi.Notifications.Add(
+                            new NotificationMessage(
+                                $"{Name} Error",
+                                $"{loc_failed_syncClientServer}",
+                                NotificationType.Error)
+                            );
+                    });
+                    logger.Error(ex, "Failed to sync uninstalled game with PlayAtlas server.");
                 }
             });
         }
@@ -202,15 +242,28 @@ namespace PlayniteInsightsExporter
             {
                 try
                 {
-                    var response = await locator.WebServerService.CheckHealth();
-                    if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
-                    {
-                        await locator.ExtensionRegistrationService.RegisterAsync();
-                    }
+                    var newRegistration = await locator.ExtensionRegistrationService.RegisterAsync();
+                    if (newRegistration)
+                        PlayniteApi.MainView.UIDispatcher.Invoke(() =>
+                        {
+                            var message = ResourceProvider.GetString("LOC_Success_Extension_Registration");
+                            PlayniteApi.Dialogs.ShowMessage(
+                                message, 
+                                Name, 
+                                System.Windows.MessageBoxButton.OK);
+                        });
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, "Failed to register extension");
+                    logger.Error(ex, "Failed to register extension with PlayAtlas server");
+                    PlayniteApi.MainView.UIDispatcher.Invoke(() =>
+                    {
+                        var message = ResourceProvider.GetString("LOC_Failed_Extension_Registration");
+                        PlayniteApi.Dialogs.ShowMessage(
+                            message,
+                            Name,
+                            System.Windows.MessageBoxButton.OK);
+                    });
                 }
             });
 
@@ -263,7 +316,17 @@ namespace PlayniteInsightsExporter
                     }
                     catch (Exception ex)
                     {
-                        logger.Error(ex, "Failed to sync library in Playnite Insights Exporter.");
+                        PlayniteApi.MainView.UIDispatcher.Invoke(() =>
+                        {
+                            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+                            PlayniteApi.Notifications.Add(
+                                new NotificationMessage(
+                                    $"{Name} Error",
+                                    $"{loc_failed_syncClientServer}",
+                                    NotificationType.Error)
+                                );
+                        });
+                        logger.Error(ex, "Failed to sync game library with PlayAtlas server.");
                     }
                 });
             }
@@ -277,7 +340,17 @@ namespace PlayniteInsightsExporter
                     }
                     catch (Exception ex)
                     {
-                        logger.Error(ex, "Failed to sync media files in Playnite Insights Exporter.");
+                        PlayniteApi.MainView.UIDispatcher.Invoke(() =>
+                        {
+                            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
+                            PlayniteApi.Notifications.Add(
+                                new NotificationMessage(
+                                    $"{Name} Error",
+                                    $"{loc_failed_syncClientServer}",
+                                    NotificationType.Error)
+                                );
+                        });
+                        logger.Error(ex, "Failed to sync media files with PlayAtlas server.");
                     }
                 });
             }
@@ -289,7 +362,7 @@ namespace PlayniteInsightsExporter
                 }
                 catch (Exception ex)
                 {
-                    logger.Error(ex, "Failed to sync game sessions in Playnite Insights Exporter.");
+                    logger.Error(ex, "Failed to sync game sessions with PlayAtlas server.");
                 }
             });
         }
@@ -378,6 +451,11 @@ namespace PlayniteInsightsExporter
         public string GetExtensionId()
         {
             return Id.ToString();
+        }
+
+        public string GetSecurityDirectoryPath()
+        {
+            return System.IO.Path.Combine(GetExtensionDataFolderPath(), "security");
         }
     }
 }

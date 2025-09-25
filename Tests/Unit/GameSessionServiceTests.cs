@@ -158,7 +158,7 @@ public class GameSessionServiceTests
             .Returns(false);
         WebServiceMock
             .Setup(ws => ws.PostJson(It.IsAny<string>(), It.IsAny<object>()))
-            .ReturnsAsync(new StringContent(""));
+            .ReturnsAsync(new HttpResponseMessage());
         // Act
         var result = await SessionsService.OpenSession(gameId, now);
         // Assert

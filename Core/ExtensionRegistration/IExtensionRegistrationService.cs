@@ -8,6 +8,11 @@ namespace Core.ExtensionRegistration
 {
     public interface IExtensionRegistrationService
     {
-        Task RegisterAsync();
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns>True when a new registration request is made, false if the extension is already registered</returns>
+        Task<bool> RegisterAsync();
+        string GetRegistrationId();
     }
 }

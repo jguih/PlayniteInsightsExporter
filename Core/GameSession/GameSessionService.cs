@@ -48,20 +48,35 @@ namespace Core
 
         private async Task<bool> SendOpenSessionAsync(GameSession session)
         {
-            var command = OpenSessionCommand.FromSession(session);
-            var result = await WebAppService.PostJson(
-                WebAppEndpoints.OpenSession,
-                command);
-            return result != null;
+            try
+            {
+                var command = OpenSessionCommand.FromSession(session);
+                var result = await WebAppService.PostJson(
+                    WebAppEndpoints.OpenSession,
+                    command);
+                return result.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to send open session command.");
+                return false;
+            }
         }
 
         private async Task<bool> SendCloseSessionAsync(GameSession session)
         {
-            var command = CloseSessionCommand.FromSession(session);
-            var result = await WebAppService.PostJson(
-                WebAppEndpoints.CloseSession,
-                command);
-            return result != null;
+            try
+            {
+                var command = CloseSessionCommand.FromSession(session);
+                var result = await WebAppService.PostJson(
+                    WebAppEndpoints.CloseSession,
+                    command);
+                return result.IsSuccessStatusCode;
+            } catch (Exception ex)
+            {
+                Logger.Error(ex, "Failed to send close session command.");
+                return false;
+            }
         }
 
         private bool ShouldClose(DateTime now, GameSession session)

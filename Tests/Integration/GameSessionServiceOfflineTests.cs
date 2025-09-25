@@ -34,7 +34,7 @@ public class GameSessionServiceOfflineTests : IDisposable
 
         WebServiceMock
             .Setup(ws => ws.PostJson(It.IsAny<string>(), It.IsAny<object>()))
-            .ReturnsAsync(false);
+            .ThrowsAsync(new HttpRequestException("Request failed"));
 
         SessionsService = new GameSessionService(
             PluginCtxMock.Object,

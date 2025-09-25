@@ -2,10 +2,21 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <sys:String x:Key="LOC_Loading_SyncClientServer">Syncing library with server...</sys:String>
-    <sys:String x:Key="LOC_Failed_SyncClientServer">Syncing library with PlayAtlas server failed.</sys:String>
-    <sys:String x:Key="LOC_Failed_SyncMediaFiles">Syncing media files with PlayAtlas server failed.</sys:String>
-    <sys:String x:Key="LOC_Failed_SyncSessions">Syncing game sessions with PlayAtlas server failed.</sys:String>
-    <sys:String x:Key="LOC_Success_SyncClientServer">Successfully synced library with web server.</sys:String>
+    <sys:String x:Key="LOC_Failed_SyncClientServer">
+        Failed to sync your library with PlayAtlas.
+        Make sure your PlayAtlas server is reachable and the extension is registered and trusted. Check logs for more details.
+    </sys:String>
+    <sys:String x:Key="LOC_Failed_SyncMediaFiles">
+        Failed to sync your media files with PlayAtlas.
+        Make sure your PlayAtlas server is reachable and the extension is registered and trusted. Check logs for more details.
+    </sys:String>
+    <sys:String x:Key="LOC_Failed_SyncSessions">
+        Failed to sync your game sessions with PlayAtlas.
+        Make sure your PlayAtlas server is reachable and the extension is registered and trusted. Check logs for more details.
+    </sys:String>
+    <sys:String x:Key="LOC_Success_SyncClientServer">Library successfully synced with PlayAtlas.</sys:String>
+    <sys:String x:Key="LOC_Success_Extension_Registration">Extension registration was requested. Approve it in the PlayAtlas UI.</sys:String>
+    <sys:String x:Key="LOC_Failed_Extension_Registration">Failed to register the extension. Check logs for details.</sys:String>
     
     <!-- Labels -->
     <sys:String x:Key="LOC_Label_WebServerURL">PlayAtlas Web Server URL</sys:String>

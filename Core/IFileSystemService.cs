@@ -34,6 +34,10 @@ namespace Core
         /// </summary>
         FileStream FileOpenRead(string path);
         /// <summary>
+        /// Mimics <see cref="System.IO.File.ReadAllBytes(string)"/>
+        /// </summary>
+        byte[] FileReadAllBytes(string path);
+        /// <summary>
         /// Mimics <see cref="System.IO.Directory.GetFiles(string, string)"/>
         /// </summary>
         string[] DirectoryGetFiles(string path, string searchPattern);

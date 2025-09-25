@@ -67,12 +67,14 @@
     <Compile Include="LibExporter\LibExporter.cs" />
     <Compile Include="Models\BaseCommand.cs" />
     <Compile Include="Models\CloseSessionCommand.cs" />
+    <Compile Include="Models\Error\ExtensionException.cs" />
     <Compile Include="Models\GameSession.cs" />
     <Compile Include="Models\HttpServerPayload.cs" />
     <Compile Include="Models\OpenSessionCommand.cs" />
     <Compile Include="Models\PlayniteGameDTO.cs" />
     <Compile Include="Models\PlayniteLibraryManifest.cs" />
     <Compile Include="Models\RegisterExtensionCommand.cs" />
+    <Compile Include="Models\RegisterExtensionResponseDTO.cs" />
     <Compile Include="Models\SyncGameListCommand.cs" />
     <Compile Include="Models\ValidationResult.cs" />
     <Compile Include="Models\WebAppEndpoints.cs" />

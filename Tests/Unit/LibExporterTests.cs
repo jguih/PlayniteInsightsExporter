@@ -39,6 +39,9 @@ public class LibExporterTests
         HashServiceMock
             .Setup(x => x.GetHashFromPlayniteGame(It.IsAny<Game>()))
             .Returns(Guid.NewGuid().ToString());
+        WebServiceMock
+            .Setup(ws => ws.PostJson(It.IsAny<string>(), It.IsAny<object>()))
+            .ReturnsAsync(new HttpResponseMessage(System.Net.HttpStatusCode.OK));
 
         LibExporter = new LibExporter(
             ProgressService: ProgressServiceMock.Object,

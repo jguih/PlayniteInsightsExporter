@@ -41,13 +41,19 @@ namespace PlayniteInsightsExporter.Lib
             var shareXService = new ShareXService(plugin);
             var keyManager = new KeyManager(plugin);
             var signatureService = new SignatureService(keyManager);
+            var fileSystemService = new FileSystemService();
 
             AppLogger = new PlayniteLogger(logger);
             ProgressService = new PlayniteProgressService(plugin.PlayniteApi, AppLogger);
             GameRepository = new PlayniteGameRepository(plugin.PlayniteApi, AppLogger);
             FileSystemService = new FileSystemService();
             HashService = new HashService(AppLogger);
-            WebServerService = new PlayAtlasWebServerService(plugin, AppLogger, signatureService, HashService);
+            WebServerService = new PlayAtlasWebServerService(
+                plugin, 
+                AppLogger, 
+                signatureService, 
+                HashService,
+                () => ExtensionRegistrationService.GetRegistrationId());
             LibExporter = new LibExporter(
                 ProgressService,
                 GameRepository,
@@ -66,7 +72,7 @@ namespace PlayniteInsightsExporter.Lib
                 ProgressService);
             ScreenCaptureService = new ScreenCaptureService(shareXService);
             HttpServer = new HttpServer(plugin, AppLogger, ScreenCaptureService, signatureService);
-            ExtensionRegistrationService = new ExtensionRegistrationService(keyManager, WebServerService, plugin);
+            ExtensionRegistrationService = new ExtensionRegistrationService(keyManager, WebServerService, plugin, fileSystemService);
         }
     }
 }
