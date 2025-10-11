@@ -49,7 +49,7 @@ namespace Core.ExtensionRegistration
             try
             {
                 var response = await webServer.CheckHealth();
-                return response.IsSuccessStatusCode;
+                return response.StatusCode != System.Net.HttpStatusCode.Forbidden;
             }
             catch (ExtensionException)
             {
