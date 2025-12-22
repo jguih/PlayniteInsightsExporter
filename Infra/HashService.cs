@@ -15,10 +15,15 @@ namespace Infra
     public class HashService : IHashService
     {
         private readonly IAppLogger Logger;
+        private readonly IFileSystemService Fs;
 
-        public HashService(IAppLogger logger)
+        public HashService(
+            IAppLogger logger,
+            IFileSystemService fileSystemService
+        )
         {
             Logger = logger;
+            Fs = fileSystemService;
         }
 
         public string HashFolderContents(string dir)
@@ -168,6 +173,56 @@ namespace Infra
                 var bytes = Encoding.UTF8.GetBytes(input);
                 var hash = sha256.ComputeHash(bytes);
                 return Convert.ToBase64String(hash);
+            }
+        }
+
+        public string ComputeMediaFilesCanonicalHash(
+            string gameId,
+            string contentHash,
+            string mediaFolderPath
+        )
+        {
+            byte[] Utf8(string s) => Encoding.UTF8.GetBytes(s);
+            byte[] SEP = new byte[] { 0 };
+
+            using (var sha256 = SHA256.Create())
+            {
+                sha256.TransformBlock(Utf8(gameId), 0, Utf8(gameId).Length, null, 0);
+                sha256.TransformBlock(SEP, 0, SEP.Length, null, 0);
+
+                sha256.TransformBlock(Utf8(contentHash), 0, Utf8(contentHash).Length, null, 0);
+                sha256.TransformBlock(SEP, 0, SEP.Length, null, 0);
+
+                var files = Directory.GetFiles(mediaFolderPath)
+                    .Select(path => new
+                    {
+                        Path = path,
+                        Name = Path.GetFileName(path)
+                    })
+                    .OrderBy(f => f.Name, StringComparer.Ordinal);
+
+                foreach (var file in files)
+                {
+                    var filenameBytes = Utf8(file.Name);
+                    sha256.TransformBlock(filenameBytes, 0, filenameBytes.Length, null, 0);
+                    sha256.TransformBlock(SEP, 0, SEP.Length, null, 0);
+
+                    using (var stream = File.OpenRead(file.Path))
+                    {
+                        var buffer = new byte[8192];
+                        int read;
+
+                        while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            sha256.TransformBlock(buffer, 0, read, null, 0);
+                        }
+                    }
+
+                    sha256.TransformBlock(SEP, 0, SEP.Length, null, 0);
+                }
+
+                sha256.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                return Convert.ToBase64String(sha256.Hash);
             }
         }
     }

@@ -13,5 +13,10 @@ namespace Core
         string GetHashFromPlayniteGame(Game game);
         string GetHashForGameSession(string gameId, DateTime startTime);
         string ComputeSHA256HashString(string input);
+        string ComputeMediaFilesCanonicalHash(
+            string gameId,
+            string contentHash,
+            string mediaFolderPath
+        );
     }
 }

@@ -47,7 +47,7 @@ namespace PlayniteInsightsExporter.Lib
             ProgressService = new PlayniteProgressService(plugin.PlayniteApi, AppLogger);
             GameRepository = new PlayniteGameRepository(plugin.PlayniteApi, AppLogger);
             FileSystemService = new FileSystemService();
-            HashService = new HashService(AppLogger);
+            HashService = new HashService(AppLogger, fileSystemService);
             WebServerService = new PlayAtlasWebServerService(
                 plugin, 
                 AppLogger, 

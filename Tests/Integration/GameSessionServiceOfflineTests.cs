@@ -22,9 +22,9 @@ public class GameSessionServiceOfflineTests : IDisposable
     {
         LoggerMock = new Mock<IAppLogger>();
         PluginCtxMock = new Mock<IPlayAtlasExporterContext>();
-        var hashService = new HashService(LoggerMock.Object);
-        WebServiceMock = new Mock<IPlayAtlasWebServerService>();
         var fileSystem = new FileSystemService();
+        var hashService = new HashService(LoggerMock.Object, fileSystem);
+        WebServiceMock = new Mock<IPlayAtlasWebServerService>();
         SessionsDirPath = Path.GetTempPath() + $"{Guid.NewGuid()}-playnite-insights-sessions";
         var config = new GameSessionConfig
         {

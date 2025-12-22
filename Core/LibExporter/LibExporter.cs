@@ -1,16 +1,12 @@
 ﻿using Core.Models;
-using Newtonsoft.Json;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -197,11 +193,12 @@ namespace Core
         }
 
         private HttpContent GetMediaFilesHttpContent(
-            string gameId,
+            Game game,
             string contentHash,
             string mediaFolderPath
         )
         {
+            var gameId = game.Id.ToString();
             var content = new MultipartFormDataContent
             {
                 { new StringContent(gameId), "gameId" },
@@ -209,37 +206,29 @@ namespace Core
             };
             foreach (var file in Fs.DirectoryGetFiles(mediaFolderPath))
             {
-                var fileContent = new StreamContent(Fs.FileOpenRead(file));
-                var fileName = Fs.PathGetFileName(file);
-                fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                content.Add(fileContent, "files", fileName);
-            }
-            return content;
-        }
-
-        private string ComputeMediaFilesCanonicalHash(
-            string gameId,
-            string contentHash,
-            string mediaFolderPath
-        ) {
-            using (var sha256 = SHA256.Create())
-            {
-                sha256.TransformBlock(Encoding.UTF8.GetBytes(gameId), 0, Encoding.UTF8.GetByteCount(gameId), null, 0);
-                sha256.TransformBlock(Encoding.UTF8.GetBytes(contentHash), 0, Encoding.UTF8.GetByteCount(contentHash), null, 0);
-
-                var files = Fs.DirectoryGetFiles(mediaFolderPath)
-                              .Select(f => new { Path = f, Name = Fs.PathGetFileName(f) })
-                              .OrderBy(f => f.Name, StringComparer.Ordinal);
-
-                foreach (var file in files)
+                var extension = Path.GetExtension(file);
+                if (string.Equals(extension, ".ico", StringComparison.OrdinalIgnoreCase))
                 {
-                    var bytes = Fs.FileReadAllBytes(file.Path);
-                    sha256.TransformBlock(bytes, 0, bytes.Length, null, 0);
+                    continue;
                 }
 
-                sha256.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-                return Convert.ToBase64String(sha256.Hash);
+                var fileName = Fs.PathGetFileName(file);
+                var isBackground = game.BackgroundImage?.Contains(fileName) ?? false;
+                var isIcon = game.Icon?.Contains(fileName) ?? false;
+                var isCover = game.CoverImage?.Contains(fileName) ?? false;
+
+                var name = isBackground && !isIcon && !isCover
+                    ? "background"
+                    : isIcon && !isBackground && !isCover
+                    ? "icon"
+                    : isCover && !isBackground && !isIcon
+                    ? "cover"
+                    : fileName;
+                var fileContent = new StreamContent(Fs.FileOpenRead(file));
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                content.Add(fileContent, name, fileName);
             }
+            return content;
         }
 
         private async Task<bool> _RunMediaFilesSync(
@@ -254,6 +243,7 @@ namespace Core
             var sent = 0;
             var failed = 0;
             var manifest = await WebServerService.GetManifestAsync();
+
             foreach (var game in games)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -298,12 +288,12 @@ namespace Core
                     }
                 }
                 using (var content = GetMediaFilesHttpContent(
-                    gameId: gameId,
+                    game: game,
                     contentHash: contentHash,
                     mediaFolderPath: mediaFolder
                 ))
                 {
-                    var canonicalHash = ComputeMediaFilesCanonicalHash(
+                    var canonicalHash = HashService.ComputeMediaFilesCanonicalHash(
                         gameId: gameId,
                         contentHash: contentHash,
                         mediaFolderPath: mediaFolder
