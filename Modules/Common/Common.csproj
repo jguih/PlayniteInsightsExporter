@@ -51,10 +51,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application\AppLoggerPort.cs" />
+    <Compile Include="Application\PlayAtlasHttpClient\GetPlayAtlasManifestResponse.cs" />
     <Compile Include="Infra\HashServicePort.cs" />
-    <Compile Include="Application\PlayAtlasHttpClientPort.cs" />
+    <Compile Include="Application\PlayAtlasHttpClient\PlayAtlasHttpClientPort.cs" />
     <Compile Include="Application\PlayAtlasLibraryManifest.cs" />
-    <Compile Include="Application\PlayAtlastHttpClientResponse.cs" />
+    <Compile Include="Application\PlayAtlasHttpClient\PlayAtlastHttpClientResponse.cs" />
     <Compile Include="Application\SendGamesRequest.cs" />
     <Compile Include="Application\SendMediaFilesRequest.cs" />
     <Compile Include="Dtos\GameDto.cs" />

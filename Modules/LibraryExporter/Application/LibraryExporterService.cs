@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace LibraryExporter.Application
 {
-    public class LibraryExporter : ILibraryExporterPort
+    public class LibraryExporterService : ILibraryExporterServicePort
     {
         private readonly IAppLoggerPort appLogger;
         private readonly IPlayAtlasHttpClientPort playAtlasHttpClient;
@@ -19,7 +19,7 @@ namespace LibraryExporter.Application
         private readonly IFileSystemServicePort fileSystemService;
         private readonly ISystemConfigPort systemConfig;
 
-        public LibraryExporter(
+        public LibraryExporterService(
           IAppLoggerPort appLogger,
           IPlayAtlasHttpClientPort playAtlasHttpClient,
           IHashServicePort hashService,
@@ -138,20 +138,57 @@ namespace LibraryExporter.Application
             throw new NotImplementedException();
         }
 
-        public async Task<bool> ExportMediaFiles(IEnumerable<Game> games = null, CancellationToken cancellationToken = default)
+        public async Task<ExportMediaFilesResult> ExportMediaFiles(IEnumerable<Game> games = null, CancellationToken cancellationToken = default)
         {
             appLogger.Debug($"Starting library media files sync for {games.Count()} games.");
+
+            if (games == null || !games.Any())
+            {
+                return new ExportMediaFilesResult()
+                {
+                    ReasonCode = ExportMediaFilesResultReasonCode.Success,
+                    Reason = $"Success",
+                    OperationSuccess = true,
+                    Failed = 0,
+                    Success = 0,
+                    Skipped = 0
+                };
+            }
+
             int skipped = 0;
             int success = 0;
             int failed = 0;
-            var manifest = await playAtlasHttpClient.GetManifestAsync();
+            var manifestResponse = await playAtlasHttpClient.GetManifestAsync();
+
+            if(!manifestResponse.Success)
+            {
+                return new ExportMediaFilesResult()
+                {
+                    ReasonCode = ExportMediaFilesResultReasonCode.FailedToFetchManifest,
+                    Reason = $"Failed to fetch manifest: {manifestResponse.Reason}",
+                    OperationSuccess = false,
+                    Failed = failed,
+                    Success = success,
+                    Skipped = skipped
+                };
+            }
+
+            var manifest = manifestResponse.Manifest;
 
             foreach (var game in games)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
                     appLogger.Info("Library media files sync cancelled by user.");
-                    return true;
+                    return new ExportMediaFilesResult()
+                    {
+                        ReasonCode = ExportMediaFilesResultReasonCode.OperationCanceledByUser,
+                        Reason = "Operation canceled by user",
+                        OperationSuccess = true,
+                        Failed = failed,
+                        Success = success,
+                        Skipped = skipped
+                    };
                 }
 
                 string gameId = game.Id.ToString();
@@ -196,11 +233,32 @@ namespace LibraryExporter.Application
                 }
                 else
                 {
+                    appLogger.Error($"Failed to send media files to PlayAtlas server: {result.Reason}");
                     failed++;
                 }
             }
 
-            return true;
+            if (failed == 0)
+            {
+                return new ExportMediaFilesResult()
+                {
+                    ReasonCode = ExportMediaFilesResultReasonCode.Success,
+                    Reason = "Success",
+                    Failed = failed,
+                    Success = success,
+                    Skipped = skipped
+                };
+            }
+
+            return new ExportMediaFilesResult()
+            {
+                ReasonCode = ExportMediaFilesResultReasonCode.OneOrMoreFailed,
+                Reason = "One or more operations failed",
+                OperationSuccess = false,
+                Failed = failed,
+                Success = success,
+                Skipped = skipped
+            };
         }
     }
 }

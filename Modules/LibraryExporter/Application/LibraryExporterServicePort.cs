@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace LibraryExporter.Application
 {
-    public interface ILibraryExporterPort
+    public interface ILibraryExporterServicePort
     {
         bool ExportLibrary(
             List<Game> itemsToAdd = null,
@@ -21,6 +21,6 @@ namespace LibraryExporter.Application
             List<Game> itemsToRemove = null
         );
         bool ExportLibrary(List<Game> itemsToSync);
-        Task<bool> ExportMediaFiles(IEnumerable<Game> games = null, CancellationToken cancellationToken = default);
+        Task<ExportMediaFilesResult> ExportMediaFiles(IEnumerable<Game> games = null, CancellationToken cancellationToken = default);
     }
 }

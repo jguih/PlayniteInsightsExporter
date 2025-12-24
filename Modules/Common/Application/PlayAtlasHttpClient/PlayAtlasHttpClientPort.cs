@@ -8,7 +8,7 @@ namespace Common.Application
 {
     public interface IPlayAtlasHttpClientPort
     {
-        Task<PlayAtlasLibraryManifest> GetManifestAsync();
+        Task<GetPlayAtlasManifestResponse> GetManifestAsync();
         Task<PlayAtlastHttpClientResponse> SendGamesAsync(SendGamesRequest request);
         Task<PlayAtlastHttpClientResponse> SendMediaFilesAsync(SendMediaFilesRequest request);
     }

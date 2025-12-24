@@ -50,8 +50,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Application\LibraryExporter.cs" />
-    <Compile Include="Application\LibraryExporterPort.cs" />
+    <Compile Include="Application\ExportMediaFilesResult.cs" />
+    <Compile Include="Application\LibraryExporterService.cs" />
+    <Compile Include="Application\LibraryExporterServicePort.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
