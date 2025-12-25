@@ -8,14 +8,14 @@ namespace Common.Application
 {
     public class PlayAtlasLibraryManifestMediaExistsFor
     {
-        public string gameId { get; set; } = null;
-        public string contentHash { get; set; } = null;
+        public string gameId { get; set; }
+        public string contentHash { get; set; }
     }
 
     public class PlayAtlasLibraryManifestGameInLibrary
     {
-        public string gameId { get; set; } = null;
-        public string contentHash { get; set; } = null;
+        public string gameId { get; set; }
+        public string contentHash { get; set; }
     }
 
     public class PlayAtlasLibraryManifest
