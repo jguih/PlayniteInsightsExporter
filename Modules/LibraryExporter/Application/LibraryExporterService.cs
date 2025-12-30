@@ -138,12 +138,16 @@ namespace LibraryExporter.Application
             throw new NotImplementedException();
         }
 
-        public async Task<ExportMediaFilesResult> ExportMediaFiles(IEnumerable<Game> games = null, CancellationToken cancellationToken = default)
+        public async Task<ExportMediaFilesResult> ExportMediaFiles(
+            IEnumerable<Game> games = null,
+            CancellationToken cancellationToken = default
+        )
         {
-            appLogger.Debug($"Starting library media files sync for {games.Count()} games.");
+            appLogger.Debug($"Exporting media files for {games.Count()} games...");
 
             if (games == null || !games.Any())
             {
+                appLogger.Debug($"No game media files to export");
                 return new ExportMediaFilesResult()
                 {
                     ReasonCode = ExportMediaFilesResultReasonCode.Success,
@@ -160,8 +164,9 @@ namespace LibraryExporter.Application
             int failed = 0;
             var manifestResponse = await playAtlasHttpClient.GetManifestAsync();
 
-            if(!manifestResponse.Success)
+            if (!manifestResponse.Success)
             {
+                appLogger.Warn($"Export game media files failed. Could not fetch library manifest from server");
                 return new ExportMediaFilesResult()
                 {
                     ReasonCode = ExportMediaFilesResultReasonCode.FailedToFetchManifest,

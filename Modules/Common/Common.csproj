@@ -53,7 +53,12 @@
     <Compile Include="Application\AppLoggerPort.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\GetPlayAtlasManifestResponse.cs" />
     <Compile Include="Domain\AppCompany.cs" />
+    <Compile Include="Domain\AppCompletionStatus.cs" />
     <Compile Include="Domain\AppGame.cs" />
+    <Compile Include="Domain\AppGenre.cs" />
+    <Compile Include="Domain\AppPlatform.cs" />
+    <Compile Include="Domain\BaseEntity.cs" />
+    <Compile Include="Error\InvalidStateException.cs" />
     <Compile Include="Infra\HashServicePort.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\PlayAtlasHttpClientPort.cs" />
     <Compile Include="Application\PlayAtlasLibraryManifest.cs" />

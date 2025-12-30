@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace Common.Domain
 {
-    public class AppCompany : BaseEntity
+    public class AppGenre : BaseEntity
     {
         private Guid id;
         private string name;
 
         public Guid Id
-        { 
+        {
             get { return id; }
             set
             {
@@ -34,16 +34,12 @@ namespace Common.Domain
             }
         }
 
-        public AppCompany() { }
+        public AppGenre() { }
 
-        public AppCompany(Guid id, string name)
+        public AppGenre(Guid id, string name)
         {
             Id = id;
             Name = name;
-        }
-
-        public override void Validate()
-        {
         }
     }
 }
