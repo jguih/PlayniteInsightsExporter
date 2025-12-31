@@ -7,8 +7,8 @@
     <ProjectGuid>{4F2FED71-1797-4176-956A-C4DB34C2C8ED}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LibraryExporter</RootNamespace>
-    <AssemblyName>LibraryExporter</AssemblyName>
+    <RootNamespace>ExporterLibraryExporter</RootNamespace>
+    <AssemblyName>ExporterLibraryExporter</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -33,9 +33,6 @@
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="Playnite.SDK, Version=6.12.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\PlayniteSDK.6.12.0\lib\net462\Playnite.SDK.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -63,9 +60,9 @@
     <Folder Include="Infra\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Common\Common.csproj">
+    <ProjectReference Include="..\Common\ExporterCommon.csproj">
       <Project>{0c45c5bf-6076-4d80-9dba-59edd13169b2}</Project>
-      <Name>Common</Name>
+      <Name>ExporterCommon</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

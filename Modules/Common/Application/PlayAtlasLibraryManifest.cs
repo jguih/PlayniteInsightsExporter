@@ -4,24 +4,35 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common.Application
+namespace ExporterCommon.Application
 {
-    public class PlayAtlasLibraryManifestMediaExistsFor
+    public class PlayAtlasLibraryManifestItem
     {
-        public string gameId { get; set; }
-        public string contentHash { get; set; }
-    }
+        public readonly string GameId;
+        public readonly string ContentHash;
 
-    public class PlayAtlasLibraryManifestGameInLibrary
-    {
-        public string gameId { get; set; }
-        public string contentHash { get; set; }
+        public PlayAtlasLibraryManifestItem(string gameId, string contentHash)
+        {
+            GameId = gameId;
+            ContentHash = contentHash;
+        }
     }
 
     public class PlayAtlasLibraryManifest
     {
-        public int totalGamesInLibrary { get; set; } = 0;
-        public List<PlayAtlasLibraryManifestGameInLibrary> gamesInLibrary { get; set; } = new List<PlayAtlasLibraryManifestGameInLibrary>();
-        public List<PlayAtlasLibraryManifestMediaExistsFor> mediaExistsFor { get; set; } = new List<PlayAtlasLibraryManifestMediaExistsFor>();
+        public readonly int TotalGamesInLibrary = 0;
+        public readonly IReadOnlyCollection<PlayAtlasLibraryManifestItem> GamesInLibrary = new List<PlayAtlasLibraryManifestItem>();
+        public readonly IReadOnlyCollection<PlayAtlasLibraryManifestItem> MediaExistsFor = new List<PlayAtlasLibraryManifestItem>();
+
+        public PlayAtlasLibraryManifest(
+            int totalGamesInLibrary, 
+            IReadOnlyCollection<PlayAtlasLibraryManifestItem> gamesInLibrary, 
+            IReadOnlyCollection<PlayAtlasLibraryManifestItem> mediaExistsFor
+        )
+        {
+            TotalGamesInLibrary = totalGamesInLibrary;
+            GamesInLibrary = gamesInLibrary;
+            MediaExistsFor = mediaExistsFor;
+        }
     }
 }

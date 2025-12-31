@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common.Application
+namespace ExporterCommon.Application
 {
     public class GetPlayAtlasManifestResponse : PlayAtlastHttpClientResponse
     {
@@ -26,6 +26,5 @@ namespace Common.Application
 
             Manifest = manifest;
         }
-
     }
 }

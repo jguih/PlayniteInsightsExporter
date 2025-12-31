@@ -1,8 +1,8 @@
-﻿using Common.Error;
+﻿using ExporterCommon.Error;
 using System;
 using System.Collections.Generic;
 
-namespace Common.Domain
+namespace ExporterCommon.Domain
 {
     public class AppGame : BaseEntity
     {

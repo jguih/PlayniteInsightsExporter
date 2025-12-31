@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common.Application
+namespace ExporterCommon.Application
 {
     public enum MediaRole
     {
@@ -15,8 +15,10 @@ namespace Common.Application
 
     public class MediaFileDescriptor
     {
-        public readonly MediaRole Role;
-        public readonly string FullPath;
+        public MediaRole Role { get; set; }
+        public string FullPath { get; set; }
+
+        public MediaFileDescriptor() { }
 
         public MediaFileDescriptor(MediaRole role, string fullPath)
         {
@@ -29,12 +31,19 @@ namespace Common.Application
     public class SendMediaFilesRequest
     {
         public readonly static string ENDPOINT = "/api/extension/sync/files";
-        public readonly string GameId;
-        public readonly string ContentHash;
-        public readonly string CanonicalHash;
-        public readonly IReadOnlyCollection<MediaFileDescriptor> MediaFiles;
+        public string GameId { get; set; }
+        public string ContentHash { get; set; }
+        public string CanonicalHash { get; set; }
+        public IEnumerable<MediaFileDescriptor> MediaFiles { get; set; }
 
-        public SendMediaFilesRequest(string gameId, string contentHash, string canonicalHash, IReadOnlyCollection<MediaFileDescriptor> mediaFiles)
+        public SendMediaFilesRequest() { }
+
+        public SendMediaFilesRequest(
+            string gameId,
+            string contentHash,
+            string canonicalHash,
+            IEnumerable<MediaFileDescriptor> mediaFiles
+        )
         {
             GameId = gameId;
             ContentHash = contentHash;

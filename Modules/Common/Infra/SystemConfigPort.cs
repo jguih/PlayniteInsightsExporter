@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common.Infra
+namespace ExporterCommon.Infra
 {
     public interface ISystemConfigPort
     {
-        string GetLibraryFilesDirPath();
+        string LibraryFilesDirPath { get; set; }
     }
 }

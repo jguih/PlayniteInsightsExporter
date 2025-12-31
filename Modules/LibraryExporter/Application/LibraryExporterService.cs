@@ -1,15 +1,13 @@
-﻿using Common.Application;
-using Common.Infra;
-using Playnite.SDK.Models;
+﻿using ExporterCommon.Application;
+using ExporterCommon.Domain;
+using ExporterCommon.Infra;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace LibraryExporter.Application
+namespace ExporterLibraryExporter.Application
 {
     public class LibraryExporterService : ILibraryExporterServicePort
     {
@@ -41,8 +39,8 @@ namespace LibraryExporter.Application
                 return false;
             }
 
-            var gameInLibrary = manifest?.gamesInLibrary?
-                    .Where((gil) => gil.gameId == gameId)
+            var gameInLibrary = manifest?.GamesInLibrary?
+                    .Where(item => item.GameId == gameId)
                     .FirstOrDefault() ?? null;
 
             return gameInLibrary != null;
@@ -55,13 +53,13 @@ namespace LibraryExporter.Application
                 return false;
             }
 
-            var mediaExistsForEntry = manifest?.mediaExistsFor?
-                        .Where(m => m.gameId == gameId)
+            var mediaExistsForEntry = manifest?.MediaExistsFor?
+                        .Where(item => item.GameId == gameId)
                         .FirstOrDefault() ?? null;
 
             if (mediaExistsForEntry != null)
             {
-                if (mediaExistsForEntry.contentHash == contentHash)
+                if (mediaExistsForEntry.ContentHash == contentHash)
                 {
                     return false;
                 }
@@ -71,7 +69,7 @@ namespace LibraryExporter.Application
         }
 
         private IReadOnlyCollection<MediaFileDescriptor> GetMediaFileDescriptors(
-            Game game,
+            AppGame game,
             string mediaFolderPath
         )
         {
@@ -96,7 +94,7 @@ namespace LibraryExporter.Application
                     files.Select(fileSystemService.PathGetFullPath),
                     StringComparer.OrdinalIgnoreCase
                 );
-            var libraryFilesDir = systemConfig.GetLibraryFilesDirPath();
+            var libraryFilesDir = systemConfig.LibraryFilesDirPath;
             var descriptors = new List<MediaFileDescriptor>();
 
             void TryAdd(string relativePath, MediaRole role)
@@ -123,23 +121,31 @@ namespace LibraryExporter.Application
             return descriptors;
         }
 
-        public bool ExportLibrary(List<Game> itemsToAdd = null, List<Game> itemsToUpdate = null, List<Game> itemsToRemove = null)
+        public bool ExportLibrary(
+            List<AppGame> itemsToAdd = null, 
+            List<AppGame> itemsToUpdate = null, 
+            List<AppGame> itemsToRemove = null
+        )
         {
             throw new NotImplementedException();
         }
 
-        public bool ExportLibrary(List<Game> itemsToSync)
+        public bool ExportLibrary(List<AppGame> itemsToSync)
         {
             throw new NotImplementedException();
         }
 
-        public Task<bool> ExportLibraryAsync(List<Game> itemsToAdd = null, List<Game> itemsToUpdate = null, List<Game> itemsToRemove = null)
+        public Task<bool> ExportLibraryAsync(
+            List<AppGame> itemsToAdd = null, 
+            List<AppGame> itemsToUpdate = null, 
+            List<AppGame> itemsToRemove = null
+        )
         {
             throw new NotImplementedException();
         }
 
         public async Task<ExportMediaFilesResult> ExportMediaFiles(
-            IEnumerable<Game> games = null,
+            IEnumerable<AppGame> games = null,
             CancellationToken cancellationToken = default
         )
         {
@@ -151,7 +157,7 @@ namespace LibraryExporter.Application
                 return new ExportMediaFilesResult()
                 {
                     ReasonCode = ExportMediaFilesResultReasonCode.Success,
-                    Reason = $"Success",
+                    Reason = "Success",
                     OperationSuccess = true,
                     Failed = 0,
                     Success = 0,
@@ -197,7 +203,7 @@ namespace LibraryExporter.Application
                 }
 
                 string gameId = game.Id.ToString();
-                string mediaFolderPath = fileSystemService.PathCombine(systemConfig.GetLibraryFilesDirPath(), gameId);
+                string mediaFolderPath = fileSystemService.PathCombine(systemConfig.LibraryFilesDirPath, gameId);
                 string contentHash = hashService.ComputeHashFromFolderContents(mediaFolderPath);
 
                 if (string.IsNullOrEmpty(contentHash))
@@ -249,6 +255,7 @@ namespace LibraryExporter.Application
                 {
                     ReasonCode = ExportMediaFilesResultReasonCode.Success,
                     Reason = "Success",
+                    OperationSuccess = true,
                     Failed = failed,
                     Success = success,
                     Skipped = skipped
