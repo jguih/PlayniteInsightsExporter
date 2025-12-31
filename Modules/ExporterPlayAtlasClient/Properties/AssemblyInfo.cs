@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // As informações gerais sobre um assembly são controladas por
 // conjunto de atributos. Altere estes valores de atributo para modificar as informações
 // associada a um assembly.
-[assembly: AssemblyTitle("LibraryExporter")]
+[assembly: AssemblyTitle("ExporterPlayAtlasClient")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("LibraryExporter")]
+[assembly: AssemblyProduct("ExporterPlayAtlasClient")]
 [assembly: AssemblyCopyright("Copyright ©  2025")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // O GUID a seguir será destinado à ID de typelib se este projeto for exposto para COM
-[assembly: Guid("92791e35-59a9-4be8-a6da-df94532adee2")]
+[assembly: Guid("84a1a852-ae99-4897-ad52-aacf2633ef7c")]
 
 // As informações da versão de um assembly consistem nos quatro valores a seguir:
 //

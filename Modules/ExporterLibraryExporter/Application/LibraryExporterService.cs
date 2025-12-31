@@ -122,8 +122,8 @@ namespace ExporterLibraryExporter.Application
         }
 
         public bool ExportLibrary(
-            List<AppGame> itemsToAdd = null, 
-            List<AppGame> itemsToUpdate = null, 
+            List<AppGame> itemsToAdd = null,
+            List<AppGame> itemsToUpdate = null,
             List<AppGame> itemsToRemove = null
         )
         {
@@ -136,8 +136,8 @@ namespace ExporterLibraryExporter.Application
         }
 
         public Task<bool> ExportLibraryAsync(
-            List<AppGame> itemsToAdd = null, 
-            List<AppGame> itemsToUpdate = null, 
+            List<AppGame> itemsToAdd = null,
+            List<AppGame> itemsToUpdate = null,
             List<AppGame> itemsToRemove = null
         )
         {
@@ -154,15 +154,14 @@ namespace ExporterLibraryExporter.Application
             if (games == null || !games.Any())
             {
                 appLogger.Debug($"No game media files to export");
-                return new ExportMediaFilesResult()
-                {
-                    ReasonCode = ExportMediaFilesResultReasonCode.Success,
-                    Reason = "Success",
-                    OperationSuccess = true,
-                    Failed = 0,
-                    Success = 0,
-                    Skipped = 0
-                };
+                return new ExportMediaFilesResult(
+                        reasonCode: ExportMediaFilesResultReasonCode.Success,
+                        reason: "Success",
+                        operationSuccess: true,
+                        skipped: 0,
+                        success: 0,
+                        failed: 0
+                    );
             }
 
             int skipped = 0;
@@ -173,15 +172,14 @@ namespace ExporterLibraryExporter.Application
             if (!manifestResponse.Success)
             {
                 appLogger.Warn($"Export game media files failed. Could not fetch library manifest from server");
-                return new ExportMediaFilesResult()
-                {
-                    ReasonCode = ExportMediaFilesResultReasonCode.FailedToFetchManifest,
-                    Reason = $"Failed to fetch manifest: {manifestResponse.Reason}",
-                    OperationSuccess = false,
-                    Failed = failed,
-                    Success = success,
-                    Skipped = skipped
-                };
+                return new ExportMediaFilesResult(
+                        reasonCode: ExportMediaFilesResultReasonCode.FailedToFetchManifest,
+                        reason: $"Failed to fetch manifest: {manifestResponse.Reason}",
+                        operationSuccess: false,
+                        skipped: skipped,
+                        success: success,
+                        failed: failed
+                    );
             }
 
             var manifest = manifestResponse.Manifest;
@@ -191,15 +189,14 @@ namespace ExporterLibraryExporter.Application
                 if (cancellationToken.IsCancellationRequested)
                 {
                     appLogger.Info("Library media files sync cancelled by user.");
-                    return new ExportMediaFilesResult()
-                    {
-                        ReasonCode = ExportMediaFilesResultReasonCode.OperationCanceledByUser,
-                        Reason = "Operation canceled by user",
-                        OperationSuccess = true,
-                        Failed = failed,
-                        Success = success,
-                        Skipped = skipped
-                    };
+                    return new ExportMediaFilesResult(
+                            reasonCode: ExportMediaFilesResultReasonCode.OperationCanceledByUser,
+                            reason: "Operation canceled by user",
+                            operationSuccess: true,
+                            skipped: skipped,
+                            success: success,
+                            failed: failed
+                        );
                 }
 
                 string gameId = game.Id.ToString();
@@ -251,26 +248,24 @@ namespace ExporterLibraryExporter.Application
 
             if (failed == 0)
             {
-                return new ExportMediaFilesResult()
-                {
-                    ReasonCode = ExportMediaFilesResultReasonCode.Success,
-                    Reason = "Success",
-                    OperationSuccess = true,
-                    Failed = failed,
-                    Success = success,
-                    Skipped = skipped
-                };
+                return new ExportMediaFilesResult(
+                            reasonCode: ExportMediaFilesResultReasonCode.Success,
+                            reason: "Success",
+                            operationSuccess: true,
+                            skipped: skipped,
+                            success: success,
+                            failed: failed
+                        );
             }
 
-            return new ExportMediaFilesResult()
-            {
-                ReasonCode = ExportMediaFilesResultReasonCode.OneOrMoreFailed,
-                Reason = "One or more operations failed",
-                OperationSuccess = false,
-                Failed = failed,
-                Success = success,
-                Skipped = skipped
-            };
+            return new ExportMediaFilesResult(
+                    reasonCode: ExportMediaFilesResultReasonCode.OneOrMoreFailed,
+                    reason: "One or more operations failed",
+                    operationSuccess: false,
+                    skipped: skipped,
+                    success: success,
+                    failed: failed
+                );
         }
     }
 }
