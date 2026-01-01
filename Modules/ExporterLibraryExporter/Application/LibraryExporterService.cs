@@ -227,7 +227,7 @@ namespace ExporterLibraryExporter.Application
                         mediaFolderPath: mediaFolderPath
                     );
                 var descriptors = GetMediaFileDescriptors(game, mediaFolderPath);
-                var request = new SendMediaFilesRequest(
+                var request = new SyncMediaFilesRequest(
                         gameId: gameId,
                         contentHash: contentHash,
                         canonicalHash: canonicalHash,

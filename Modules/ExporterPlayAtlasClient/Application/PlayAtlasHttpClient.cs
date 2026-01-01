@@ -17,19 +17,22 @@ namespace ExporterPlayAtlasClient.Application
         private readonly IExporterPluginContextPort pluginContext;
         private readonly ISystemConfigPort systemConfig;
         private readonly ISignatureServicePort signatureService;
+        private readonly IHashServicePort hashService;
         private readonly HttpClient httpClient;
 
         public PlayAtlasHttpClient(
             IAppLoggerPort appLogger,
             IExporterPluginContextPort pluginContext,
             ISystemConfigPort systemConfig,
-            ISignatureServicePort signatureService
+            ISignatureServicePort signatureService,
+            IHashServicePort hashService
         )
         {
             this.appLogger = appLogger;
             this.pluginContext = pluginContext;
             this.systemConfig = systemConfig;
             this.signatureService = signatureService;
+            this.hashService = hashService;
             httpClient = new HttpClient();
         }
 
@@ -43,32 +46,56 @@ namespace ExporterPlayAtlasClient.Application
             return $"{webAppUrl.TrimEnd('/')}/{endpoint.TrimStart('/')}";
         }
 
+        private HttpRequestMessage CreateSignedRequest(
+            HttpMethod method,
+            string endpoint,
+            HttpContent content = null,
+            string bodyHash = null
+        )
+        {
+            string serverUrl = pluginContext.GetWebServerURL();
+            string requestUrl = ParseUrl(endpoint);
+            string registrationId = systemConfig.GetExtensionRegistrationId();
+            string extensionId = pluginContext.GetExtensionId();
+
+            byte[] canonicalBytes = signatureService.BuildRequestCanonicalString(
+                method: method,
+                endpoint: endpoint,
+                bodyHash: bodyHash
+            );
+
+            string signatureBase64 = signatureService.Sign(canonicalBytes);
+
+            var request = new HttpRequestMessage(method, requestUrl);
+
+            if (content != null)
+            {
+                request.Content = content;
+            }
+
+            request.Headers.Add("Origin", serverUrl);
+            request.Headers.Add("Referer", serverUrl);
+            request.Headers.Add("X-Signature", signatureBase64);
+            request.Headers.Add("X-ExtensionId", extensionId);
+            request.Headers.Add("X-RegistrationId", registrationId);
+
+            if (bodyHash != null)
+            {
+                request.Headers.Add("X-ContentHash", bodyHash);
+            }
+
+            return request;
+        }
+
+
         public async Task<PlayAtlasLibraryManifest> GetManifestAsync()
         {
             try
             {
                 string endpoint = SendGetManifestRequest.ENDPOINT;
-                string serverUrl = pluginContext.GetWebServerURL();
-                string requestUrl = ParseUrl(endpoint);
-                string registrationId = systemConfig.GetExtensionRegistrationId();
-                string extensionId = pluginContext.GetExtensionId();
-                byte[] canonicalBytes = signatureService.BuildRequestCanonicalString(
-                        method: HttpMethod.Get,
-                        endpoint: SendGetManifestRequest.ENDPOINT,
-                        bodyHash: null
-                    );
-                string signatureBase64 = signatureService.Sign(canonicalBytes);
-
-                using (var request = new HttpRequestMessage(HttpMethod.Get, requestUrl))
+                using (var request = CreateSignedRequest(HttpMethod.Get, endpoint))
+                using (var response = await httpClient.SendAsync(request))
                 {
-                    request.Headers.Add("Origin", serverUrl);
-                    request.Headers.Add("Referer", serverUrl);
-                    request.Headers.Add("X-Signature", signatureBase64);
-                    request.Headers.Add("X-ExtensionId", extensionId);
-                    request.Headers.Add("X-RegistrationId", registrationId);
-
-                    var response = await httpClient.SendAsync(request);
-
                     response.EnsureSuccessStatusCode();
 
                     var body = await response.Content.ReadAsStringAsync();
@@ -76,19 +103,51 @@ namespace ExporterPlayAtlasClient.Application
 
                     return manifest;
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 appLogger.Error("PlayAtlas manifest request failed", ex);
-                throw ex;
+                throw;
             }
         }
 
-        public Task SendGamesAsync(SendGamesRequest request)
+        public async Task SyncGamesAsync(SyncGamesRequest request)
         {
-            throw new NotImplementedException();
+            try
+            {
+                string endpoint = SyncGamesRequest.ENDPOINT;
+                string requestBody = request.ToJsonString();
+                string contentHash = hashService.ComputeSHA256HashFromString(requestBody);
+
+                using (
+                    var jsonContent = new StringContent(
+                        requestBody,
+                        Encoding.UTF8,
+                        "application/json"
+                    )
+                )
+                using (
+                    var signedRequest = CreateSignedRequest(
+                        HttpMethod.Post,
+                        endpoint,
+                        jsonContent,
+                        contentHash
+                    )
+                )
+                using (var response = await httpClient.SendAsync(signedRequest))
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                appLogger.Error("PlayAtlas request to sync games failed", ex);
+                throw;
+            }
         }
 
-        public Task SendMediaFilesAsync(SendMediaFilesRequest request)
+        public Task SendMediaFilesAsync(SyncMediaFilesRequest request)
         {
             throw new NotImplementedException();
         }

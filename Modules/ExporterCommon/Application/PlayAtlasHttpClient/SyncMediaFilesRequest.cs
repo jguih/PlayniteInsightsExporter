@@ -28,7 +28,7 @@ namespace ExporterCommon.Application
     }
 
 
-    public class SendMediaFilesRequest
+    public class SyncMediaFilesRequest
     {
         public readonly static string ENDPOINT = "/api/extension/sync/files";
         public string GameId { get; set; }
@@ -36,9 +36,9 @@ namespace ExporterCommon.Application
         public string CanonicalHash { get; set; }
         public IEnumerable<MediaFileDescriptor> MediaFiles { get; set; }
 
-        public SendMediaFilesRequest() { }
+        public SyncMediaFilesRequest() { }
 
-        public SendMediaFilesRequest(
+        public SyncMediaFilesRequest(
             string gameId,
             string contentHash,
             string canonicalHash,

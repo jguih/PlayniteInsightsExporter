@@ -16,5 +16,6 @@ namespace ExporterCommon.Application
             string contentHash,
             string mediaFolderPath
         );
+        string ComputeSHA256HashFromString(string input);
     }
 }

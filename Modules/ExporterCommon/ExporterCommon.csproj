@@ -63,8 +63,8 @@
     <Compile Include="Infra\HashServicePort.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\PlayAtlasHttpClientPort.cs" />
     <Compile Include="Application\PlayAtlasLibraryManifest.cs" />
-    <Compile Include="Application\PlayAtlasHttpClient\SendGamesRequest.cs" />
-    <Compile Include="Application\PlayAtlasHttpClient\SendMediaFilesRequest.cs" />
+    <Compile Include="Application\PlayAtlasHttpClient\SyncGamesRequest.cs" />
+    <Compile Include="Application\PlayAtlasHttpClient\SyncMediaFilesRequest.cs" />
     <Compile Include="Dtos\GameDto.cs" />
     <Compile Include="Infra\FileSystemServicePort.cs" />
     <Compile Include="Infra\SignatureServicePort.cs" />
