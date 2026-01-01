@@ -166,5 +166,10 @@ namespace ExporterSystem.Infra
                 return Convert.ToBase64String(sha256.Hash);
             }
         }
+
+        public string ComputeSHA256HashFromString(string input)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

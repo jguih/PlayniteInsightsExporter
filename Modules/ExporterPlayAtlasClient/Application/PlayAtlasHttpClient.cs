@@ -61,7 +61,7 @@ namespace ExporterPlayAtlasClient.Application
         {
             string serverUrl = pluginContext.GetWebServerURL();
             string requestUrl = ParseUrl(endpoint);
-            string registrationId = systemConfig.GetExtensionRegistrationId();
+            string registrationId = systemConfig.ExtensionRegistrationId;
             string extensionId = pluginContext.GetExtensionId();
 
             byte[] canonicalBytes = signatureService.BuildRequestCanonicalString(

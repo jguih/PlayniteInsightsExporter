@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{56A9FC4F-D3E0-47D5-A6A3-A20379584E0D}</ProjectGuid>
+    <ProjectGuid>{BD220E5D-A3E9-42D9-9842-28102E2E34D8}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ExporterSystem</RootNamespace>
-    <AssemblyName>ExporterSystem</AssemblyName>
+    <RootNamespace>ExporterBootstrap</RootNamespace>
+    <AssemblyName>ExporterBootstrap</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -31,12 +31,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="BouncyCastle.Crypto, Version=1.9.0.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Portable.BouncyCastle.1.9.0\lib\net40\BouncyCastle.Crypto.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -47,13 +41,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Infra\ExtensionRegistration.cs" />
-    <Compile Include="Infra\FileSystemService.cs" />
-    <Compile Include="Infra\HashService.cs" />
-    <Compile Include="Infra\KeyManager.cs" />
-    <Compile Include="Infra\KeyManagerPort.cs" />
-    <Compile Include="Infra\SignatureService.cs" />
-    <Compile Include="Infra\SystemConfig.cs" />
+    <Compile Include="Application\ExporterConfigApi.cs" />
+    <Compile Include="Application\ExporterApi.cs" />
+    <Compile Include="Application\ExporterInfraApi.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -61,9 +51,18 @@
       <Project>{0c45c5bf-6076-4d80-9dba-59edd13169b2}</Project>
       <Name>ExporterCommon</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
+    <ProjectReference Include="..\ExporterLibraryExporter\ExporterLibraryExporter.csproj">
+      <Project>{4f2fed71-1797-4176-956a-c4db34c2c8ed}</Project>
+      <Name>ExporterLibraryExporter</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ExporterPlayAtlasClient\ExporterPlayAtlasClient.csproj">
+      <Project>{84a1a852-ae99-4897-ad52-aacf2633ef7c}</Project>
+      <Name>ExporterPlayAtlasClient</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ExporterSystem\ExporterSystem.csproj">
+      <Project>{56a9fc4f-d3e0-47d5-a6a3-a20379584e0d}</Project>
+      <Name>ExporterSystem</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

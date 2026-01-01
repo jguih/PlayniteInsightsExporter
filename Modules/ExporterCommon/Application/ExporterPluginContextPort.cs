@@ -8,7 +8,8 @@ namespace ExporterCommon.Application
 {
     public interface IExporterPluginContextPort
     {
-        string GetExtensionDataFolderPath();
+        string GetExtensionDataDirPath();
+        string GetConfigurationDirPath();
         string GetWebServerURL();
         /// <summary>
         /// Gets the ShareX executable path
@@ -20,6 +21,5 @@ namespace ExporterCommon.Application
         string GetHttpServerPort();
         string GetExtensionVersion();
         string GetExtensionId();
-        string GetSecurityDirectoryPath();
     }
 }

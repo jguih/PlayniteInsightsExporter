@@ -1,30 +1,52 @@
-﻿using ExporterCommon.Infra;
+﻿using ExporterCommon.Application;
+using ExporterCommon.Infra;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ExporterSystem.Infra
 {
+
     public class SystemConfig : ISystemConfigPort
     {
-        private string libraryFilesDirPath;
+        private readonly IExporterPluginContextPort pluginContext;
+        private readonly IFileSystemServicePort fileSystemService;
 
-        public string LibraryFilesDirPath
+        public string LibraryFilesDirPath { get; }
+        public string SecurityDirPath { get; }
+        public string ExtensionRegistrationId { get; } = null;
+        public string RegistrationId { get; set; } = null;
+
+        public SystemConfig(
+            IExporterPluginContextPort pluginContext,
+            IFileSystemServicePort fileSystemService
+        ) 
         {
-            get
-            {
-                return libraryFilesDirPath;
-            }
-            set
-            {
-                if (string.IsNullOrEmpty(value))
-                    throw new ArgumentNullException(nameof(LibraryFilesDirPath));
-                libraryFilesDirPath = value;
-            }
+            this.fileSystemService = fileSystemService;
+            this.pluginContext = pluginContext;
+
+            string configDir = pluginContext.GetConfigurationDirPath();
+            string dataDir = pluginContext.GetExtensionDataDirPath();
+            LibraryFilesDirPath = fileSystemService.PathCombine(configDir, "library", "files");
+            SecurityDirPath = fileSystemService.PathCombine(dataDir, "security");
+            RegistrationId = GetRegistrationIdFromFile();
         }
 
-        public SystemConfig() { }
+        public string GetRegistrationIdFromFile()
+        {
+            var registrationIdPath = fileSystemService.PathCombine(SecurityDirPath, "registrationId.txt");
+            if (!fileSystemService.FileExists(registrationIdPath))
+            {
+                return null;
+            }
+            var jsonString = fileSystemService.FileReadAllText(registrationIdPath);
+            var registration = JsonConvert.DeserializeObject<ExtensionRegistration>(jsonString);
+            return registration.RegistrationId;
+        }
     }
 }
