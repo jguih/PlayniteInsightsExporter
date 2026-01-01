@@ -167,22 +167,7 @@ namespace ExporterLibraryExporter.Application
             int skipped = 0;
             int success = 0;
             int failed = 0;
-            var manifestResponse = await playAtlasHttpClient.GetManifestAsync();
-
-            if (!manifestResponse.Success)
-            {
-                appLogger.Warn($"Export game media files failed. Could not fetch library manifest from server");
-                return new ExportMediaFilesResult(
-                        reasonCode: ExportMediaFilesResultReasonCode.FailedToFetchManifest,
-                        reason: $"Failed to fetch manifest: {manifestResponse.Reason}",
-                        operationSuccess: false,
-                        skipped: skipped,
-                        success: success,
-                        failed: failed
-                    );
-            }
-
-            var manifest = manifestResponse.Manifest;
+            var manifest = await playAtlasHttpClient.GetManifestAsync();
 
             foreach (var game in games)
             {
@@ -234,15 +219,16 @@ namespace ExporterLibraryExporter.Application
                         mediaFiles: descriptors
                     );
 
-                var result = await playAtlasHttpClient.SendMediaFilesAsync(request);
-                if (result.Success)
+                try
                 {
+                    await playAtlasHttpClient.SyncMediaFilesAsync(request);
                     success++;
-                }
-                else
+                } 
+                catch (Exception ex)
                 {
-                    appLogger.Error($"Failed to send media files to PlayAtlas server: {result.Reason}");
+                    appLogger.Error($"Failed to send media files for game (Id: {game.Id}, Name: {game.Name}) to PlayAtlas server", ex);
                     failed++;
+                    continue;
                 }
             }
 

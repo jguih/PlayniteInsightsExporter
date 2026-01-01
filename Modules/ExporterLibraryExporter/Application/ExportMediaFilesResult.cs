@@ -11,7 +11,6 @@ namespace ExporterLibraryExporter.Application
         OneOrMoreFailed,
         Success,
         OperationCanceledByUser,
-        FailedToFetchManifest
     }
 
     public class ExportMediaFilesResult

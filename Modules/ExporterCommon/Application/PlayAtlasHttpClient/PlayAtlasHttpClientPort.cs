@@ -10,6 +10,6 @@ namespace ExporterCommon.Application
     {
         Task<PlayAtlasLibraryManifest> GetManifestAsync();
         Task SyncGamesAsync(SyncGamesRequest request);
-        Task SendMediaFilesAsync(SyncMediaFilesRequest request);
+        Task SyncMediaFilesAsync(SyncMediaFilesRequest request);
     }
 }

@@ -45,6 +45,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application\PlayAtlasHttpClient.cs" />
+    <Compile Include="Infra\HttpContentBuilderPort.cs" />
+    <Compile Include="Infra\SyncGamesHttpContentBuilder.cs" />
+    <Compile Include="Infra\SyncMediaFilesHttpContentBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

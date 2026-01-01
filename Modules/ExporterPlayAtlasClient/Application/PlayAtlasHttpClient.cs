@@ -18,6 +18,8 @@ namespace ExporterPlayAtlasClient.Application
         private readonly ISystemConfigPort systemConfig;
         private readonly ISignatureServicePort signatureService;
         private readonly IHashServicePort hashService;
+        private readonly IHttpContentBuilderPort<SyncGamesRequest> syncGamesHttpContentBuilder;
+        private readonly IHttpContentBuilderPort<SyncMediaFilesRequest> syncMediaFilesHttpContentBuilder;
         private readonly HttpClient httpClient;
 
         public PlayAtlasHttpClient(
@@ -25,7 +27,9 @@ namespace ExporterPlayAtlasClient.Application
             IExporterPluginContextPort pluginContext,
             ISystemConfigPort systemConfig,
             ISignatureServicePort signatureService,
-            IHashServicePort hashService
+            IHashServicePort hashService,
+            IHttpContentBuilderPort<SyncGamesRequest> syncGamesHttpContentBuilder,
+            IHttpContentBuilderPort<SyncMediaFilesRequest> syncMediaFilesHttpContentBuilder
         )
         {
             this.appLogger = appLogger;
@@ -33,6 +37,8 @@ namespace ExporterPlayAtlasClient.Application
             this.systemConfig = systemConfig;
             this.signatureService = signatureService;
             this.hashService = hashService;
+            this.syncGamesHttpContentBuilder = syncGamesHttpContentBuilder;
+            this.syncMediaFilesHttpContentBuilder = syncMediaFilesHttpContentBuilder;
             httpClient = new HttpClient();
         }
 
@@ -120,11 +126,7 @@ namespace ExporterPlayAtlasClient.Application
                 string contentHash = hashService.ComputeSHA256HashFromString(requestBody);
 
                 using (
-                    var jsonContent = new StringContent(
-                        requestBody,
-                        Encoding.UTF8,
-                        "application/json"
-                    )
+                    var jsonContent = syncGamesHttpContentBuilder.Build(request)
                 )
                 using (
                     var signedRequest = CreateSignedRequest(
@@ -147,9 +149,34 @@ namespace ExporterPlayAtlasClient.Application
             }
         }
 
-        public Task SendMediaFilesAsync(SyncMediaFilesRequest request)
+        public async Task SyncMediaFilesAsync(SyncMediaFilesRequest request)
         {
-            throw new NotImplementedException();
+            try
+            {
+                string endpoint = SyncMediaFilesRequest.ENDPOINT;
+
+                using (
+                    var multipartContent = syncMediaFilesHttpContentBuilder.Build(request)
+                )
+                using (
+                    var signedRequest = CreateSignedRequest(
+                        HttpMethod.Post,
+                        endpoint,
+                        multipartContent,
+                        request.CanonicalHash
+                    )
+                )
+                using (var response = await httpClient.SendAsync(signedRequest))
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                appLogger.Error("PlayAtlas request to sync game media files failed", ex);
+                throw;
+            }
         }
     }
 }
