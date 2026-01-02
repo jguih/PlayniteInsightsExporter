@@ -110,6 +110,18 @@
       <Project>{0c45c5bf-6076-4d80-9dba-59edd13169b2}</Project>
       <Name>ExporterCommon</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Modules\ExporterLibraryExporter\ExporterLibraryExporter.csproj">
+      <Project>{4f2fed71-1797-4176-956a-c4db34c2c8ed}</Project>
+      <Name>ExporterLibraryExporter</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Modules\ExporterPlayAtlasClient\ExporterPlayAtlasClient.csproj">
+      <Project>{84a1a852-ae99-4897-ad52-aacf2633ef7c}</Project>
+      <Name>ExporterPlayAtlasClient</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Modules\ExporterSystem\ExporterSystem.csproj">
+      <Project>{56a9fc4f-d3e0-47d5-a6a3-a20379584e0d}</Project>
+      <Name>ExporterSystem</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

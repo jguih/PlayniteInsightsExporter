@@ -40,7 +40,7 @@ namespace PlayniteInsightsExporter
             // TODO: Remove
             locator = new ServiceLocator(this, logger);
 
-            Settings = new PlayniteInsightsExporterSettingsViewModel(this, logger, locator);
+            Settings = new PlayniteInsightsExporterSettingsViewModel(this, logger, locator, exporterApi);
             Properties = new GenericPluginProperties
             {
                 HasSettings = true

@@ -12,24 +12,26 @@ namespace ExporterBootstrap.Application
 {
     public class ExporterPlayAtlasClientApi
     {
-        public readonly IPlayAtlasHttpClientPort playAtlasHttpClient;
+        public readonly IPlayAtlasHttpClientPort PlayAtlasHttpClient;
 
         public ExporterPlayAtlasClientApi(
             IAppLoggerPort appLogger,
             IExporterPluginContextPort pluginContext,
-            ExporterConfigApi configApi,
-            ExporterInfraApi infraApi
+            ISystemConfigPort systemConfig,
+            ISignatureServicePort signatureService,
+            IHashServicePort hashService,
+            IFileSystemServicePort fileSystemService
         )
         {
             var syncGamesHttpContentBuilder = new SyncGamesHttpContentBuilder();
-            var syncMediaFilesHttpContentBuilder = new SyncMediaFilesHttpContentBuilder(infraApi.fileSystemService);
+            var syncMediaFilesHttpContentBuilder = new SyncMediaFilesHttpContentBuilder(fileSystemService);
 
-            playAtlasHttpClient = new PlayAtlasHttpClient(
+            PlayAtlasHttpClient = new PlayAtlasHttpClient(
                 appLogger,
                 pluginContext,
-                configApi.SystemConfig,
-                infraApi.signatureService,
-                infraApi.hashService,
+                systemConfig,
+                signatureService,
+                hashService,
                 syncGamesHttpContentBuilder,
                 syncMediaFilesHttpContentBuilder
             );

@@ -1,4 +1,5 @@
 ﻿using Core;
+using ExporterBootstrap.Application;
 using Infra;
 using Microsoft.Win32;
 using Newtonsoft.Json;
@@ -81,6 +82,8 @@ namespace PlayniteInsightsExporter
         private readonly IPlayniteAPI PlayniteApi;
         private PlayniteInsightsExporterSettings editingClone { get; set; }
         private PlayniteInsightsExporterSettings settings;
+        private readonly ExporterApi ExporterApi;
+        // TODO: remove
         private readonly ServiceLocator ServiceLocator;
         private string httpServerStatusText = string.Empty;
         private bool httpServerRunning = false;
@@ -123,7 +126,8 @@ namespace PlayniteInsightsExporter
         public PlayniteInsightsExporterSettingsViewModel(
             PlayniteInsightsExporter plugin,
             ILogger Logger,
-            ServiceLocator locator)
+            ServiceLocator locator,
+            ExporterApi exporterApi)
         {
             // Injecting your plugin instance is required for Save/Load method because Playnite saves data to a location based on what plugin requested the operation.
             this.Plugin = plugin;
@@ -140,6 +144,8 @@ namespace PlayniteInsightsExporter
                 Settings = new PlayniteInsightsExporterSettings();
             }
 
+            ExporterApi = exporterApi;
+            // TODO: remove
             ServiceLocator = locator;
 
             var httpServer = locator.HttpServer;

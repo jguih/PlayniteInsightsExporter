@@ -14,6 +14,7 @@ namespace ExporterBootstrap.Application
         public readonly ExporterConfigApi Config;
         public readonly ExporterInfraApi Infra;
         public readonly ExporterPlayAtlasClientApi PlayAtlasClient;
+        public readonly ExporterLibraryExporterApi LibraryExporter;
 
         public ExporterApi(
             IAppLoggerPort appLogger,
@@ -23,8 +24,22 @@ namespace ExporterBootstrap.Application
             IFileSystemServicePort fileSystemService = new FileSystemService();
 
             Config = new ExporterConfigApi(pluginContext, fileSystemService);
-            Infra = new ExporterInfraApi(Config, appLogger, fileSystemService);
-            PlayAtlasClient = new ExporterPlayAtlasClientApi(appLogger, pluginContext, Config, Infra);
+            Infra = new ExporterInfraApi(appLogger, Config.SystemConfig, fileSystemService);
+            PlayAtlasClient = new ExporterPlayAtlasClientApi(
+                appLogger, 
+                pluginContext, 
+                Config.SystemConfig, 
+                Infra.SignatureService,
+                Infra.HashService,
+                Infra.FileSystemService
+            );
+            LibraryExporter = new ExporterLibraryExporterApi(
+                appLogger,
+                PlayAtlasClient.PlayAtlasHttpClient,
+                Infra.HashService,
+                Infra.FileSystemService,
+                Config.SystemConfig
+            );
         }
 
         public void InitEnvironment()

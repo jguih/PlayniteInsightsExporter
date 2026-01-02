@@ -12,45 +12,45 @@ namespace ExporterBootstrap.Application
     public class ExporterInfraApi
     {
         private readonly IAppLoggerPort appLogger;
-        private readonly ExporterConfigApi configApi;
+        private readonly ISystemConfigPort systemConfig;
 
-        public readonly IFileSystemServicePort fileSystemService;
-        public readonly IHashServicePort hashService;
-        public readonly IKeyManagerPort keyManager;
-        public readonly ISignatureServicePort signatureService;
+        public readonly IFileSystemServicePort FileSystemService;
+        public readonly IHashServicePort HashService;
+        public readonly IKeyManagerPort KeyManager;
+        public readonly ISignatureServicePort SignatureService;
 
         public ExporterInfraApi(
-            ExporterConfigApi configApi,
             IAppLoggerPort appLogger,
+            ISystemConfigPort systemConfig,
             IFileSystemServicePort fileSystemService
         )
         {
             this.appLogger = appLogger;
-            this.fileSystemService = fileSystemService;
-            this.configApi = configApi;
+            this.FileSystemService = fileSystemService;
+            this.systemConfig = systemConfig;
 
-            keyManager = new KeyManager(configApi.SystemConfig, fileSystemService, appLogger);
-            hashService = new HashService(fileSystemService);
-            signatureService = new SignatureService(appLogger, keyManager, configApi.SystemConfig);
+            KeyManager = new KeyManager(systemConfig, fileSystemService, appLogger);
+            HashService = new HashService(fileSystemService);
+            SignatureService = new SignatureService(appLogger, KeyManager, systemConfig);
         }
 
         public void InitInfra()
         {
             var extensionDirs = new List<string>()
             {
-                configApi.SystemConfig.SecurityDirPath
+                systemConfig.SecurityDirPath
             };
 
             foreach(var dirPath in extensionDirs)
             {
-                if (!fileSystemService.DirectoryExists(dirPath))
-                    fileSystemService.DirectoryCreate(dirPath);
+                if (!FileSystemService.DirectoryExists(dirPath))
+                    FileSystemService.DirectoryCreate(dirPath);
             }
 
-            if (!keyManager.KeyExistsAndIsValid())
+            if (!KeyManager.KeyExistsAndIsValid())
             {
                 appLogger.Warn("Assymetric key pair is missing or invalid, trying to create a new pair...");
-                keyManager.WriteAsymmetricKeyPair();
+                KeyManager.WriteAsymmetricKeyPair();
             }
         }
     }
