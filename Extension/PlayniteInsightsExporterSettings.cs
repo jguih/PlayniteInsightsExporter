@@ -195,25 +195,50 @@ namespace PlayniteInsightsExporter
             return true;
         }
 
-        public void OnExportLibrary()
+        public async Task OnExportLibrary()
         {
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
-            if (!ServiceLocator.LibExporter.RunLibrarySync())
+
+            void ShowError()
             {
                 PlayniteApi.Dialogs.ShowErrorMessage(
-                        loc_failed_syncClientServer,
-                        Plugin.Name);
-                return;
+                    loc_failed_syncClientServer,
+                    Plugin.Name);
             }
-            if (!ServiceLocator.LibExporter.RunMediaFilesSync())
+
+            //if (!ServiceLocator.LibExporter.RunLibrarySync())
+            //{
+            //    PlayniteApi.Dialogs.ShowErrorMessage(
+            //            loc_failed_syncClientServer,
+            //            Plugin.Name);
+            //    return;
+            //}
+            try
             {
-                PlayniteApi.Dialogs.ShowErrorMessage(
-                        loc_failed_syncClientServer,
-                        Plugin.Name);
+                var games = ExporterApi.PlayniteIntegration
+                    .Query
+                    .GetAllGames
+                    .Execute();
+                var result = await ExporterApi.LibraryExporter
+                    .LibraryExporterService
+                    .ExportMediaFilesAsync(games);
+
+                if (!result.OperationSuccess)
+                {
+                    ShowError();
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                ExporterApi.Logger.Error("Failed to export media files", ex);
+                ShowError();
                 return;
             }
-            PlayniteApi.Dialogs.ShowMessage(loc_success_syncClientServer);
+            PlayniteApi
+                .Dialogs
+                .ShowMessage(loc_success_syncClientServer);
         }
 
         public void OnBrowseShareXPath()

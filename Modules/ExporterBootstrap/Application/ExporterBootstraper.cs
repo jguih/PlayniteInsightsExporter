@@ -48,7 +48,11 @@ namespace ExporterBootstrap.Application
             // Infra
             var keyManager = new KeyManager(systemConfig, fileSystemService, appLogger);
             var hashService = new HashService(fileSystemService);
-            var signatureService = new SignatureService(appLogger, keyManager, systemConfig);
+            var signatureService = new SignatureService(
+                appLogger, 
+                keyManager, 
+                plugin
+            );
             var playniteGameRepository = new PlayniteGameRepositoryAdapter(
                 api: playniteAPI
             );

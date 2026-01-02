@@ -40,7 +40,10 @@ namespace ExporterPlayAtlasClient.Application
             this.hashService = hashService;
             this.syncGamesHttpContentBuilder = syncGamesHttpContentBuilder;
             this.syncMediaFilesHttpContentBuilder = syncMediaFilesHttpContentBuilder;
-            httpClient = new HttpClient();
+            httpClient = new HttpClient()
+            {
+                Timeout = TimeSpan.FromSeconds(5)
+            };
         }
 
         private string ParseUrl(string endpoint = "")

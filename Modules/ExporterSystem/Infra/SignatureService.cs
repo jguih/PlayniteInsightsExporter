@@ -12,17 +12,17 @@ namespace ExporterSystem.Infra
     {
         private readonly IAppLoggerPort appLogger;
         private readonly IKeyManagerPort keyManager;
-        private readonly ISystemConfigPort systemConfig;
+        private readonly IExporterPluginContextPort pluginContext;
 
         public SignatureService(
             IAppLoggerPort appLogger,
             IKeyManagerPort keyManager,
-            ISystemConfigPort systemConfig
+            IExporterPluginContextPort pluginContext
         )
         {
             this.appLogger = appLogger;
             this.keyManager = keyManager;
-            this.systemConfig = systemConfig;
+            this.pluginContext = pluginContext;
         }
 
         public bool VerifyPlayAtlasServerSignature(byte[] data, byte[] signature, byte[] publicKeyDer)
@@ -55,7 +55,7 @@ namespace ExporterSystem.Infra
             string bodyHash = null
         )
         {
-            string extensionId = systemConfig.ExtensionRegistrationId;
+            string extensionId = pluginContext.GetExtensionId();
             string methodString = method.ToString();
             string canonicalString;
             if (bodyHash != null)

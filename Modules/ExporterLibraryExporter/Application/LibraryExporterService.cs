@@ -4,12 +4,22 @@ using ExporterCommon.Dtos;
 using ExporterCommon.Infra;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.Net.WebRequestMethods;
 
 namespace ExporterLibraryExporter.Application
 {
+    enum MediaProcessResult
+    {
+        Success,
+        Skipped,
+        Failed,
+        Canceled
+    }
+
     public class LibraryExporterService : ILibraryExporterServicePort
     {
         private readonly IAppLoggerPort appLogger;
@@ -125,6 +135,88 @@ namespace ExporterLibraryExporter.Application
             return descriptors;
         }
 
+        private async Task<MediaProcessResult> ProcessGameMediaAsync(
+            AppGame game,
+            PlayAtlasLibraryManifest manifest,
+            CancellationToken cancellationToken
+        )
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                appLogger.Info("Library media files sync cancelled by user.");
+                return MediaProcessResult.Canceled;
+            }
+
+            string gameId = game.Id.ToString();
+            string mediaFolderPath = fileSystemService
+                .PathCombine(systemConfig.LibraryFilesDirPath, gameId);
+            string contentHash;
+            string canonicalHash;
+
+            if (!fileSystemService.DirectoryExists(mediaFolderPath))
+            {
+                return MediaProcessResult.Skipped;
+            }
+
+            try
+            {
+                contentHash = hashService
+                    .ComputeHashFromFolderContents(mediaFolderPath);
+            }
+            catch (Exception ex)
+            {
+                appLogger.Error($"Failed to compute content hash for game (Id: {game.Id}, Name: {game.Name})", ex);
+                return MediaProcessResult.Failed;
+            }
+
+            if (string.IsNullOrEmpty(contentHash))
+            {
+                return MediaProcessResult.Skipped;
+            }
+
+            if (!IsGameInServerLibrary(manifest, gameId))
+            {
+                return MediaProcessResult.Skipped;
+            }
+
+            if (!ShouldSendMediaFiles(manifest, gameId, contentHash))
+            {
+                return MediaProcessResult.Skipped;
+            }
+
+            try
+            {
+                canonicalHash = hashService.ComputeCanonicalHashForGameMediaFiles(
+                        gameId: gameId,
+                        contentHash: contentHash,
+                        mediaFolderPath: mediaFolderPath
+                    );
+            }
+            catch (Exception ex)
+            {
+                appLogger.Error($"Failed to compute canonical hash for game (Id: {game.Id}, Name: {game.Name})", ex);
+                return MediaProcessResult.Failed;
+            }
+
+            try
+            {
+                var descriptors = GetMediaFileDescriptors(game, mediaFolderPath);
+                var request = new SyncMediaFilesRequest(
+                        gameId: gameId,
+                        contentHash: contentHash,
+                        canonicalHash: canonicalHash,
+                        mediaFiles: descriptors
+                    );
+                await playAtlasHttpClient.SyncMediaFilesAsync(request);
+                return MediaProcessResult.Success;
+            }
+            catch (Exception ex)
+            {
+                appLogger.Error($"Failed to send media files for game (Id: {game.Id}, Name: {game.Name}) to PlayAtlas server", ex);
+                return MediaProcessResult.Failed;
+            }
+        }
+
         public Task<bool> ExportLibraryAsync(
            LibraryExportDiff diff,
            CancellationToken cancellationToken = default
@@ -157,67 +249,32 @@ namespace ExporterLibraryExporter.Application
             int success = 0;
             int failed = 0;
             var manifest = await playAtlasHttpClient.GetManifestAsync();
+            const int batchSize = 5;
+            const int delayBetweenBatchesMs = 2000;
 
-            foreach (var game in games)
+            for (int i = 0; i < games.Count; i++)
             {
-                if (cancellationToken.IsCancellationRequested)
+                var result = await ProcessGameMediaAsync(games[i], manifest, cancellationToken);
+
+                switch (result)
                 {
-                    appLogger.Info("Library media files sync cancelled by user.");
-                    return new ExportMediaFilesResult(
+                    case MediaProcessResult.Canceled:
+                        return new ExportMediaFilesResult(
                             reasonCode: ExportMediaFilesResultReasonCode.OperationCanceledByUser,
-                            reason: "Operation canceled by user",
+                            reason: "Canceled by user",
                             operationSuccess: true,
                             skipped: skipped,
                             success: success,
                             failed: failed
                         );
+                    case MediaProcessResult.Success: success++; break;
+                    case MediaProcessResult.Failed: failed++; break;
+                    case MediaProcessResult.Skipped: skipped++; break;
                 }
 
-                string gameId = game.Id.ToString();
-                string mediaFolderPath = fileSystemService.PathCombine(systemConfig.LibraryFilesDirPath, gameId);
-                string contentHash = hashService.ComputeHashFromFolderContents(mediaFolderPath);
-
-                if (string.IsNullOrEmpty(contentHash))
+                if ((i + 1) % batchSize == 0 && i + 1 < games.Count)
                 {
-                    skipped++;
-                    continue;
-                }
-
-                if (!IsGameInServerLibrary(manifest, gameId))
-                {
-                    skipped++;
-                    continue;
-                }
-
-                if (!ShouldSendMediaFiles(manifest, gameId, contentHash))
-                {
-                    skipped++;
-                    continue;
-                }
-
-                string canonicalHash = hashService.ComputeCanonicalHashForGameMediaFiles(
-                        gameId: gameId,
-                        contentHash: contentHash,
-                        mediaFolderPath: mediaFolderPath
-                    );
-                var descriptors = GetMediaFileDescriptors(game, mediaFolderPath);
-                var request = new SyncMediaFilesRequest(
-                        gameId: gameId,
-                        contentHash: contentHash,
-                        canonicalHash: canonicalHash,
-                        mediaFiles: descriptors
-                    );
-
-                try
-                {
-                    await playAtlasHttpClient.SyncMediaFilesAsync(request);
-                    success++;
-                } 
-                catch (Exception ex)
-                {
-                    appLogger.Error($"Failed to send media files for game (Id: {game.Id}, Name: {game.Name}) to PlayAtlas server", ex);
-                    failed++;
-                    continue;
+                    await Task.Delay(delayBetweenBatchesMs, cancellationToken);
                 }
             }
 

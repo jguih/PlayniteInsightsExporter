@@ -29,7 +29,11 @@ public class LibraryExporterTests
     {
         appLogger = new Mock<IAppLoggerPort>();
         playAtlasHttpClient = new Mock<IPlayAtlasHttpClientPort>();
+
         hashService = new Mock<IHashServicePort>();
+        hashService
+            .Setup(hs => hs.ComputeHashFromFolderContents(It.IsAny<string>()))
+            .Returns(faker.Random.Hash());
 
         fileSystemService = new Mock<IFileSystemServicePort>();
         fileSystemService
@@ -45,14 +49,11 @@ public class LibraryExporterTests
             .Returns(faker.System.DirectoryPath());
 
         gameRepository = new Mock<IPlayniteGameRepositoryPort>();
+
         systemConfig = new SystemConfig(
             pluginContext.Object, 
             fileSystemService.Object
         );
-
-        hashService
-            .Setup(hs => hs.ComputeHashFromFolderContents(It.IsAny<string>()))
-            .Returns(faker.Random.Hash());
 
         libraryExporter = new LibraryExporterService(
             appLogger.Object,
