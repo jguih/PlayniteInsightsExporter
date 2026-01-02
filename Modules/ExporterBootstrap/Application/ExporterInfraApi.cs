@@ -50,7 +50,7 @@ namespace ExporterBootstrap.Application
             if (!keyManager.KeyExistsAndIsValid())
             {
                 appLogger.Warn("Assymetric key pair is missing or invalid, trying to create a new pair...");
-                keyManager.WriteAssymetricKeyPair();
+                keyManager.WriteAsymmetricKeyPair();
             }
         }
     }

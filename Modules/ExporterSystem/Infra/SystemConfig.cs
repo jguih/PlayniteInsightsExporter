@@ -20,7 +20,6 @@ namespace ExporterSystem.Infra
         public string LibraryFilesDirPath { get; }
         public string SecurityDirPath { get; }
         public string ExtensionRegistrationId { get; } = null;
-        public string RegistrationId { get; set; } = null;
 
         public SystemConfig(
             IExporterPluginContextPort pluginContext,

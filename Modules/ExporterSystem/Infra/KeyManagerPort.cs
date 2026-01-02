@@ -16,7 +16,7 @@ namespace ExporterSystem.Infra
         /// <param name="data"></param>
         /// <returns></returns>
         byte[] Sign(byte[] data);
-        void WriteAssymetricKeyPair();
+        void WriteAsymmetricKeyPair();
         bool KeyExistsAndIsValid();
     }
 }

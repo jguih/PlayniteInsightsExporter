@@ -11,6 +11,5 @@ namespace ExporterCommon.Infra
         string LibraryFilesDirPath { get; }
         string ExtensionRegistrationId { get; }
         string SecurityDirPath { get; }
-        string RegistrationId { get; set; }
     }
 }

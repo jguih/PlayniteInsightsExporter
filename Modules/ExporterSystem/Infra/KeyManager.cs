@@ -73,7 +73,7 @@ namespace ExporterSystem.Infra
             }
         }
 
-        public void WriteAssymetricKeyPair()
+        public void WriteAsymmetricKeyPair()
         {
             string keyFilePath = GetKeyFilePath();
             using (var rsa = new RSACryptoServiceProvider(KeySize))
