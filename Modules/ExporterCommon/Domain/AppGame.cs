@@ -23,7 +23,7 @@ namespace ExporterCommon.Domain
         private string icon = null;
         private string description = null;
         private bool isHidden = false;
-        private AppCompletionStatus appCompletionStatus;
+        private AppCompletionStatus appCompletionStatus = null;
         private string contentHash;
 
         public Guid Id 
@@ -265,8 +265,6 @@ namespace ExporterCommon.Domain
             }
             set
             {
-                if (appCompletionStatus is null)
-                    throw new ArgumentNullException(nameof(CompletionStatus));
                 appCompletionStatus = value;
             }
         }

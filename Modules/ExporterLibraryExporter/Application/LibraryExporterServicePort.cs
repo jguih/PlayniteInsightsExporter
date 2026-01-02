@@ -10,12 +10,12 @@ namespace ExporterLibraryExporter.Application
 {
     public class LibraryExportDiff
     {
-        public IReadOnlyList<AppGame> Added { get; } = new List<AppGame>();
-        public IReadOnlyList<AppGame> Updated { get; } = new List<AppGame>();
-        public IReadOnlyList<AppGame> Deleted { get; } = new List<AppGame>();
+        public IReadOnlyList<AppGame> ToAdd { get; } = new List<AppGame>();
+        public IReadOnlyList<AppGame> ToUpdate { get; } = new List<AppGame>();
+        public IReadOnlyList<AppGame> ToRemove { get; } = new List<AppGame>();
 
         public bool HasChanges =>
-            Added.Count > 0 || Updated.Count > 0 || Deleted.Count > 0;
+            ToAdd.Count > 0 || ToUpdate.Count > 0 || ToRemove.Count > 0;
 
         public LibraryExportDiff(
             IReadOnlyList<AppGame> added, 
@@ -23,9 +23,9 @@ namespace ExporterLibraryExporter.Application
             IReadOnlyList<AppGame> deleted
         )
         {
-            Added = added ?? new List<AppGame>(); ;
-            Updated = updated ?? new List<AppGame>();
-            Deleted = deleted ?? new List<AppGame>();
+            ToAdd = added ?? new List<AppGame>(); ;
+            ToUpdate = updated ?? new List<AppGame>();
+            ToRemove = deleted ?? new List<AppGame>();
         }
     }
 

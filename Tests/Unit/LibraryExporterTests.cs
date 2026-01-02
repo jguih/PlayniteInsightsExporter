@@ -1,10 +1,11 @@
 ﻿using Bogus;
 using ExporterCommon.Application;
+using ExporterCommon.Domain;
 using ExporterCommon.Infra;
 using ExporterCommon.Testing;
 using ExporterLibraryExporter.Application;
-using Moq;
 using ExporterSystem.Infra;
+using Moq;
 
 namespace Tests.Unit;
 
@@ -16,6 +17,8 @@ public class LibraryExporterTests
     private readonly Mock<IPlayAtlasHttpClientPort> playAtlasHttpClient;
     private readonly Mock<IHashServicePort> hashService;
     private readonly Mock<IFileSystemServicePort> fileSystemService;
+    private readonly Mock<IExporterPluginContextPort> pluginContext;
+    private readonly Mock<IPlayniteGameRepositoryPort> gameRepository;
     private readonly ISystemConfigPort systemConfig;
 
     private readonly ILibraryExporterServicePort libraryExporter;
@@ -27,15 +30,26 @@ public class LibraryExporterTests
         appLogger = new Mock<IAppLoggerPort>();
         playAtlasHttpClient = new Mock<IPlayAtlasHttpClientPort>();
         hashService = new Mock<IHashServicePort>();
-        fileSystemService = new Mock<IFileSystemServicePort>();
-        systemConfig = new SystemConfig()
-        {
-            LibraryFilesDirPath = faker.System.DirectoryPath()
-        };
 
+        fileSystemService = new Mock<IFileSystemServicePort>();
         fileSystemService
             .Setup(fs => fs.PathCombine(It.IsAny<string[]>()))
             .Returns((string[] paths) => Path.Combine(paths));
+
+        pluginContext = new Mock<IExporterPluginContextPort>();
+        pluginContext
+            .Setup(x => x.GetConfigurationDirPath())
+            .Returns(faker.System.DirectoryPath());
+        pluginContext
+            .Setup(x => x.GetExtensionDataDirPath())
+            .Returns(faker.System.DirectoryPath());
+
+        gameRepository = new Mock<IPlayniteGameRepositoryPort>();
+        systemConfig = new SystemConfig(
+            pluginContext.Object, 
+            fileSystemService.Object
+        );
+
         hashService
             .Setup(hs => hs.ComputeHashFromFolderContents(It.IsAny<string>()))
             .Returns(faker.Random.Hash());
@@ -45,7 +59,8 @@ public class LibraryExporterTests
             playAtlasHttpClient.Object,
             hashService.Object,
             fileSystemService.Object,
-            systemConfig
+            systemConfig,
+            gameRepository.Object
         );
 
         gameFactory = new GameFactory();
@@ -56,22 +71,14 @@ public class LibraryExporterTests
     {
         // Arrange
         var games = gameFactory.BuildGameList(15);
-        var manifestResponse = new GetPlayAtlasManifestResponse(
-            success: false,
-            reason: "Failed to fetch manifest",
-            reasonCode: ReasonCode.NotFound,
-            manifest: null
-        );
         playAtlasHttpClient
             .Setup(x => x.GetManifestAsync())
-            .Returns(Task.FromResult(manifestResponse));
-        // Act
-        var result = await libraryExporter.ExportMediaFilesAsync(games);
-        // Assert
-        playAtlasHttpClient
-            .Verify(x => x.GetManifestAsync(), Times.Once);
-        Assert.False(result.OperationSuccess);
-        Assert.Equal(ExportMediaFilesResultReasonCode.FailedToFetchManifest, result.ReasonCode);
+            .ThrowsAsync(new Exception("Invalid request"));
+        // Act & Assert
+        await Assert.ThrowsAnyAsync<Exception>(() =>
+        {
+            return libraryExporter.ExportMediaFilesAsync(games);
+        });
     }
 
     [Fact]
@@ -83,15 +90,9 @@ public class LibraryExporterTests
             gamesInLibrary: [],
             mediaExistsFor: []
         );
-        var manifestResponse = new GetPlayAtlasManifestResponse(
-            success: true,
-            reason: "Success",
-            reasonCode: ReasonCode.Success,
-            manifest: manifest
-        );
         playAtlasHttpClient
             .Setup(x => x.GetManifestAsync())
-            .Returns(Task.FromResult(manifestResponse));
+            .Returns(Task.FromResult(manifest));
         var games = gameFactory.BuildGameList(15);
         // Act
         var result = await libraryExporter.ExportMediaFilesAsync(games);
@@ -100,4 +101,51 @@ public class LibraryExporterTests
         Assert.Equal(0, result.Success);
         Assert.Equal(15, result.Skipped);
     }
+
+    [Fact]
+    public async Task ComputeLibraryDiff_Should_Return_Add_Update_And_Remove()
+    {
+        // Arrange
+        var gameA = gameFactory.BuildGame();
+        var gameB = gameFactory.BuildGame();
+        var gameC = gameFactory.BuildGame();
+        var gameD = gameFactory.BuildGame();
+
+        gameA.ContentHash = "hash-a";
+        gameB.ContentHash = "hash-b";
+        gameC.ContentHash = "hash-c-local";
+
+        gameRepository
+            .Setup(r => r.GetAll())
+            .Returns([gameA, gameB, gameC]);
+
+        var manifest = new PlayAtlasLibraryManifest(
+            totalGamesInLibrary: 3,
+            gamesInLibrary:
+            [
+                new(gameB.Id.ToString(), "hash-b"),          // same → no-op
+                new(gameC.Id.ToString(), "hash-c-remote"),   // different → update
+                new(gameD.Id.ToString(), "hash-d")           // not local → remove
+            ],
+            mediaExistsFor: []
+        );
+
+        playAtlasHttpClient
+            .Setup(x => x.GetManifestAsync())
+            .ReturnsAsync(manifest);
+
+        // Act
+        var diff = await libraryExporter.ComputeLibraryDiff();
+
+        // Assert
+        Assert.Single(diff.ToAdd);
+        Assert.Equal(gameA.Id, diff.ToAdd[0].Id);
+
+        Assert.Single(diff.ToUpdate);
+        Assert.Equal(gameC.Id, diff.ToUpdate[0].Id);
+
+        Assert.Single(diff.ToRemove);
+        Assert.Equal(gameD.Id, diff.ToRemove[0].Id);
+    }
+
 }

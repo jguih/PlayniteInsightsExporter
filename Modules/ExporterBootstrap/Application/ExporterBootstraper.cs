@@ -107,7 +107,8 @@ namespace ExporterBootstrap.Application
                 playAtlasClientApi,
                 libraryExporterApi,
                 playniteIntegrationApi,
-                environmentInitializer
+                environmentInitializer,
+                appLogger
             );
             return Api;
         }

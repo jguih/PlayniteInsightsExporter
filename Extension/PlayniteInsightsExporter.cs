@@ -34,7 +34,6 @@ namespace PlayniteInsightsExporter
             // New API
             var bootstrapper = new ExporterBootstraper(this, PlayniteApi, logger);
             ExporterApi = bootstrapper.BootstrapExporterApi();
-            ExporterApi.EnvironmentInitializer.Initialize();
             // TODO: Remove
             locator = new ServiceLocator(this, logger);
 
@@ -246,6 +245,15 @@ namespace PlayniteInsightsExporter
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
             // Add code to be executed when Playnite is started.
+
+            try
+            {
+                ExporterApi.EnvironmentInitializer.Initialize();
+            } 
+            catch (Exception ex)
+            {
+                ExporterApi.Logger.Error("Failed to initialize extension environment", ex);
+            }
 
             _ = Task.Run(async () =>
             {

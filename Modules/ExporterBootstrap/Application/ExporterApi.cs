@@ -15,18 +15,21 @@ namespace ExporterBootstrap.Application
         public readonly ExporterLibraryExporterApi LibraryExporter;
         public readonly ExporterPlayniteIntegrationApi PlayniteIntegration;
         public readonly InfraEnvironmentInitializer EnvironmentInitializer;
+        public readonly IAppLoggerPort Logger;
 
         public ExporterApi(
             ExporterPlayAtlasClientApi playAtlasClientApi,
             ExporterLibraryExporterApi libraryExporterApi,
             ExporterPlayniteIntegrationApi playniteIntegrationApi,
-            InfraEnvironmentInitializer environmentInitializer
+            InfraEnvironmentInitializer environmentInitializer,
+            IAppLoggerPort appLogger
         )
         {
             this.PlayAtlasClient = playAtlasClientApi;
             this.LibraryExporter = libraryExporterApi;
             this.PlayniteIntegration = playniteIntegrationApi;
             this.EnvironmentInitializer = environmentInitializer;
+            this.Logger = appLogger;
         }
     }
 }
