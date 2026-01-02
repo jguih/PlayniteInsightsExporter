@@ -44,6 +44,7 @@
     <Compile Include="Application\ExporterConfigApi.cs" />
     <Compile Include="Application\ExporterApi.cs" />
     <Compile Include="Application\ExporterInfraApi.cs" />
+    <Compile Include="Application\ExporterPlayAtlasClientApi.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,6 @@
 ﻿using ExporterCommon.Application;
 using ExporterCommon.Infra;
+using ExporterPlayAtlasClient.Infra;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

@@ -67,7 +67,6 @@
     <Compile Include="Application\PlayAtlasHttpClient\SyncMediaFilesRequest.cs" />
     <Compile Include="Dtos\GameDto.cs" />
     <Compile Include="Infra\FileSystemServicePort.cs" />
-    <Compile Include="Infra\HttpContentBuilderPort.cs" />
     <Compile Include="Infra\SignatureServicePort.cs" />
     <Compile Include="Infra\SystemConfigPort.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

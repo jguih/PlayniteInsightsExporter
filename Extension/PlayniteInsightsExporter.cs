@@ -1,10 +1,13 @@
 ﻿using Core;
+using ExporterBootstrap.Application;
+using ExporterCommon.Application;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteInsightsExporter.Lib;
 using PlayniteInsightsExporter.Lib.Logger;
+using PlayniteInsightsExporter.Src.Adapters;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -18,17 +21,25 @@ using System.Windows.Shapes;
 
 namespace PlayniteInsightsExporter
 {
-    public class PlayniteInsightsExporter : GenericPlugin, IPlayAtlasExporterContext
+    public class PlayniteInsightsExporter : GenericPlugin, IPlayAtlasExporterContext, IExporterPluginContextPort
     {
         private static readonly ILogger logger = LogManager.GetLogger();
+        private readonly IAppLoggerPort appLogger;
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
         private readonly ServiceLocator locator;
+        private readonly ExporterApi exporterApi;
+
         public readonly string Name = "PlayAtlas Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
 
         public PlayniteInsightsExporter(IPlayniteAPI api) : base(api)
         {
+            // New API
+            appLogger = new AppLoggerAdapter(logger);
+            exporterApi = new ExporterApi(appLogger, this);
+            // TODO: Remove
             locator = new ServiceLocator(this, logger);
+
             Settings = new PlayniteInsightsExporterSettingsViewModel(this, logger, locator);
             Properties = new GenericPluginProperties
             {
@@ -456,6 +467,16 @@ namespace PlayniteInsightsExporter
         public string GetSecurityDirectoryPath()
         {
             return System.IO.Path.Combine(GetExtensionDataFolderPath(), "security");
+        }
+
+        public string GetExtensionDataDirPath()
+        {
+            return GetPluginUserDataPath();
+        }
+
+        public string GetConfigurationDirPath()
+        {
+            return PlayniteApi.Paths.ConfigurationPath;
         }
     }
 }

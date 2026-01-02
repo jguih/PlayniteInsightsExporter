@@ -11,8 +11,8 @@ namespace ExporterBootstrap.Application
 {
     public class ExporterInfraApi
     {
-        private IAppLoggerPort appLogger;
-        private ExporterConfigApi configApi;
+        private readonly IAppLoggerPort appLogger;
+        private readonly ExporterConfigApi configApi;
 
         public readonly IFileSystemServicePort fileSystemService;
         public readonly IHashServicePort hashService;
