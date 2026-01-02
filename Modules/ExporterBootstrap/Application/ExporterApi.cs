@@ -11,40 +11,22 @@ namespace ExporterBootstrap.Application
 {
     public class ExporterApi
     {
-        public readonly ExporterConfigApi Config;
-        public readonly ExporterInfraApi Infra;
         public readonly ExporterPlayAtlasClientApi PlayAtlasClient;
         public readonly ExporterLibraryExporterApi LibraryExporter;
+        public readonly ExporterPlayniteIntegrationApi PlayniteIntegration;
+        public readonly InfraEnvironmentInitializer EnvironmentInitializer;
 
         public ExporterApi(
-            IAppLoggerPort appLogger,
-            IExporterPluginContextPort pluginContext
+            ExporterPlayAtlasClientApi playAtlasClientApi,
+            ExporterLibraryExporterApi libraryExporterApi,
+            ExporterPlayniteIntegrationApi playniteIntegrationApi,
+            InfraEnvironmentInitializer environmentInitializer
         )
         {
-            IFileSystemServicePort fileSystemService = new FileSystemService();
-
-            Config = new ExporterConfigApi(pluginContext, fileSystemService);
-            Infra = new ExporterInfraApi(appLogger, Config.SystemConfig, fileSystemService);
-            PlayAtlasClient = new ExporterPlayAtlasClientApi(
-                appLogger, 
-                pluginContext, 
-                Config.SystemConfig, 
-                Infra.SignatureService,
-                Infra.HashService,
-                Infra.FileSystemService
-            );
-            LibraryExporter = new ExporterLibraryExporterApi(
-                appLogger,
-                PlayAtlasClient.PlayAtlasHttpClient,
-                Infra.HashService,
-                Infra.FileSystemService,
-                Config.SystemConfig
-            );
-        }
-
-        public void InitEnvironment()
-        {
-            Infra.InitInfra();
+            this.PlayAtlasClient = playAtlasClientApi;
+            this.LibraryExporter = libraryExporterApi;
+            this.PlayniteIntegration = playniteIntegrationApi;
+            this.EnvironmentInitializer = environmentInitializer;
         }
     }
 }

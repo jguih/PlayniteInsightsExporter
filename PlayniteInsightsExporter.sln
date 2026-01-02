@@ -30,6 +30,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExporterPlayAtlasClient", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExporterBootstrap", "Modules\ExporterBootstrap\ExporterBootstrap.csproj", "{BD220E5D-A3E9-42D9-9842-28102E2E34D8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExporterPlayniteIntegration", "Modules\ExporterPlayniteIntegration\ExporterPlayniteIntegration.csproj", "{2F486FB2-34D6-4A46-9931-C9B17F2798E8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,6 +74,10 @@ Global
 		{BD220E5D-A3E9-42D9-9842-28102E2E34D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD220E5D-A3E9-42D9-9842-28102E2E34D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BD220E5D-A3E9-42D9-9842-28102E2E34D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F486FB2-34D6-4A46-9931-C9B17F2798E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F486FB2-34D6-4A46-9931-C9B17F2798E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F486FB2-34D6-4A46-9931-C9B17F2798E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F486FB2-34D6-4A46-9931-C9B17F2798E8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -82,6 +88,7 @@ Global
 		{56A9FC4F-D3E0-47D5-A6A3-A20379584E0D} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{84A1A852-AE99-4897-AD52-AACF2633EF7C} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{BD220E5D-A3E9-42D9-9842-28102E2E34D8} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{2F486FB2-34D6-4A46-9931-C9B17F2798E8} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {620DAE38-0360-4A4F-A05E-7FE07CD0E592}

@@ -1,6 +1,4 @@
-﻿using ExporterCommon.Application;
-using ExporterCommon.Infra;
-using ExporterSystem.Infra;
+﻿using ExporterCommon.Infra;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,14 +9,11 @@ namespace ExporterBootstrap.Application
 {
     public class ExporterConfigApi
     {
-        public ISystemConfigPort SystemConfig { get; }
+        public readonly ISystemConfigPort SystemConfig;
 
-        public ExporterConfigApi(
-            IExporterPluginContextPort pluginContext,
-            IFileSystemServicePort fileSystemService
-        ) 
+        public ExporterConfigApi(ISystemConfigPort systemConfig)
         {
-            SystemConfig = new SystemConfig(pluginContext, fileSystemService);
+            SystemConfig = systemConfig;
         }
     }
 }

@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Infra\EnvironmentInitializer.cs" />
     <Compile Include="Infra\ExtensionRegistration.cs" />
     <Compile Include="Infra\FileSystemService.cs" />
     <Compile Include="Infra\HashService.cs" />

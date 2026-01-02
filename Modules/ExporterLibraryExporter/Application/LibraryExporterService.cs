@@ -1,5 +1,6 @@
 ﻿using ExporterCommon.Application;
 using ExporterCommon.Domain;
+using ExporterCommon.Dtos;
 using ExporterCommon.Infra;
 using System;
 using System.Collections.Generic;
@@ -16,13 +17,15 @@ namespace ExporterLibraryExporter.Application
         private readonly IHashServicePort hashService;
         private readonly IFileSystemServicePort fileSystemService;
         private readonly ISystemConfigPort systemConfig;
+        private readonly IPlayniteGameRepositoryPort gameRepository;
 
         public LibraryExporterService(
           IAppLoggerPort appLogger,
           IPlayAtlasHttpClientPort playAtlasHttpClient,
           IHashServicePort hashService,
           IFileSystemServicePort fileSystemService,
-          ISystemConfigPort systemConfig
+          ISystemConfigPort systemConfig,
+          IPlayniteGameRepositoryPort gameRepository
         )
         {
             this.appLogger = appLogger;
@@ -30,6 +33,7 @@ namespace ExporterLibraryExporter.Application
             this.hashService = hashService;
             this.fileSystemService = fileSystemService;
             this.systemConfig = systemConfig;
+            this.gameRepository = gameRepository;
         }
 
         private bool IsGameInServerLibrary(PlayAtlasLibraryManifest manifest, string gameId)
@@ -121,31 +125,16 @@ namespace ExporterLibraryExporter.Application
             return descriptors;
         }
 
-        public bool ExportLibrary(
-            List<AppGame> itemsToAdd = null,
-            List<AppGame> itemsToUpdate = null,
-            List<AppGame> itemsToRemove = null
-        )
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool ExportLibrary(List<AppGame> itemsToSync)
-        {
-            throw new NotImplementedException();
-        }
-
         public Task<bool> ExportLibraryAsync(
-            List<AppGame> itemsToAdd = null,
-            List<AppGame> itemsToUpdate = null,
-            List<AppGame> itemsToRemove = null
+           LibraryExportDiff diff,
+           CancellationToken cancellationToken = default
         )
         {
             throw new NotImplementedException();
         }
 
-        public async Task<ExportMediaFilesResult> ExportMediaFiles(
-            IEnumerable<AppGame> games = null,
+        public async Task<ExportMediaFilesResult> ExportMediaFilesAsync(
+            IReadOnlyList<AppGame> games,
             CancellationToken cancellationToken = default
         )
         {
@@ -253,5 +242,53 @@ namespace ExporterLibraryExporter.Application
                     failed: failed
                 );
         }
+
+        public async Task<LibraryExportDiff> ComputeLibraryDiff()
+        {
+            var manifest = await playAtlasHttpClient.GetManifestAsync();
+            var localGames = gameRepository.GetAll();
+
+            var toAdd = new List<AppGame>();
+            var toUpdate = new List<AppGame>();
+            var toRemove = new List<AppGame>();
+
+            var localById = localGames.ToDictionary(g => g.Id.ToString());
+            var manifestById = manifest?.GamesInLibrary?
+                .ToDictionary(g => g.GameId)
+                ?? new Dictionary<string, PlayAtlasLibraryManifestItem>();
+
+            // Add & Update
+            foreach (var localGame in localById.Values)
+            {
+                if (!manifestById.TryGetValue(localGame.Id.ToString(), out var manifestGame))
+                {
+                    toAdd.Add(localGame);
+                    continue;
+                }
+
+                if (!string.Equals(manifestGame.ContentHash, localGame.ContentHash, StringComparison.Ordinal))
+                {
+                    toUpdate.Add(localGame);
+                }
+            }
+
+            // Remove (exists on server but not locally)
+            foreach (var manifestGame in manifestById.Values)
+            {
+                if (!localById.ContainsKey(manifestGame.GameId))
+                {
+                    appLogger.Warn(
+                        $"Server manifest contains game {manifestGame.GameId} not present locally. It will be removed.");
+
+                    toRemove.Add(new AppGame
+                    {
+                        Id = Guid.Parse(manifestGame.GameId)
+                    });
+                }
+            }
+
+            return new LibraryExportDiff(toAdd, toUpdate, toRemove);
+        }
+
     }
 }

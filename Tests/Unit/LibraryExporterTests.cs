@@ -66,7 +66,7 @@ public class LibraryExporterTests
             .Setup(x => x.GetManifestAsync())
             .Returns(Task.FromResult(manifestResponse));
         // Act
-        var result = await libraryExporter.ExportMediaFiles(games);
+        var result = await libraryExporter.ExportMediaFilesAsync(games);
         // Assert
         playAtlasHttpClient
             .Verify(x => x.GetManifestAsync(), Times.Once);
@@ -94,7 +94,7 @@ public class LibraryExporterTests
             .Returns(Task.FromResult(manifestResponse));
         var games = gameFactory.BuildGameList(15);
         // Act
-        var result = await libraryExporter.ExportMediaFiles(games);
+        var result = await libraryExporter.ExportMediaFilesAsync(games);
         // Assert
         Assert.True(result.OperationSuccess);
         Assert.Equal(0, result.Success);

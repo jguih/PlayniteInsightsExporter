@@ -1,6 +1,4 @@
-﻿using ExporterCommon.Application;
-using ExporterCommon.Infra;
-using ExporterLibraryExporter.Application;
+﻿using ExporterLibraryExporter.Application;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,20 +12,10 @@ namespace ExporterBootstrap.Application
         public readonly ILibraryExporterServicePort LibraryExporterService;
 
         public ExporterLibraryExporterApi(
-            IAppLoggerPort appLogger,
-            IPlayAtlasHttpClientPort playAtlasHttpClient,
-            IHashServicePort hashService,
-            IFileSystemServicePort fileSystemService,
-            ISystemConfigPort systemConfig
+            ILibraryExporterServicePort libraryExporterService
         )
         {
-            LibraryExporterService = new LibraryExporterService(
-                 appLogger,
-                 playAtlasHttpClient,
-                 hashService,
-                 fileSystemService,
-                 systemConfig
-            );
+            this.LibraryExporterService = libraryExporterService;
         }
     }
 }

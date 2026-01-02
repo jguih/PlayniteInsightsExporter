@@ -6,8 +6,6 @@ using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteInsightsExporter.Lib;
-using PlayniteInsightsExporter.Lib.Logger;
-using PlayniteInsightsExporter.Src.Adapters;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -24,10 +22,9 @@ namespace PlayniteInsightsExporter
     public class PlayniteInsightsExporter : GenericPlugin, IPlayAtlasExporterContext, IExporterPluginContextPort
     {
         private static readonly ILogger logger = LogManager.GetLogger();
-        private readonly IAppLoggerPort appLogger;
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
         private readonly ServiceLocator locator;
-        private readonly ExporterApi exporterApi;
+        private readonly ExporterApi ExporterApi;
 
         public readonly string Name = "PlayAtlas Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
@@ -35,12 +32,13 @@ namespace PlayniteInsightsExporter
         public PlayniteInsightsExporter(IPlayniteAPI api) : base(api)
         {
             // New API
-            appLogger = new AppLoggerAdapter(logger);
-            exporterApi = new ExporterApi(appLogger, this);
+            var bootstrapper = new ExporterBootstraper(this, PlayniteApi, logger);
+            ExporterApi = bootstrapper.BootstrapExporterApi();
+            ExporterApi.EnvironmentInitializer.Initialize();
             // TODO: Remove
             locator = new ServiceLocator(this, logger);
 
-            Settings = new PlayniteInsightsExporterSettingsViewModel(this, logger, locator, exporterApi);
+            Settings = new PlayniteInsightsExporterSettingsViewModel(this, logger, locator, ExporterApi);
             Properties = new GenericPluginProperties
             {
                 HasSettings = true

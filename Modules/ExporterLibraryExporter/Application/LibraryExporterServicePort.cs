@@ -8,19 +8,37 @@ using System.Threading.Tasks;
 
 namespace ExporterLibraryExporter.Application
 {
+    public class LibraryExportDiff
+    {
+        public IReadOnlyList<AppGame> Added { get; } = new List<AppGame>();
+        public IReadOnlyList<AppGame> Updated { get; } = new List<AppGame>();
+        public IReadOnlyList<AppGame> Deleted { get; } = new List<AppGame>();
+
+        public bool HasChanges =>
+            Added.Count > 0 || Updated.Count > 0 || Deleted.Count > 0;
+
+        public LibraryExportDiff(
+            IReadOnlyList<AppGame> added, 
+            IReadOnlyList<AppGame> updated, 
+            IReadOnlyList<AppGame> deleted
+        )
+        {
+            Added = added ?? new List<AppGame>(); ;
+            Updated = updated ?? new List<AppGame>();
+            Deleted = deleted ?? new List<AppGame>();
+        }
+    }
+
     public interface ILibraryExporterServicePort
     {
-        bool ExportLibrary(
-            List<AppGame> itemsToAdd = null,
-            List<AppGame> itemsToUpdate = null,
-            List<AppGame> itemsToRemove = null
-        );
         Task<bool> ExportLibraryAsync(
-            List<AppGame> itemsToAdd = null,
-            List<AppGame> itemsToUpdate = null,
-            List<AppGame> itemsToRemove = null
+            LibraryExportDiff diff, 
+            CancellationToken cancellationToken = default
         );
-        bool ExportLibrary(List<AppGame> itemsToSync);
-        Task<ExportMediaFilesResult> ExportMediaFiles(IEnumerable<AppGame> games = null, CancellationToken cancellationToken = default);
+        Task<ExportMediaFilesResult> ExportMediaFilesAsync(
+            IReadOnlyList<AppGame> games = null, 
+            CancellationToken cancellationToken = default
+        );
+        Task<LibraryExportDiff> ComputeLibraryDiff();
     }
 }
