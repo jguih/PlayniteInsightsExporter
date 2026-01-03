@@ -1,5 +1,6 @@
 ﻿using Core;
 using ExporterBootstrap.Application;
+using ExporterLibraryExporter.Application;
 using Infra;
 using Microsoft.Win32;
 using Newtonsoft.Json;
@@ -46,10 +47,10 @@ namespace PlayniteInsightsExporter
             get => shareXExePath;
             set => SetValue(ref shareXExePath, value);
         }
-        public string HttpServerPort 
-        { 
-            get => httpServerPort; 
-            set => SetValue(ref httpServerPort, value); 
+        public string HttpServerPort
+        {
+            get => httpServerPort;
+            set => SetValue(ref httpServerPort, value);
         }
         public bool HttpServerStartOnStartUp
         {
@@ -59,7 +60,7 @@ namespace PlayniteInsightsExporter
         public string PlayAtlasServerPubKeyPath
         {
             get => playAtlasServerPubKeyPath;
-            set => SetValue(ref  playAtlasServerPubKeyPath, value);
+            set => SetValue(ref playAtlasServerPubKeyPath, value);
         }
 
         [DontSerialize]
@@ -195,17 +196,11 @@ namespace PlayniteInsightsExporter
             return true;
         }
 
-        public async Task OnExportLibrary()
+        public void OnExportLibrary()
         {
             var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
             var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
-
-            void ShowError()
-            {
-                PlayniteApi.Dialogs.ShowErrorMessage(
-                    loc_failed_syncClientServer,
-                    Plugin.Name);
-            }
+            var loc_progress_exporting_media_files = ResourceProvider.GetString("LOC_Progress_SyncingMediaFiles");
 
             //if (!ServiceLocator.LibExporter.RunLibrarySync())
             //{
@@ -214,31 +209,96 @@ namespace PlayniteInsightsExporter
             //            Plugin.Name);
             //    return;
             //}
-            try
-            {
-                var games = ExporterApi.PlayniteIntegration
-                    .Query
-                    .GetAllGames
-                    .Execute();
-                var result = await ExporterApi.LibraryExporter
-                    .LibraryExporterService
-                    .ExportMediaFilesAsync(games);
 
-                if (!result.OperationSuccess)
+            ExportMediaFilesResult exportMediaFilesResult = null;
+
+            var exportMediaFilesProgressResult = PlayniteApi
+                .Dialogs
+                .ActivateGlobalProgress(async progress =>
                 {
-                    ShowError();
-                    return;
-                }
-            }
-            catch (Exception ex)
+                    var games = ExporterApi.PlayniteIntegration
+                        .Query
+                        .GetAllGames
+                        .Execute();
+
+                    progress.Text = "Exporting game media files...";
+                    progress.IsIndeterminate = false;
+                    progress.CurrentProgressValue = 0;
+                    progress.ProgressMaxValue = games.Count();
+
+                    var context = new ExportMediaFilesContext
+                    {
+                        OnBeginProcessing = (game) =>
+                        {
+                            var progressText = loc_progress_exporting_media_files
+                                .Replace("{{current}}", (progress.CurrentProgressValue + 1).ToString())
+                                .Replace("{{total}}", (progress.ProgressMaxValue).ToString())
+                                .Replace("{{gameName}}", game.Name);
+                            progress.Text = progressText;
+                        },
+                        OnFinishProcessing = (game) =>
+                        {
+                            progress.CurrentProgressValue++;
+                        }
+                    };
+
+                    exportMediaFilesResult = await ExporterApi.LibraryExporter
+                        .LibraryExporterService
+                        .ExportMediaFilesAsync(
+                            games, 
+                            progress.CancelToken, 
+                            context
+                        );
+                },
+                new GlobalProgressOptions("Exporting game media files...", true)
+            );
+
+            if (exportMediaFilesProgressResult.Canceled)
             {
-                ExporterApi.Logger.Error("Failed to export media files", ex);
-                ShowError();
+                PlayniteApi.Dialogs.ShowMessage(
+                    "Media export was canceled by the user.",
+                    "Export Media Files"
+                );
                 return;
             }
-            PlayniteApi
-                .Dialogs
-                .ShowMessage(loc_success_syncClientServer);
+
+
+            if (exportMediaFilesProgressResult.Error != null)
+            {
+                PlayniteApi.Dialogs.ShowErrorMessage(
+                    $"Unexpected error while exporting media files:\n\n{exportMediaFilesProgressResult.Error.Message}",
+                    "Export Media Files"
+                );
+                return;
+            }
+
+            if (exportMediaFilesResult == null)
+            {
+                PlayniteApi.Dialogs.ShowErrorMessage(
+                    "Export was not executed.",
+                    "Export Media Files"
+                );
+                return;
+            }
+
+            if (!exportMediaFilesResult.OperationSuccess)
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    $"Media export finished with errors.\n\n" +
+                    $"Success: {exportMediaFilesResult.Success}\n" +
+                    $"Skipped: {exportMediaFilesResult.Skipped}\n" +
+                    $"Failed: {exportMediaFilesResult.Failed}",
+                    "Export Media Files"
+                );
+                return;
+            }
+
+            PlayniteApi.Dialogs.ShowMessage(
+                $"Media export completed successfully.\n\n" +
+                $"Success: {exportMediaFilesResult.Success}\n" +
+                $"Skipped: {exportMediaFilesResult.Skipped}",
+                "Export Media Files"
+            );
         }
 
         public void OnBrowseShareXPath()
@@ -282,7 +342,8 @@ namespace PlayniteInsightsExporter
             try
             {
                 ServiceLocator.HttpServer.Start();
-            } catch (Exception)
+            }
+            catch (Exception)
             {
                 var LOC_Label_HttpServer_Failed_To_Start = ResourceProvider.GetString("LOC_Label_HttpServer_Failed_To_Start");
                 PlayniteApi.Dialogs.ShowErrorMessage(

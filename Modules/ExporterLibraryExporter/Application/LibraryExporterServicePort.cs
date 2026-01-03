@@ -37,7 +37,8 @@ namespace ExporterLibraryExporter.Application
         );
         Task<ExportMediaFilesResult> ExportMediaFilesAsync(
             IReadOnlyList<AppGame> games = null, 
-            CancellationToken cancellationToken = default
+            CancellationToken cancellationToken = default,
+            ExportMediaFilesContext context = null
         );
         Task<LibraryExportDiff> ComputeLibraryDiff();
     }

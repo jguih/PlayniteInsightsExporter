@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Application\ExportMediaFilesContext.cs" />
     <Compile Include="Application\ExportMediaFilesResult.cs" />
     <Compile Include="Application\LibraryExporterService.cs" />
     <Compile Include="Application\LibraryExporterServicePort.cs" />

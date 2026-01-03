@@ -1,6 +1,5 @@
 ﻿using ExporterCommon.Application;
 using ExporterCommon.Domain;
-using ExporterCommon.Dtos;
 using ExporterCommon.Infra;
 using System;
 using System.Collections.Generic;
@@ -8,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using static System.Net.WebRequestMethods;
 
 namespace ExporterLibraryExporter.Application
 {
@@ -16,8 +14,7 @@ namespace ExporterLibraryExporter.Application
     {
         Success,
         Skipped,
-        Failed,
-        Canceled
+        Failed
     }
 
     public class LibraryExporterService : ILibraryExporterServicePort
@@ -137,16 +134,9 @@ namespace ExporterLibraryExporter.Application
 
         private async Task<MediaProcessResult> ProcessGameMediaAsync(
             AppGame game,
-            PlayAtlasLibraryManifest manifest,
-            CancellationToken cancellationToken
+            PlayAtlasLibraryManifest manifest
         )
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                appLogger.Info("Library media files sync cancelled by user.");
-                return MediaProcessResult.Canceled;
-            }
-
             string gameId = game.Id.ToString();
             string mediaFolderPath = fileSystemService
                 .PathCombine(systemConfig.LibraryFilesDirPath, gameId);
@@ -227,7 +217,8 @@ namespace ExporterLibraryExporter.Application
 
         public async Task<ExportMediaFilesResult> ExportMediaFilesAsync(
             IReadOnlyList<AppGame> games,
-            CancellationToken cancellationToken = default
+            CancellationToken cancellationToken = default,
+            ExportMediaFilesContext context = null
         )
         {
             appLogger.Debug($"Exporting media files for {games.Count()} games...");
@@ -254,12 +245,14 @@ namespace ExporterLibraryExporter.Application
 
             for (int i = 0; i < games.Count; i++)
             {
-                var result = await ProcessGameMediaAsync(games[i], manifest, cancellationToken);
+                var game = games[i];
 
-                switch (result)
+                context?.OnBeginProcessing(game);
+
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    case MediaProcessResult.Canceled:
-                        return new ExportMediaFilesResult(
+                    appLogger.Info("Library media files sync cancelled by user.");
+                    return new ExportMediaFilesResult(
                             reasonCode: ExportMediaFilesResultReasonCode.OperationCanceledByUser,
                             reason: "Canceled by user",
                             operationSuccess: true,
@@ -267,6 +260,17 @@ namespace ExporterLibraryExporter.Application
                             success: success,
                             failed: failed
                         );
+                }
+
+                var result = await ProcessGameMediaAsync(
+                    game, 
+                    manifest
+                );
+
+                context?.OnFinishProcessing(game);
+
+                switch (result)
+                {
                     case MediaProcessResult.Success: success++; break;
                     case MediaProcessResult.Failed: failed++; break;
                     case MediaProcessResult.Skipped: skipped++; break;
