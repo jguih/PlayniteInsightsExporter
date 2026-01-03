@@ -12,10 +12,12 @@ namespace ExporterLibraryExporter.Application
 {
     enum MediaProcessResult
     {
-        Success,
-        Skipped,
+        Skipped,    
+        SentSuccessfully,
+        SentFailed,
         Failed
     }
+
 
     public class LibraryExporterService : ILibraryExporterServicePort
     {
@@ -198,12 +200,12 @@ namespace ExporterLibraryExporter.Application
                         mediaFiles: descriptors
                     );
                 await playAtlasHttpClient.SyncMediaFilesAsync(request);
-                return MediaProcessResult.Success;
+                return MediaProcessResult.SentSuccessfully;
             }
             catch (Exception ex)
             {
                 appLogger.Error($"Failed to send media files for game (Id: {game.Id}, Name: {game.Name}) to PlayAtlas server", ex);
-                return MediaProcessResult.Failed;
+                return MediaProcessResult.SentFailed;
             }
         }
 
@@ -239,6 +241,7 @@ namespace ExporterLibraryExporter.Application
             int skipped = 0;
             int success = 0;
             int failed = 0;
+            int requestsInBatch = 0;
             var manifest = await playAtlasHttpClient.GetManifestAsync();
             const int batchSize = 5;
             const int delayBetweenBatchesMs = 2000;
@@ -271,13 +274,25 @@ namespace ExporterLibraryExporter.Application
 
                 switch (result)
                 {
-                    case MediaProcessResult.Success: success++; break;
+                    case MediaProcessResult.SentSuccessfully:
+                        {
+                            success++;
+                            requestsInBatch++;
+                            break;
+                        }
+                    case MediaProcessResult.SentFailed:
+                        {
+                            failed++;
+                            requestsInBatch++;
+                            break;
+                        }
                     case MediaProcessResult.Failed: failed++; break;
                     case MediaProcessResult.Skipped: skipped++; break;
                 }
 
-                if ((i + 1) % batchSize == 0 && i + 1 < games.Count)
+                if (requestsInBatch >= batchSize)
                 {
+                    requestsInBatch = 0;
                     await Task.Delay(delayBetweenBatchesMs, cancellationToken);
                 }
             }

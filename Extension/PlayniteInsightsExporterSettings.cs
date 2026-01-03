@@ -262,7 +262,6 @@ namespace PlayniteInsightsExporter
                 return;
             }
 
-
             if (exportMediaFilesProgressResult.Error != null)
             {
                 PlayniteApi.Dialogs.ShowErrorMessage(
