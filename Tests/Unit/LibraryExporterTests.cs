@@ -21,7 +21,7 @@ public class LibraryExporterTests
     private readonly Mock<IPlayniteGameRepositoryPort> gameRepository;
     private readonly ISystemConfigPort systemConfig;
 
-    private readonly ILibraryExporterServicePort libraryExporter;
+    private readonly ILibrarySyncServicePort libraryExporter;
 
     private readonly GameFactory gameFactory;
 
@@ -55,7 +55,7 @@ public class LibraryExporterTests
             fileSystemService.Object
         );
 
-        libraryExporter = new LibraryExporterService(
+        libraryExporter = new LibrarySyncService(
             appLogger.Object,
             playAtlasHttpClient.Object,
             hashService.Object,
@@ -78,7 +78,7 @@ public class LibraryExporterTests
         // Act & Assert
         await Assert.ThrowsAnyAsync<Exception>(() =>
         {
-            return libraryExporter.ExportMediaFilesAsync(games);
+            return libraryExporter.SyncMediaFilesAsync(games);
         });
     }
 
@@ -96,7 +96,7 @@ public class LibraryExporterTests
             .Returns(Task.FromResult(manifest));
         var games = gameFactory.BuildGameList(15);
         // Act
-        var result = await libraryExporter.ExportMediaFilesAsync(games);
+        var result = await libraryExporter.SyncMediaFilesAsync(games);
         // Assert
         Assert.True(result.OperationSuccess);
         Assert.Equal(0, result.Success);
@@ -111,10 +111,6 @@ public class LibraryExporterTests
         var gameB = gameFactory.BuildGame();
         var gameC = gameFactory.BuildGame();
         var gameD = gameFactory.BuildGame();
-
-        gameA.ContentHash = "hash-a";
-        gameB.ContentHash = "hash-b";
-        gameC.ContentHash = "hash-c-local";
 
         gameRepository
             .Setup(r => r.GetAll())
@@ -134,19 +130,28 @@ public class LibraryExporterTests
         playAtlasHttpClient
             .Setup(x => x.GetManifestAsync())
             .ReturnsAsync(manifest);
+        hashService
+            .Setup(x => x.ComputeHashFromGame(It.Is<AppGame>(g => g.Id.Equals(gameA.Id))))
+            .Returns("hash-a");
+        hashService
+            .Setup(x => x.ComputeHashFromGame(It.Is<AppGame>(g => g.Id.Equals(gameB.Id))))
+            .Returns("hash-b");
+        hashService
+            .Setup(x => x.ComputeHashFromGame(It.Is<AppGame>(g => g.Id.Equals(gameC.Id))))
+            .Returns("hash-c-local");
 
         // Act
-        var diff = await libraryExporter.ComputeLibraryDiff();
+        var diff = await libraryExporter.ComputeGameLibraryDiff();
 
         // Assert
         Assert.Single(diff.ToAdd);
-        Assert.Equal(gameA.Id, diff.ToAdd[0].Id);
+        Assert.Equal(gameA.Id, diff.ToAdd[0].Game.Id);
 
         Assert.Single(diff.ToUpdate);
-        Assert.Equal(gameC.Id, diff.ToUpdate[0].Id);
+        Assert.Equal(gameC.Id, diff.ToUpdate[0].Game.Id);
 
         Assert.Single(diff.ToRemove);
-        Assert.Equal(gameD.Id, diff.ToRemove[0].Id);
+        Assert.Equal(gameD.Id.ToString(), diff.ToRemove[0]);
     }
 
 }

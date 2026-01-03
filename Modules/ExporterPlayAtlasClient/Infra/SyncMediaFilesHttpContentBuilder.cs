@@ -1,5 +1,6 @@
 ﻿using ExporterCommon.Application;
 using ExporterCommon.Infra;
+using ExporterPlayAtlasClient.Application;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,7 +12,9 @@ using System.Threading.Tasks;
 
 namespace ExporterPlayAtlasClient.Infra
 {
-    public class SyncMediaFilesHttpContentBuilder : IHttpContentBuilderPort<SyncMediaFilesRequest>
+    public interface ISyncMediaFilesHttpContentBuilder : IHttpContentBuilderPort<SyncMediaFilesRequestDto> { }
+
+    public class SyncMediaFilesHttpContentBuilder : ISyncMediaFilesHttpContentBuilder
     {
         private readonly IFileSystemServicePort fileSystemService;
 
@@ -39,14 +42,14 @@ namespace ExporterPlayAtlasClient.Infra
             }
         }
 
-        public HttpContent Build(SyncMediaFilesRequest request)
+        public HttpContent Build(SyncMediaFilesRequestDto requestDto)
         {
             var content = new MultipartFormDataContent
             {
-                { new StringContent(request.GameId), "gameId" },
-                { new StringContent(request.ContentHash), "contentHash" }
+                { new StringContent(requestDto.GameId), "gameId" },
+                { new StringContent(requestDto.ContentHash), "contentHash" }
             };
-            foreach (var descriptor in request.MediaFiles)
+            foreach (var descriptor in requestDto.MediaFiles)
             {
                 var extension = Path.GetExtension(descriptor.FullPath);
 

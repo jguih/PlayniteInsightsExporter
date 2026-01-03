@@ -50,7 +50,7 @@
     <Compile Include="Application\ExporterConfigApi.cs" />
     <Compile Include="Application\ExporterApi.cs" />
     <Compile Include="Application\ExporterInfraApi.cs" />
-    <Compile Include="Application\ExporterLibraryExporterApi.cs" />
+    <Compile Include="Application\ExporterLibrarySyncApi.cs" />
     <Compile Include="Application\ExporterPlayAtlasClientApi.cs" />
     <Compile Include="Application\ExporterPlayniteIntegrationApi.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

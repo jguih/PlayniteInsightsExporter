@@ -42,4 +42,5 @@
     
     <!--Progress-->
     <sys:String x:Key="LOC_Progress_SyncingMediaFiles">Syncing media files {{current}} of {{total}}: {{gameName}}</sys:String>
+    <sys:String x:Key="LOC_Progress_SyncingGames">Syncing {{total}} games with PlayAtlas server</sys:String>
 </ResourceDictionary>

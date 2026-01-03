@@ -9,9 +9,9 @@ namespace ExporterBootstrap.Application
 {
     public class ExporterPlayniteIntegrationApiQuery
     {
-        public readonly GetAllGamesQueryHandler GetAllGames;
+        public readonly IGetAllGamesQueryHandlerPort GetAllGames;
 
-        public ExporterPlayniteIntegrationApiQuery(GetAllGamesQueryHandler getAllGames)
+        public ExporterPlayniteIntegrationApiQuery(IGetAllGamesQueryHandlerPort getAllGames)
         {
             GetAllGames = getAllGames;
         }

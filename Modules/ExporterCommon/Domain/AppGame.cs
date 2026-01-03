@@ -24,7 +24,6 @@ namespace ExporterCommon.Domain
         private string description = null;
         private bool isHidden = false;
         private AppCompletionStatus appCompletionStatus = null;
-        private string contentHash;
 
         public Guid Id 
         { 
@@ -266,20 +265,6 @@ namespace ExporterCommon.Domain
             set
             {
                 appCompletionStatus = value;
-            }
-        }
-
-        public string ContentHash
-        {
-            get
-            {
-                return contentHash;
-            }
-            set
-            {
-                if (string.IsNullOrEmpty(value))
-                    throw new ArgumentNullException(nameof(ContentHash));
-                contentHash = value;
             }
         }
 

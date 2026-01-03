@@ -52,7 +52,9 @@
   <ItemGroup>
     <Compile Include="Application\AppLoggerPort.cs" />
     <Compile Include="Application\ExporterPluginContextPort.cs" />
-    <Compile Include="Application\PlayAtlasHttpClient\SendGetManifestRequest.cs" />
+    <Compile Include="Application\PlayAtlasHttpClient\SendGetManifestRequestDto.cs" />
+    <Compile Include="Application\PlayAtlasHttpClient\SyncGamesCommand.cs" />
+    <Compile Include="Application\PlayAtlasHttpClient\SyncMediaFilesCommand.cs" />
     <Compile Include="Application\QueryHandlerPort.cs" />
     <Compile Include="Domain\AppCompany.cs" />
     <Compile Include="Domain\AppCompletionStatus.cs" />
@@ -64,8 +66,6 @@
     <Compile Include="Infra\HashServicePort.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\PlayAtlasHttpClientPort.cs" />
     <Compile Include="Application\PlayAtlasLibraryManifest.cs" />
-    <Compile Include="Application\PlayAtlasHttpClient\SyncGamesRequest.cs" />
-    <Compile Include="Application\PlayAtlasHttpClient\SyncMediaFilesRequest.cs" />
     <Compile Include="Dtos\GameDto.cs" />
     <Compile Include="Infra\FileSystemServicePort.cs" />
     <Compile Include="Infra\PlayniteGameRepositoryPort.cs" />

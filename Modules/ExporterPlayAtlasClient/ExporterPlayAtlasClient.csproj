@@ -45,6 +45,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application\PlayAtlasHttpClient.cs" />
+    <Compile Include="Application\SyncGamesDtoMapper.cs" />
+    <Compile Include="Application\SyncGamesDtoMapperPort.cs" />
+    <Compile Include="Application\SyncGamesRequestDto.cs" />
+    <Compile Include="Application\SyncMediaFilesRequestDto.cs" />
     <Compile Include="Infra\HttpContentBuilderPort.cs" />
     <Compile Include="Infra\SyncGamesHttpContentBuilder.cs" />
     <Compile Include="Infra\SyncMediaFilesHttpContentBuilder.cs" />

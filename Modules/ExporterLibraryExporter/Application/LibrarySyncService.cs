@@ -18,8 +18,7 @@ namespace ExporterLibraryExporter.Application
         Failed
     }
 
-
-    public class LibraryExporterService : ILibraryExporterServicePort
+    public class LibrarySyncService : ILibrarySyncServicePort
     {
         private readonly IAppLoggerPort appLogger;
         private readonly IPlayAtlasHttpClientPort playAtlasHttpClient;
@@ -28,7 +27,7 @@ namespace ExporterLibraryExporter.Application
         private readonly ISystemConfigPort systemConfig;
         private readonly IPlayniteGameRepositoryPort gameRepository;
 
-        public LibraryExporterService(
+        public LibrarySyncService(
           IAppLoggerPort appLogger,
           IPlayAtlasHttpClientPort playAtlasHttpClient,
           IHashServicePort hashService,
@@ -143,7 +142,6 @@ namespace ExporterLibraryExporter.Application
             string mediaFolderPath = fileSystemService
                 .PathCombine(systemConfig.LibraryFilesDirPath, gameId);
             string contentHash;
-            string canonicalHash;
 
             if (!fileSystemService.DirectoryExists(mediaFolderPath))
             {
@@ -178,28 +176,14 @@ namespace ExporterLibraryExporter.Application
 
             try
             {
-                canonicalHash = hashService.ComputeCanonicalHashForGameMediaFiles(
-                        gameId: gameId,
-                        contentHash: contentHash,
-                        mediaFolderPath: mediaFolderPath
-                    );
-            }
-            catch (Exception ex)
-            {
-                appLogger.Error($"Failed to compute canonical hash for game (Id: {game.Id}, Name: {game.Name})", ex);
-                return MediaProcessResult.Failed;
-            }
-
-            try
-            {
                 var descriptors = GetMediaFileDescriptors(game, mediaFolderPath);
-                var request = new SyncMediaFilesRequest(
+                var command = new SyncMediaFilesCommand(
                         gameId: gameId,
                         contentHash: contentHash,
-                        canonicalHash: canonicalHash,
+                        mediaFolderPath: mediaFolderPath,
                         mediaFiles: descriptors
                     );
-                await playAtlasHttpClient.SyncMediaFilesAsync(request);
+                await playAtlasHttpClient.SyncMediaFilesAsync(command);
                 return MediaProcessResult.SentSuccessfully;
             }
             catch (Exception ex)
@@ -209,18 +193,39 @@ namespace ExporterLibraryExporter.Application
             }
         }
 
-        public Task<bool> ExportLibraryAsync(
-           LibraryExportDiff diff,
+        public async Task SyncGamesLibraryAsync(
+           GameLibrarySyncDiff diff,
            CancellationToken cancellationToken = default
         )
         {
-            throw new NotImplementedException();
+            appLogger.Debug($"Exporting games database to PlayAtlas server...");
+            
+            if (!diff.HasChanges)
+            {
+                appLogger.Debug("No games to export");
+                return;
+            }
+
+            appLogger.Debug(
+                $"Games to remove: {diff.ToRemove.Count}. " +
+                $"Games to add: {diff.ToAdd.Count}. " +
+                $"Games to update: {diff.ToUpdate.Count}."
+            );
+
+            SyncGamesCommand request = new SyncGamesCommand
+            {
+                AddedItems = diff.ToAdd,
+                RemovedItems = diff.ToRemove,
+                UpdatedItems = diff.ToUpdate
+            };
+
+            await playAtlasHttpClient.SyncGamesAsync(request);
         }
 
-        public async Task<ExportMediaFilesResult> ExportMediaFilesAsync(
+        public async Task<SyncMediaFilesResult> SyncMediaFilesAsync(
             IReadOnlyList<AppGame> games,
             CancellationToken cancellationToken = default,
-            ExportMediaFilesContext context = null
+            SyncMediaFilesContext context = null
         )
         {
             appLogger.Debug($"Exporting media files for {games.Count()} games...");
@@ -228,8 +233,8 @@ namespace ExporterLibraryExporter.Application
             if (games == null || !games.Any())
             {
                 appLogger.Debug($"No game media files to export");
-                return new ExportMediaFilesResult(
-                        reasonCode: ExportMediaFilesResultReasonCode.Success,
+                return new SyncMediaFilesResult(
+                        reasonCode: SyncMediaFilesResultReasonCode.Success,
                         reason: "Success",
                         operationSuccess: true,
                         skipped: 0,
@@ -255,8 +260,8 @@ namespace ExporterLibraryExporter.Application
                 if (cancellationToken.IsCancellationRequested)
                 {
                     appLogger.Info("Library media files sync cancelled by user.");
-                    return new ExportMediaFilesResult(
-                            reasonCode: ExportMediaFilesResultReasonCode.OperationCanceledByUser,
+                    return new SyncMediaFilesResult(
+                            reasonCode: SyncMediaFilesResultReasonCode.OperationCanceledByUser,
                             reason: "Canceled by user",
                             operationSuccess: true,
                             skipped: skipped,
@@ -269,8 +274,6 @@ namespace ExporterLibraryExporter.Application
                     game, 
                     manifest
                 );
-
-                context?.OnFinishProcessing(game);
 
                 switch (result)
                 {
@@ -295,12 +298,14 @@ namespace ExporterLibraryExporter.Application
                     requestsInBatch = 0;
                     await Task.Delay(delayBetweenBatchesMs, cancellationToken);
                 }
+
+                context?.OnFinishProcessing(game);
             }
 
             if (failed == 0)
             {
-                return new ExportMediaFilesResult(
-                            reasonCode: ExportMediaFilesResultReasonCode.Success,
+                return new SyncMediaFilesResult(
+                            reasonCode: SyncMediaFilesResultReasonCode.Success,
                             reason: "Success",
                             operationSuccess: true,
                             skipped: skipped,
@@ -309,8 +314,8 @@ namespace ExporterLibraryExporter.Application
                         );
             }
 
-            return new ExportMediaFilesResult(
-                    reasonCode: ExportMediaFilesResultReasonCode.OneOrMoreFailed,
+            return new SyncMediaFilesResult(
+                    reasonCode: SyncMediaFilesResultReasonCode.OneOrMoreFailed,
                     reason: "One or more operations failed",
                     operationSuccess: false,
                     skipped: skipped,
@@ -319,14 +324,14 @@ namespace ExporterLibraryExporter.Application
                 );
         }
 
-        public async Task<LibraryExportDiff> ComputeLibraryDiff()
+        public async Task<GameLibrarySyncDiff> ComputeGameLibraryDiff()
         {
             var manifest = await playAtlasHttpClient.GetManifestAsync();
             var localGames = gameRepository.GetAll();
 
-            var toAdd = new List<AppGame>();
-            var toUpdate = new List<AppGame>();
-            var toRemove = new List<AppGame>();
+            var toAdd = new List<SyncGameCommandItem>();
+            var toUpdate = new List<SyncGameCommandItem>();
+            var toRemove = new List<string>();
 
             var localById = localGames.ToDictionary(g => g.Id.ToString());
             var manifestById = manifest?.GamesInLibrary?
@@ -336,15 +341,26 @@ namespace ExporterLibraryExporter.Application
             // Add & Update
             foreach (var localGame in localById.Values)
             {
+                var contentHash = hashService.ComputeHashFromGame(localGame);
+                SyncGameCommandItem gameItem = new SyncGameCommandItem(localGame, contentHash);
+
                 if (!manifestById.TryGetValue(localGame.Id.ToString(), out var manifestGame))
                 {
-                    toAdd.Add(localGame);
+                    toAdd.Add(gameItem);
                     continue;
                 }
 
-                if (!string.Equals(manifestGame.ContentHash, localGame.ContentHash, StringComparison.Ordinal))
+                try
                 {
-                    toUpdate.Add(localGame);
+                    if (!string.Equals(manifestGame.ContentHash, contentHash, StringComparison.Ordinal))
+                    {
+                        toUpdate.Add(gameItem);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    appLogger.Error($"Failed to compute hash for game (Id: {localGame.Id}, Name: {localGame.Name})", ex);
+                    continue;
                 }
             }
 
@@ -356,14 +372,11 @@ namespace ExporterLibraryExporter.Application
                     appLogger.Warn(
                         $"Server manifest contains game {manifestGame.GameId} not present locally. It will be removed.");
 
-                    toRemove.Add(new AppGame
-                    {
-                        Id = Guid.Parse(manifestGame.GameId)
-                    });
+                    toRemove.Add(manifestGame.GameId);
                 }
             }
 
-            return new LibraryExportDiff(toAdd, toUpdate, toRemove);
+            return new GameLibrarySyncDiff(toAdd, toUpdate, toRemove);
         }
 
     }

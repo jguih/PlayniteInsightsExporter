@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ExporterCommon.Application
 {
-    public class SendGetManifestRequest
+    public class SendGetManifestRequestDto
     {
         public static readonly string ENDPOINT = "/api/extension/sync/manifest";
     }

@@ -12,8 +12,36 @@ namespace ExporterCommon.Dtos
     [JsonObject]
     public class GameDto
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; }
+        private Guid id;
+        private string name;
+        private string contentHash;
+
+        public Guid Id
+        {
+            get
+            {
+                return id;
+            }
+            set
+            {
+                if (value == null || value == Guid.Empty)
+                    throw new ArgumentException("Id must not be null or empty");
+                id = value;
+            }
+        }
+        public string Name
+        {
+            get
+            {
+                return name;
+            }
+            set
+            {
+                if (string.IsNullOrEmpty(value))
+                    throw new ArgumentNullException(nameof(Name));
+                name = value;
+            }
+        }
         public List<AppPlatform> Platforms { get; set; } = new List<AppPlatform>();
         public List<AppGenre> Genres { get; set; } = new List<AppGenre>();
         public List<AppCompany> Developers { get; set; } = new List<AppCompany>();
@@ -29,8 +57,20 @@ namespace ExporterCommon.Dtos
         public string Icon { get; set; } = null;
         public string Description { get; set; } = null;
         public bool Hidden { get; set; } = false;
-        public AppCompletionStatus CompletionStatus { get; set; }
-        public string ContentHash { get; set; }
+        public AppCompletionStatus CompletionStatus { get; set; } = null;
+        public string ContentHash
+        {
+            get
+            {
+                return contentHash;
+            }
+            set
+            {
+                if (string.IsNullOrEmpty(value))
+                    throw new ArgumentNullException(nameof(ContentHash));
+                contentHash = value;
+            }
+        }
 
         public GameDto() { }
 
@@ -44,7 +84,7 @@ namespace ExporterCommon.Dtos
                 Genres = game.Genres,
                 Developers = game.Developers,
                 Publishers = game.Publishers,
-                ReleaseDate = game.ReleaseDate.Value,
+                ReleaseDate = game.ReleaseDate,
                 Playtime = game.Playtime,
                 LastActivity = game.LastActivity,
                 Added = game.Added,
@@ -56,7 +96,7 @@ namespace ExporterCommon.Dtos
                 Description = game.Description,
                 Hidden = game.IsHidden,
                 CompletionStatus = game.CompletionStatus,
-                ContentHash = contentHash
+                ContentHash = contentHash,
             };
         }
     }

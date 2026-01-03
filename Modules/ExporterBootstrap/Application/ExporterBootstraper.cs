@@ -65,6 +65,7 @@ namespace ExporterBootstrap.Application
             // PlayAtlas Client
             var syncGamesHttpContentBuilder = new SyncGamesHttpContentBuilder();
             var syncMediaFilesHttpContentBuilder = new SyncMediaFilesHttpContentBuilder(fileSystemService);
+            var syncGamesDtoMapper = new SyncGamesDtoMapper();
             var playAtlasHttpClient = new PlayAtlasHttpClient(
                 appLogger: appLogger,
                 pluginContext: plugin,
@@ -72,10 +73,11 @@ namespace ExporterBootstrap.Application
                 signatureService: signatureService,
                 hashService: hashService,
                 syncGamesHttpContentBuilder: syncGamesHttpContentBuilder,
-                syncMediaFilesHttpContentBuilder: syncMediaFilesHttpContentBuilder
+                syncMediaFilesHttpContentBuilder: syncMediaFilesHttpContentBuilder,
+                syncGamesDtoMapper: syncGamesDtoMapper
             );
-            // Library Exporter
-            var libraryExporterService = new LibraryExporterService(
+            // Library Sync
+            var librarySyncService = new LibrarySyncService(
                  appLogger: appLogger,
                  playAtlasHttpClient: playAtlasHttpClient,
                  hashService: hashService,
@@ -85,8 +87,7 @@ namespace ExporterBootstrap.Application
             );
             // Playnite Integration
             var getAllGamesQueryHandler = new GetAllGamesQueryHandler(
-                playniteGameRepository: playniteGameRepository,
-                hashService: hashService
+                playniteGameRepository: playniteGameRepository
             );
 
             var configApi = new ExporterConfigApi(
@@ -100,7 +101,7 @@ namespace ExporterBootstrap.Application
                 playniteGameRepository: playniteGameRepository
             );
             var playAtlasClientApi = new ExporterPlayAtlasClientApi(playAtlasHttpClient);
-            var libraryExporterApi = new ExporterLibraryExporterApi(libraryExporterService);
+            var librarySyncApi = new ExporterLibrarySyncApi(librarySyncService);
             var playniteIntegrationApi = new ExporterPlayniteIntegrationApi(
                 query: new ExporterPlayniteIntegrationApiQuery(
                     getAllGamesQueryHandler
@@ -109,7 +110,7 @@ namespace ExporterBootstrap.Application
 
             Api = new ExporterApi(
                 playAtlasClientApi,
-                libraryExporterApi,
+                librarySyncApi,
                 playniteIntegrationApi,
                 environmentInitializer,
                 appLogger

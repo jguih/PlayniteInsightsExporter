@@ -9,7 +9,7 @@ namespace ExporterCommon.Application
     public interface IPlayAtlasHttpClientPort
     {
         Task<PlayAtlasLibraryManifest> GetManifestAsync();
-        Task SyncGamesAsync(SyncGamesRequest request);
-        Task SyncMediaFilesAsync(SyncMediaFilesRequest request);
+        Task SyncGamesAsync(SyncGamesCommand request);
+        Task SyncMediaFilesAsync(SyncMediaFilesCommand request);
     }
 }

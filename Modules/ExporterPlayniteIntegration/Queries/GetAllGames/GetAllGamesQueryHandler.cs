@@ -9,27 +9,22 @@ using System.Threading.Tasks;
 
 namespace ExporterPlayniteIntegration.Queries.GetAllGames
 {
-    public class GetAllGamesQueryHandler : IQueryHandlerPort<IReadOnlyList<AppGame>>
+    public interface IGetAllGamesQueryHandlerPort : IQueryHandlerPort<IReadOnlyList<AppGame>> { }
+
+    public class GetAllGamesQueryHandler : IGetAllGamesQueryHandlerPort
     {
         private readonly IPlayniteGameRepositoryPort playniteGameRepository;
-        private readonly IHashServicePort hashService;
 
         public GetAllGamesQueryHandler(
-            IPlayniteGameRepositoryPort playniteGameRepository,
-            IHashServicePort hashService)
+            IPlayniteGameRepositoryPort playniteGameRepository
+        )
         {
             this.playniteGameRepository = playniteGameRepository;
-            this.hashService = hashService;
         }
 
         public IReadOnlyList<AppGame> Execute()
         {
             var games = playniteGameRepository.GetAll();
-
-            foreach (var game in games)
-            {
-                game.ContentHash = hashService.ComputeHashFromGame(game);
-            }
 
             return games;
         }

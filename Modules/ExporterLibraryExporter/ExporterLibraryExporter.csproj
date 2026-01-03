@@ -47,10 +47,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Application\ExportMediaFilesContext.cs" />
-    <Compile Include="Application\ExportMediaFilesResult.cs" />
-    <Compile Include="Application\LibraryExporterService.cs" />
-    <Compile Include="Application\LibraryExporterServicePort.cs" />
+    <Compile Include="Application\SyncMediaFilesContext.cs" />
+    <Compile Include="Application\SyncMediaFilesResult.cs" />
+    <Compile Include="Application\LibrarySyncService.cs" />
+    <Compile Include="Application\LibrarySyncServicePort.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -64,6 +64,10 @@
     <ProjectReference Include="..\ExporterCommon\ExporterCommon.csproj">
       <Project>{0c45c5bf-6076-4d80-9dba-59edd13169b2}</Project>
       <Name>ExporterCommon</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ExporterPlayniteIntegration\ExporterPlayniteIntegration.csproj">
+      <Project>{2F486FB2-34D6-4A46-9931-C9B17F2798E8}</Project>
+      <Name>ExporterPlayniteIntegration</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

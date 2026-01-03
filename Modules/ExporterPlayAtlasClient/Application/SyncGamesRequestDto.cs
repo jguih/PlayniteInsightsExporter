@@ -1,5 +1,4 @@
-﻿using ExporterCommon.Domain;
-using ExporterCommon.Dtos;
+﻿using ExporterCommon.Dtos;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -7,25 +6,28 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExporterCommon.Application
+namespace ExporterPlayAtlasClient.Application
 {
-    public class SyncGamesRequest
+    [JsonObject]
+    public class SyncGamesRequestDto
     {
+        [JsonIgnore]
         public readonly static string ENDPOINT = "/api/extension/sync/games";
-        public IEnumerable<AppGame> AddedItems { get; set; } = new List<AppGame>();
+
+        public IEnumerable<GameDto> AddedItems { get; set; } = new List<GameDto>();
         public IEnumerable<string> RemovedItems { get; set; } = new List<string>();
-        public IEnumerable<AppGame> UpdatedItems { get; set; } = new List<AppGame>();
+        public IEnumerable<GameDto> UpdatedItems { get; set; } = new List<GameDto>();
 
-        public SyncGamesRequest() { }
+        public SyncGamesRequestDto() { }
 
-        public SyncGamesRequest(
-            IReadOnlyCollection<AppGame> AddedItems,
+        public SyncGamesRequestDto(
+            IReadOnlyCollection<GameDto> AddedItems,
             IReadOnlyCollection<string> RemovedItems,
-            IReadOnlyCollection<AppGame> UpdatedItems)
+            IReadOnlyCollection<GameDto> UpdatedItems)
         {
-            this.AddedItems = AddedItems ?? new List<AppGame>();
+            this.AddedItems = AddedItems ?? new List<GameDto>();
             this.RemovedItems = RemovedItems ?? new List<string>();
-            this.UpdatedItems = UpdatedItems ?? new List<AppGame>();
+            this.UpdatedItems = UpdatedItems ?? new List<GameDto>();
         }
 
         public string ToJsonString()
@@ -39,6 +41,5 @@ namespace ExporterCommon.Application
                 }
             );
         }
-
     }
 }

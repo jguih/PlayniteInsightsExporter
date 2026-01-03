@@ -6,25 +6,25 @@ using System.Threading.Tasks;
 
 namespace ExporterLibraryExporter.Application
 {
-    public enum ExportMediaFilesResultReasonCode
+    public enum SyncMediaFilesResultReasonCode
     {
         OneOrMoreFailed,
         Success,
         OperationCanceledByUser,
     }
 
-    public class ExportMediaFilesResult
+    public class SyncMediaFilesResult
     {
         public readonly string Reason;
-        public readonly ExportMediaFilesResultReasonCode ReasonCode;
+        public readonly SyncMediaFilesResultReasonCode ReasonCode;
         public readonly bool OperationSuccess;
         public readonly int Skipped;
         public readonly int Success;
         public readonly int Failed;
 
-        public ExportMediaFilesResult(
+        public SyncMediaFilesResult(
             string reason, 
-            ExportMediaFilesResultReasonCode reasonCode, 
+            SyncMediaFilesResultReasonCode reasonCode, 
             bool operationSuccess, 
             int skipped, 
             int success, 

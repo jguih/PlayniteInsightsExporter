@@ -19,8 +19,9 @@ namespace ExporterPlayAtlasClient.Application
         private readonly ISystemConfigPort systemConfig;
         private readonly ISignatureServicePort signatureService;
         private readonly IHashServicePort hashService;
-        private readonly IHttpContentBuilderPort<SyncGamesRequest> syncGamesHttpContentBuilder;
-        private readonly IHttpContentBuilderPort<SyncMediaFilesRequest> syncMediaFilesHttpContentBuilder;
+        private readonly ISyncGamesHttpContentBuilderPort syncGamesHttpContentBuilder;
+        private readonly ISyncMediaFilesHttpContentBuilder syncMediaFilesHttpContentBuilder;
+        private readonly ISyncGamesDtoMapperPort syncGamesDtoMapper;
         private readonly HttpClient httpClient;
 
         public PlayAtlasHttpClient(
@@ -29,8 +30,9 @@ namespace ExporterPlayAtlasClient.Application
             ISystemConfigPort systemConfig,
             ISignatureServicePort signatureService,
             IHashServicePort hashService,
-            IHttpContentBuilderPort<SyncGamesRequest> syncGamesHttpContentBuilder,
-            IHttpContentBuilderPort<SyncMediaFilesRequest> syncMediaFilesHttpContentBuilder
+            ISyncGamesHttpContentBuilderPort syncGamesHttpContentBuilder,
+            ISyncMediaFilesHttpContentBuilder syncMediaFilesHttpContentBuilder,
+            ISyncGamesDtoMapperPort syncGamesDtoMapper
         )
         {
             this.appLogger = appLogger;
@@ -40,9 +42,11 @@ namespace ExporterPlayAtlasClient.Application
             this.hashService = hashService;
             this.syncGamesHttpContentBuilder = syncGamesHttpContentBuilder;
             this.syncMediaFilesHttpContentBuilder = syncMediaFilesHttpContentBuilder;
+            this.syncGamesDtoMapper = syncGamesDtoMapper;
+
             httpClient = new HttpClient()
             {
-                Timeout = TimeSpan.FromSeconds(5)
+                Timeout = TimeSpan.FromSeconds(60)
             };
         }
 
@@ -102,7 +106,7 @@ namespace ExporterPlayAtlasClient.Application
         {
             try
             {
-                string endpoint = SendGetManifestRequest.ENDPOINT;
+                string endpoint = SendGetManifestRequestDto.ENDPOINT;
                 using (var request = CreateSignedRequest(HttpMethod.Get, endpoint))
                 using (var response = await httpClient.SendAsync(request))
                 {
@@ -121,16 +125,17 @@ namespace ExporterPlayAtlasClient.Application
             }
         }
 
-        public async Task SyncGamesAsync(SyncGamesRequest request)
+        public async Task SyncGamesAsync(SyncGamesCommand command)
         {
             try
             {
-                string endpoint = SyncGamesRequest.ENDPOINT;
-                string requestBody = request.ToJsonString();
-                string contentHash = hashService.ComputeSHA256HashFromString(requestBody);
+                string endpoint = SyncGamesRequestDto.ENDPOINT;
+                var requestDto = syncGamesDtoMapper.Map(command);
+                var jsonString = requestDto.ToJsonString();
+                var contentHash = hashService.ComputeSHA256HashFromString(jsonString);
 
                 using (
-                    var jsonContent = syncGamesHttpContentBuilder.Build(request)
+                    var jsonContent = syncGamesHttpContentBuilder.Build(requestDto)
                 )
                 using (
                     var signedRequest = CreateSignedRequest(
@@ -153,21 +158,33 @@ namespace ExporterPlayAtlasClient.Application
             }
         }
 
-        public async Task SyncMediaFilesAsync(SyncMediaFilesRequest request)
+        public async Task SyncMediaFilesAsync(SyncMediaFilesCommand command)
         {
             try
             {
-                string endpoint = SyncMediaFilesRequest.ENDPOINT;
+                string endpoint = SyncMediaFilesRequestDto.ENDPOINT;
+                var canonicalHash = hashService.ComputeCanonicalHashForGameMediaFiles(
+                        gameId: command.GameId,
+                        contentHash: command.ContentHash,
+                        mediaFolderPath: command.MediaFolderPath
+                    );
+                var requestDto = new SyncMediaFilesRequestDto
+                {
+                    CanonicalHash = canonicalHash,
+                    ContentHash = command.ContentHash,
+                    GameId = command.GameId,
+                    MediaFiles = command.MediaFiles,
+                };
 
                 using (
-                    var multipartContent = syncMediaFilesHttpContentBuilder.Build(request)
+                    var multipartContent = syncMediaFilesHttpContentBuilder.Build(requestDto)
                 )
                 using (
                     var signedRequest = CreateSignedRequest(
                         HttpMethod.Post,
                         endpoint,
                         multipartContent,
-                        request.CanonicalHash
+                        canonicalHash
                     )
                 )
                 using (var response = await httpClient.SendAsync(signedRequest))
