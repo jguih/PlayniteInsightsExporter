@@ -72,6 +72,8 @@ namespace ExporterBootstrap.Application
             var syncMediaFilesHttpContentBuilder = new SyncMediaFilesHttpContentBuilder(fileSystemService);
             var syncGamesDtoMapper = new SyncGamesDtoMapper();
             var openGameSessionHttpContentBuilder = new OpenGameSessionHttpContentBuilder();
+            var closeGameSessionHttpContentBuilder = new CloseGameSessionHttpContentBuilder();
+            var staleGameSessionHttpContentBuilder = new StaleGameSessionHttpContentBuilder();
             var playAtlasHttpClient = new PlayAtlasHttpClient(
                 appLogger: appLogger,
                 pluginContext: plugin,
@@ -81,7 +83,9 @@ namespace ExporterBootstrap.Application
                 syncGamesHttpContentBuilder: syncGamesHttpContentBuilder,
                 syncMediaFilesHttpContentBuilder: syncMediaFilesHttpContentBuilder,
                 syncGamesDtoMapper: syncGamesDtoMapper,
-                openGameSessionHttpContentBuilder: openGameSessionHttpContentBuilder
+                openGameSessionHttpContentBuilder: openGameSessionHttpContentBuilder,
+                closeGameSessionHttpContentBuilder: closeGameSessionHttpContentBuilder,
+                staleGameSessionHttpContentBuilder: staleGameSessionHttpContentBuilder
             );
             // Library Sync
             var librarySyncService = new LibrarySyncService(
