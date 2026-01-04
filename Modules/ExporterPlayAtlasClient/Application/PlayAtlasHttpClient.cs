@@ -1,5 +1,7 @@
 ﻿using ExporterCommon.Application;
+using ExporterCommon.Application.PlayAtlasHttpClient;
 using ExporterCommon.Infra;
+using ExporterPlayAtlasClient.Dtos;
 using ExporterPlayAtlasClient.Infra;
 using Newtonsoft.Json;
 using System;
@@ -20,8 +22,9 @@ namespace ExporterPlayAtlasClient.Application
         private readonly ISignatureServicePort signatureService;
         private readonly IHashServicePort hashService;
         private readonly ISyncGamesHttpContentBuilderPort syncGamesHttpContentBuilder;
-        private readonly ISyncMediaFilesHttpContentBuilder syncMediaFilesHttpContentBuilder;
+        private readonly ISyncMediaFilesHttpContentBuilderPort syncMediaFilesHttpContentBuilder;
         private readonly ISyncGamesDtoMapperPort syncGamesDtoMapper;
+        private readonly IOpenGameSessionHttpContentBuilderPort openGameSessionHttpContentBuilder;
         private readonly HttpClient httpClient;
 
         public PlayAtlasHttpClient(
@@ -31,8 +34,9 @@ namespace ExporterPlayAtlasClient.Application
             ISignatureServicePort signatureService,
             IHashServicePort hashService,
             ISyncGamesHttpContentBuilderPort syncGamesHttpContentBuilder,
-            ISyncMediaFilesHttpContentBuilder syncMediaFilesHttpContentBuilder,
-            ISyncGamesDtoMapperPort syncGamesDtoMapper
+            ISyncMediaFilesHttpContentBuilderPort syncMediaFilesHttpContentBuilder,
+            ISyncGamesDtoMapperPort syncGamesDtoMapper,
+            IOpenGameSessionHttpContentBuilderPort openGameSessionHttpContentBuilder
         )
         {
             this.appLogger = appLogger;
@@ -43,6 +47,7 @@ namespace ExporterPlayAtlasClient.Application
             this.syncGamesHttpContentBuilder = syncGamesHttpContentBuilder;
             this.syncMediaFilesHttpContentBuilder = syncMediaFilesHttpContentBuilder;
             this.syncGamesDtoMapper = syncGamesDtoMapper;
+            this.openGameSessionHttpContentBuilder = openGameSessionHttpContentBuilder;
 
             httpClient = new HttpClient()
             {
@@ -196,6 +201,43 @@ namespace ExporterPlayAtlasClient.Application
             catch (Exception ex)
             {
                 appLogger.Error("PlayAtlas request to sync game media files failed", ex);
+                throw;
+            }
+        }
+
+        public async Task OpenGameSessionAsync(OpenGameSessionCommand command)
+        {
+            try
+            {
+                string endpoint = OpenGameSessionRequestDto.ENDPOINT;
+                var requestDto = new OpenGameSessionRequestDto(
+                    sessionId: command.GameSession.SessionId,
+                    gameId: command.GameSession.GameId,
+                    startTime: command.GameSession.StartTime
+                );
+                var jsonString = requestDto.ToJsonString();
+                var contentHash = hashService.ComputeSHA256HashFromString(jsonString);
+
+                using (
+                    var jsonContent = openGameSessionHttpContentBuilder.Build(requestDto)
+                )
+                using (
+                    var signedRequest = CreateSignedRequest(
+                        HttpMethod.Post,
+                        endpoint,
+                        jsonContent,
+                        contentHash
+                    )
+                )
+                using (var response = await httpClient.SendAsync(signedRequest))
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                appLogger.Error("PlayAtlas request to open game session failed", ex);
                 throw;
             }
         }

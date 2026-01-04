@@ -6,10 +6,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExporterPlayAtlasClient.Application
+namespace ExporterPlayAtlasClient.Dtos
 {
     [JsonObject]
-    public class SyncGamesRequestDto
+    public class SyncGamesRequestDto : BaseRequestDto
     {
         [JsonIgnore]
         public readonly static string ENDPOINT = "/api/extension/sync/games";
@@ -28,18 +28,6 @@ namespace ExporterPlayAtlasClient.Application
             this.AddedItems = AddedItems ?? new List<GameDto>();
             this.RemovedItems = RemovedItems ?? new List<string>();
             this.UpdatedItems = UpdatedItems ?? new List<GameDto>();
-        }
-
-        public string ToJsonString()
-        {
-            return JsonConvert.SerializeObject(
-                this,
-                Formatting.None,
-                new JsonSerializerSettings
-                {
-                    NullValueHandling = NullValueHandling.Ignore
-                }
-            );
         }
     }
 }

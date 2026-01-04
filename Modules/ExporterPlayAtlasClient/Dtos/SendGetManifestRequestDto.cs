@@ -1,12 +1,14 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExporterCommon.Application
+namespace ExporterPlayAtlasClient.Dtos
 {
-    public class SendGetManifestRequestDto
+    [JsonObject]
+    public class SendGetManifestRequestDto : BaseRequestDto
     {
         public static readonly string ENDPOINT = "/api/extension/sync/manifest";
     }

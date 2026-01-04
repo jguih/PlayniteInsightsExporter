@@ -1,6 +1,4 @@
-﻿using ExporterCommon.Application;
-using ExporterCommon.Dtos;
-using ExporterPlayAtlasClient.Application;
+﻿using ExporterPlayAtlasClient.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,16 +10,9 @@ namespace ExporterPlayAtlasClient.Infra
 {
     public interface ISyncGamesHttpContentBuilderPort : IHttpContentBuilderPort<SyncGamesRequestDto> { }
 
-    public class SyncGamesHttpContentBuilder : ISyncGamesHttpContentBuilderPort
+    public class SyncGamesHttpContentBuilder : 
+        BaseHttpContentBuilder<SyncGamesRequestDto>, 
+        ISyncGamesHttpContentBuilderPort
     {
-        public HttpContent Build(SyncGamesRequestDto request)
-        {
-            var jsonContent = new StringContent(
-                    content: request.ToJsonString(),
-                    encoding: Encoding.UTF8,
-                    mediaType: "application/json"
-                );
-            return jsonContent;
-        }
     }
 }

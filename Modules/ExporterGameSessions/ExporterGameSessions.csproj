@@ -47,7 +47,6 @@
     <Compile Include="Application\GameSessionConfig.cs" />
     <Compile Include="Application\GameSessionService.cs" />
     <Compile Include="Application\GameSessionServicePort.cs" />
-    <Compile Include="Domain\GameSession.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

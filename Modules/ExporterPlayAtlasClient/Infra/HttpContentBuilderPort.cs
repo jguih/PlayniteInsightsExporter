@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ExporterPlayAtlasClient.Dtos;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -7,7 +8,8 @@ using System.Threading.Tasks;
 
 namespace ExporterPlayAtlasClient.Infra
 {
-    public interface IHttpContentBuilderPort<in TRequest>
+    public interface IHttpContentBuilderPort<TRequest>
+        where TRequest : BaseRequestDto
     {
         HttpContent Build(TRequest request);
     }

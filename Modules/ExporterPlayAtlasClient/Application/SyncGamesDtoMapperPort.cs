@@ -1,4 +1,5 @@
 ﻿using ExporterCommon.Application;
+using ExporterPlayAtlasClient.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;

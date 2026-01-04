@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ExporterCommon.Application.PlayAtlasHttpClient;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +10,8 @@ namespace ExporterCommon.Application
     public interface IPlayAtlasHttpClientPort
     {
         Task<PlayAtlasLibraryManifest> GetManifestAsync();
-        Task SyncGamesAsync(SyncGamesCommand request);
-        Task SyncMediaFilesAsync(SyncMediaFilesCommand request);
+        Task SyncGamesAsync(SyncGamesCommand command);
+        Task SyncMediaFilesAsync(SyncMediaFilesCommand command);
+        Task OpenGameSessionAsync(OpenGameSessionCommand command);
     }
 }

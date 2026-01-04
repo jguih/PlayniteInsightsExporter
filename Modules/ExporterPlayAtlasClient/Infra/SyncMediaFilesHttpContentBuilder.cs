@@ -1,6 +1,6 @@
 ﻿using ExporterCommon.Application;
 using ExporterCommon.Infra;
-using ExporterPlayAtlasClient.Application;
+using ExporterPlayAtlasClient.Dtos;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,9 +12,9 @@ using System.Threading.Tasks;
 
 namespace ExporterPlayAtlasClient.Infra
 {
-    public interface ISyncMediaFilesHttpContentBuilder : IHttpContentBuilderPort<SyncMediaFilesRequestDto> { }
+    public interface ISyncMediaFilesHttpContentBuilderPort : IHttpContentBuilderPort<SyncMediaFilesRequestDto> { }
 
-    public class SyncMediaFilesHttpContentBuilder : ISyncMediaFilesHttpContentBuilder
+    public class SyncMediaFilesHttpContentBuilder : BaseHttpContentBuilder<SyncMediaFilesRequestDto>, ISyncMediaFilesHttpContentBuilderPort
     {
         private readonly IFileSystemServicePort fileSystemService;
 
@@ -42,7 +42,7 @@ namespace ExporterPlayAtlasClient.Infra
             }
         }
 
-        public HttpContent Build(SyncMediaFilesRequestDto requestDto)
+        public override HttpContent Build(SyncMediaFilesRequestDto requestDto)
         {
             var content = new MultipartFormDataContent
             {

@@ -71,6 +71,7 @@ namespace ExporterBootstrap.Application
             var syncGamesHttpContentBuilder = new SyncGamesHttpContentBuilder();
             var syncMediaFilesHttpContentBuilder = new SyncMediaFilesHttpContentBuilder(fileSystemService);
             var syncGamesDtoMapper = new SyncGamesDtoMapper();
+            var openGameSessionHttpContentBuilder = new OpenGameSessionHttpContentBuilder();
             var playAtlasHttpClient = new PlayAtlasHttpClient(
                 appLogger: appLogger,
                 pluginContext: plugin,
@@ -79,7 +80,8 @@ namespace ExporterBootstrap.Application
                 hashService: hashService,
                 syncGamesHttpContentBuilder: syncGamesHttpContentBuilder,
                 syncMediaFilesHttpContentBuilder: syncMediaFilesHttpContentBuilder,
-                syncGamesDtoMapper: syncGamesDtoMapper
+                syncGamesDtoMapper: syncGamesDtoMapper,
+                openGameSessionHttpContentBuilder: openGameSessionHttpContentBuilder
             );
             // Library Sync
             var librarySyncService = new LibrarySyncService(

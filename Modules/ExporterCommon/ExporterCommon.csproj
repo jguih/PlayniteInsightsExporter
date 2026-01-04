@@ -52,7 +52,7 @@
   <ItemGroup>
     <Compile Include="Application\AppLoggerPort.cs" />
     <Compile Include="Application\ExporterPluginContextPort.cs" />
-    <Compile Include="Application\PlayAtlasHttpClient\SendGetManifestRequestDto.cs" />
+    <Compile Include="Application\PlayAtlasHttpClient\OpenGameSessionCommand.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\SyncGamesCommand.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\SyncMediaFilesCommand.cs" />
     <Compile Include="Application\QueryHandlerPort.cs" />
@@ -62,6 +62,7 @@
     <Compile Include="Domain\AppGenre.cs" />
     <Compile Include="Domain\AppPlatform.cs" />
     <Compile Include="Domain\BaseEntity.cs" />
+    <Compile Include="Domain\GameSession.cs" />
     <Compile Include="Error\InvalidStateException.cs" />
     <Compile Include="Infra\HashServicePort.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\PlayAtlasHttpClientPort.cs" />

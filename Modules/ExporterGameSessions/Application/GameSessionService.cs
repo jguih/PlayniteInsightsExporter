@@ -1,6 +1,6 @@
 ﻿using ExporterCommon.Application;
 using ExporterCommon.Infra;
-using ExporterGameSessions.Domain;
+using ExporterCommon.Domain;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
