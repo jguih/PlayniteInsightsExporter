@@ -14,11 +14,24 @@ namespace ExporterCommon.Testing
 
         private AppGame _BuildGame()
         {
+            bool isInstalled = faker.Random.Bool();
+
             return new AppGame
             {
                 Id = faker.Random.Guid(),
                 Name = faker.Lorem.Word(),
-                IsInstalled = faker.Random.Bool()
+                IsInstalled = isInstalled,
+                Added = faker.Date.Recent(),
+                BackgroundImage = faker.System.DirectoryPath(),
+                CoverImage = faker.System.DirectoryPath(),
+                Icon = faker.System.DirectoryPath(),
+                CompletionStatus = null,
+                Description = faker.Lorem.Paragraphs(5),
+                InstallDirectory = isInstalled ? faker.System.DirectoryPath() : null,
+                IsHidden = faker.Random.Bool(),
+                LastActivity = faker.Date.Recent(),
+                Playtime = checked((ulong)faker.Random.Number(min: 0)),
+                ReleaseDate = faker.Date.Recent()
             };
         }
 

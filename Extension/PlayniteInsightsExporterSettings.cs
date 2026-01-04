@@ -9,6 +9,7 @@ using Playnite.SDK.Data;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteInsightsExporter.Lib;
+using PlayniteInsightsExporter.Src;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -83,7 +84,10 @@ namespace PlayniteInsightsExporter
         private readonly IPlayniteAPI PlayniteApi;
         private PlayniteInsightsExporterSettings editingClone { get; set; }
         private PlayniteInsightsExporterSettings settings;
+
         private readonly ExporterApi ExporterApi;
+        private readonly SyncGameLibraryWorkflow SyncGameLibraryWorkflow;
+
         // TODO: remove
         private readonly ServiceLocator ServiceLocator;
         private string httpServerStatusText = string.Empty;
@@ -146,6 +150,8 @@ namespace PlayniteInsightsExporter
             }
 
             ExporterApi = exporterApi;
+            SyncGameLibraryWorkflow = new SyncGameLibraryWorkflow(ExporterApi, PlayniteApi);
+
             // TODO: remove
             ServiceLocator = locator;
 
@@ -198,40 +204,16 @@ namespace PlayniteInsightsExporter
 
         public void OnExportLibrary()
         {
-            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-            var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
-            var loc_progress_syncing_library = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
-            var loc_progress_syncing_media_files = ResourceProvider.GetString("LOC_Progress_SyncingMediaFiles");
-            var loc_progress_syncing_games = ResourceProvider.GetString("LOC_Progress_SyncingGames");
+            var loc_operationCanceledByUser = ResourceProvider.GetString("LOC_Operation_CanceledByUser");
+            var loc_failedSyncGameLibrary = ResourceProvider.GetString("LOC_Failed_SyncGameLibrary");
+            var loc_successSyncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
 
-            GlobalProgressOptions syncGamesProgressOptions = new GlobalProgressOptions(null)
-            {
-                Cancelable = true,
-                IsIndeterminate = true,
-                Text = loc_progress_syncing_library
-            };
-
-            var syncGamesProgressResult = PlayniteApi
-                .Dialogs
-                .ActivateGlobalProgress(async progress =>
-                {
-                    var diff = await ExporterApi.LibrarySync
-                        .LibrarySyncService
-                        .ComputeGameLibraryDiff();
-                    var total = diff.Total;
-
-                    progress.Text = loc_progress_syncing_games
-                        .Replace("{{total}}", total.ToString());
-
-                    await ExporterApi.LibrarySync
-                        .LibrarySyncService
-                        .SyncGamesLibraryAsync(diff, progress.CancelToken);
-                }, syncGamesProgressOptions);
+            var syncGamesProgressResult = SyncGameLibraryWorkflow.SyncGames();
 
             if (syncGamesProgressResult.Canceled)
             {
                 PlayniteApi.Dialogs.ShowMessage(
-                    "Games database sync was canceled by the user.",
+                    loc_operationCanceledByUser,
                     "Sync Games"
                 );
                 return;
@@ -240,73 +222,33 @@ namespace PlayniteInsightsExporter
             if (syncGamesProgressResult.Error != null)
             {
                 PlayniteApi.Dialogs.ShowErrorMessage(
-                    $"Unexpected error while syncing games database:\n\n{syncGamesProgressResult.Error.Message}",
+                    $"{loc_failedSyncGameLibrary}:\n\n{syncGamesProgressResult.Error.Message}",
                     "Sync Games"
                 );
                 return;
             }
 
-            SyncMediaFilesResult syncMediaFilesResult = null;
+            var syncMediaFilesResult = SyncGameLibraryWorkflow.SyncMediaFiles();
 
-            var syncMediaFilesProgressResult = PlayniteApi
-                .Dialogs
-                .ActivateGlobalProgress(async progress =>
-                {
-                    var games = ExporterApi.PlayniteIntegration
-                        .Query
-                        .GetAllGames
-                        .Execute();
-
-                    progress.IsIndeterminate = false;
-                    progress.CurrentProgressValue = 0;
-                    progress.ProgressMaxValue = games.Count();
-
-                    var context = new SyncMediaFilesContext
-                    {
-                        OnBeginProcessing = (game) =>
-                        {
-                            var progressText = loc_progress_syncing_media_files
-                                .Replace("{{current}}", (progress.CurrentProgressValue + 1).ToString())
-                                .Replace("{{total}}", (progress.ProgressMaxValue).ToString())
-                                .Replace("{{gameName}}", game.Name);
-                            progress.Text = progressText;
-                        },
-                        OnFinishProcessing = (game) =>
-                        {
-                            progress.CurrentProgressValue++;
-                        }
-                    };
-
-                    syncMediaFilesResult = await ExporterApi.LibrarySync
-                        .LibrarySyncService
-                        .SyncMediaFilesAsync(
-                            games,
-                            progress.CancelToken,
-                            context
-                        );
-                },
-                new GlobalProgressOptions(loc_progress_syncing_library, true)
-            );
-
-            if (syncMediaFilesProgressResult.Canceled)
+            if (syncMediaFilesResult.ProgressResult.Canceled)
             {
                 PlayniteApi.Dialogs.ShowMessage(
-                    "Media files sync was canceled by the user.",
+                    loc_operationCanceledByUser,
                     "Sync Media Files"
                 );
                 return;
             }
 
-            if (syncMediaFilesProgressResult.Error != null)
+            if (syncMediaFilesResult.ProgressResult.Error != null)
             {
                 PlayniteApi.Dialogs.ShowErrorMessage(
-                    $"Unexpected error while syncing media files:\n\n{syncMediaFilesProgressResult.Error.Message}",
+                    $"Unexpected error while syncing media files:\n\n{syncMediaFilesResult.ProgressResult.Error.Message}",
                     "Sync Media Files"
                 );
                 return;
             }
 
-            if (syncMediaFilesResult == null)
+            if (syncMediaFilesResult.SyncResult == null)
             {
                 PlayniteApi.Dialogs.ShowErrorMessage(
                     "Sync media files was not executed.",
@@ -315,23 +257,21 @@ namespace PlayniteInsightsExporter
                 return;
             }
 
-            if (!syncMediaFilesResult.OperationSuccess)
+            if (!syncMediaFilesResult.SyncResult.OperationSuccess)
             {
                 PlayniteApi.Dialogs.ShowMessage(
                     $"Media files sync finished with errors.\n\n" +
-                    $"Success: {syncMediaFilesResult.Success}\n" +
-                    $"Skipped: {syncMediaFilesResult.Skipped}\n" +
-                    $"Failed: {syncMediaFilesResult.Failed}",
+                    $"Success: {syncMediaFilesResult.SyncResult.Success}\n" +
+                    $"Skipped: {syncMediaFilesResult.SyncResult.Skipped}\n" +
+                    $"Failed: {syncMediaFilesResult.SyncResult.Failed}",
                     "Sync Media Files"
                 );
                 return;
             }
 
             PlayniteApi.Dialogs.ShowMessage(
-                $"Media files sync completed successfully.\n\n" +
-                $"Success: {syncMediaFilesResult.Success}\n" +
-                $"Skipped: {syncMediaFilesResult.Skipped}",
-                "Sync Media Files"
+                loc_successSyncClientServer,
+                "PlayAtlas Synchronization"
             );
         }
 

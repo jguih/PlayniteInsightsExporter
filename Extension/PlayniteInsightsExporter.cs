@@ -6,6 +6,7 @@ using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteInsightsExporter.Lib;
+using PlayniteInsightsExporter.Src;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -24,7 +25,9 @@ namespace PlayniteInsightsExporter
         private static readonly ILogger logger = LogManager.GetLogger();
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
         private readonly ServiceLocator locator;
+
         private readonly ExporterApi ExporterApi;
+        private readonly SyncGameLibraryWorkflow SyncGameLibrary;
 
         public readonly string Name = "PlayAtlas Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
@@ -34,6 +37,8 @@ namespace PlayniteInsightsExporter
             // New API
             var bootstrapper = new ExporterBootstraper(this, PlayniteApi, logger);
             ExporterApi = bootstrapper.BootstrapExporterApi();
+            SyncGameLibrary = new SyncGameLibraryWorkflow(ExporterApi, PlayniteApi);
+
             // TODO: Remove
             locator = new ServiceLocator(this, logger);
 
