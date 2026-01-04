@@ -12,7 +12,7 @@ namespace ExporterLibraryExporter.Application
 {
     enum MediaProcessResult
     {
-        Skipped,    
+        Skipped,
         SentSuccessfully,
         SentFailed,
         Failed
@@ -199,7 +199,7 @@ namespace ExporterLibraryExporter.Application
         )
         {
             appLogger.Debug($"Exporting games database to PlayAtlas server...");
-            
+
             if (!diff.HasChanges)
             {
                 appLogger.Debug("No games to export");
@@ -271,7 +271,7 @@ namespace ExporterLibraryExporter.Application
                 }
 
                 var result = await ProcessGameMediaAsync(
-                    game, 
+                    game,
                     manifest
                 );
 
@@ -341,7 +341,18 @@ namespace ExporterLibraryExporter.Application
             // Add & Update
             foreach (var localGame in localById.Values)
             {
-                var contentHash = hashService.ComputeHashFromGame(localGame);
+                string contentHash;
+
+                try
+                {
+                    contentHash = hashService.ComputeHashFromGame(localGame);
+                }
+                catch (Exception ex)
+                {
+                    appLogger.Error($"Failed to compute hash for game (Id: {localGame.Id}, Name: {localGame.Name})", ex);
+                    continue;
+                }
+
                 SyncGameCommandItem gameItem = new SyncGameCommandItem(localGame, contentHash);
 
                 if (!manifestById.TryGetValue(localGame.Id.ToString(), out var manifestGame))
@@ -350,18 +361,11 @@ namespace ExporterLibraryExporter.Application
                     continue;
                 }
 
-                try
+                if (!string.Equals(manifestGame.ContentHash, contentHash, StringComparison.Ordinal))
                 {
-                    if (!string.Equals(manifestGame.ContentHash, contentHash, StringComparison.Ordinal))
-                    {
-                        toUpdate.Add(gameItem);
-                    }
+                    toUpdate.Add(gameItem);
                 }
-                catch (Exception ex)
-                {
-                    appLogger.Error($"Failed to compute hash for game (Id: {localGame.Id}, Name: {localGame.Name})", ex);
-                    continue;
-                }
+
             }
 
             // Remove (exists on server but not locally)
@@ -370,7 +374,7 @@ namespace ExporterLibraryExporter.Application
                 if (!localById.ContainsKey(manifestGame.GameId))
                 {
                     appLogger.Warn(
-                        $"Server manifest contains game {manifestGame.GameId} not present locally. It will be removed.");
+                        $"Server manifest contains game {manifestGame.GameId} not present locally. It will be removed from PlayAtlas server.");
 
                     toRemove.Add(manifestGame.GameId);
                 }
