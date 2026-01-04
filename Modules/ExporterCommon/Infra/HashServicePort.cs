@@ -17,5 +17,6 @@ namespace ExporterCommon.Application
             string mediaFolderPath
         );
         string ComputeSHA256HashFromString(string input);
+        string ComputeHashForGameSession(string gameId, DateTime startTime);
     }
 }

@@ -27,17 +27,22 @@ namespace ExporterSystem.Infra
 
         private byte[] Utf8(string s) => Encoding.UTF8.GetBytes(s);
 
+        private void AppendHashInfo(string data, SHA256 sha256)
+        {
+            if (data is null) return;
+
+            var dataBytes = Utf8(data);
+            sha256.TransformBlock(dataBytes, 0, dataBytes.Length, null, 0);
+            sha256.TransformBlock(SEP, 0, SEP.Length, null, 0);
+        }
+
         public string ComputeCanonicalHashForGameMediaFiles(string gameId, string contentHash, string mediaFolderPath)
         {
             using (var sha256 = SHA256.Create())
             {
                 void AppendInfo(string data)
                 {
-                    if (data is null) return;
-
-                    var dataBytes = Utf8(data);
-                    sha256.TransformBlock(dataBytes, 0, dataBytes.Length, null, 0);
-                    sha256.TransformBlock(SEP, 0, SEP.Length, null, 0);
+                    AppendHashInfo(data, sha256);
                 }
 
                 AppendInfo(gameId);
@@ -90,11 +95,7 @@ namespace ExporterSystem.Infra
             {
                 void AppendInfo(string data)
                 {
-                    if (data is null) return;
-
-                    var dataBytes = Utf8(data);
-                    sha256.TransformBlock(dataBytes, 0, dataBytes.Length, null, 0);
-                    sha256.TransformBlock(SEP, 0, SEP.Length, null, 0);
+                    AppendHashInfo(data, sha256);
                 }
 
                 foreach (var fileName in fileNames)
@@ -128,11 +129,7 @@ namespace ExporterSystem.Infra
             {
                 void AppendInfo(string data)
                 {
-                    if (data is null) return;
-
-                    var dataBytes = Utf8(data);
-                    sha256.TransformBlock(dataBytes, 0, dataBytes.Length, null, 0);
-                    sha256.TransformBlock(SEP, 0, SEP.Length, null, 0);
+                    AppendHashInfo(data, sha256);
                 }
 
                 void AppendInfoArr(IEnumerable<string> dataArr)
@@ -182,6 +179,27 @@ namespace ExporterSystem.Infra
                 var bytes = Encoding.UTF8.GetBytes(input);
                 var hash = sha256.ComputeHash(bytes);
                 return Convert.ToBase64String(hash);
+            }
+        }
+
+        public string ComputeHashForGameSession(string gameId, DateTime startTime)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                void AppendInfo(string data)
+                {
+                    AppendHashInfo(data, sha256);
+                }
+
+                AppendInfo(gameId);
+                AppendInfo(startTime
+                    .ToUniversalTime()
+                    .Ticks
+                    .ToString(CultureInfo.InvariantCulture)
+                );
+
+                sha256.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                return Convert.ToBase64String(sha256.Hash);
             }
         }
     }

@@ -29,10 +29,6 @@ namespace ExporterCommon.Domain
         public DateTime? EndTime { get { return endTime; } }
         public ulong? Duration { get { return duration; } }
 
-        public static string STATUS_IN_PROGRESS = "in_progress";
-        public static string STATUS_CLOSED = "closed";
-        public static string STATUS_STALE = "stale";
-
         public GameSession(
             string gameId, 
             string sessionId, 
@@ -87,13 +83,6 @@ namespace ExporterCommon.Domain
             this.duration = duration;
             this.endTime = endTime;
             status = GameSessionStatus.Closed;
-        }
-
-        public override void Validate()
-        {
-            base.Validate();
-
-
         }
     }
 }

@@ -24,6 +24,6 @@ namespace ExporterGameSessions.Application
         /// Synchronizes remaining session data with the server.
         /// </summary>
         /// <returns></returns>
-        Task<bool> SyncAsync(DateTime now);
+        Task ProcessPendingSessionsAsync(DateTime now);
     }
 }

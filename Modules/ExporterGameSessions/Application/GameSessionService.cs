@@ -160,9 +160,31 @@ namespace ExporterGameSessions.Application
             return sessionAge.TotalHours > config.STALE_AFTER_HOURS;
         }
 
-        public string GetSessionId(string gameId, DateTime now)
+        private async Task ProcessPendingSessionAsync(GameSession session, DateTime now, string filePath)
         {
-            return hashService.GetHashForGameSession(gameId, now);
+            if (ShouldStale(now, session))
+            {
+                session.Stale();
+
+                UpdateSessionFile(session);
+                fileSystemService.FileDelete(filePath);
+                await SendSessionToServerAsync(session);
+            }
+
+            if (ShouldDelete(now, session))
+            {
+                try
+                {
+                    await SendSessionToServerAsync(session);
+                }
+                finally
+                {
+                    fileSystemService.FileDelete(filePath);
+                }
+            }
+
+            await SendSessionToServerAsync(session);
+            fileSystemService.FileDelete(filePath);
         }
 
         public async Task OpenSessionAsync(string gameId, DateTime now)
@@ -188,7 +210,7 @@ namespace ExporterGameSessions.Application
                 await SendSessionToServerAsync(existingSession);
             }
 
-            var sessionId = GetSessionId(gameId, now);
+            var sessionId = hashService.ComputeHashForGameSession(gameId, now);
             var session = new GameSession(
                     gameId: gameId,
                     sessionId: sessionId,
@@ -219,93 +241,39 @@ namespace ExporterGameSessions.Application
             await SendSessionToServerAsync(session);
         }
 
-        public async Task<bool> SyncAsync(DateTime now)
+        public async Task ProcessPendingSessionsAsync(DateTime now)
         {
-            appLogger.Debug("Syncing remaining sessions.");
-            try
-            {
-                var pattern = $"*{config.SESSION_FILE_EXTENSION}";
-                foreach (var file in fileSystemService.DirectoryGetFiles(SessionsFolderPath, pattern))
-                {
-                    var contents = fileSystemService.FileReadAllText(file);
-                    var session = JsonConvert.DeserializeObject<GameSession>(contents);
-                    if (session == null || !session.IsValid())
-                    {
-                        appLogger.Warn($"Session data in file {file} is invalid and will be deleted");
-                        fileSystemService.FileDelete(file);
-                        continue;
-                    }
-                    var createdTime = fileSystemService.FileGetCreationTimeUtc(file);
-                    if (session.Status == GameSession.STATUS_IN_PROGRESS)
-                    {
-                        if (!ShouldStale(now, session)) continue;
-                        await StaleAndSendSession(session);
-                        fileSystemService.FileDelete(file);
-                        continue;
-                    }
-                    if (session.Status == GameSession.STATUS_CLOSED)
-                    {
-                        var result = await SendCloseSessionAsync(session);
-                        if (result == true)
-                        {
-                            fileSystemService.FileDelete(file);
-                            appLogger.Info(file + " deleted after successful sync.");
-                        }
-                        else if (ShouldDelete(now, session))
-                        {
-                            fileSystemService.FileDelete(file);
-                            appLogger.Info(file + " deleted after being stale for too long.");
-                        }
-                        else
-                        {
-                            appLogger.Warn($"Failed to sync completed session {session.SessionId}. Will retry on next library sync.");
-                        }
-                        continue;
-                    }
-                    if (session.Status == GameSession.STATUS_STALE)
-                    {
-                        var result = await SendCloseSessionAsync(session);
-                        if (result == true)
-                        {
-                            fileSystemService.FileDelete(file);
-                            appLogger.Info(file + " deleted after successful sync.");
-                        }
-                        else if (ShouldDelete(now, session))
-                        {
-                            fileSystemService.FileDelete(file);
-                            appLogger.Info(file + " deleted after being stale for too long.");
-                        }
-                        else
-                        {
-                            appLogger.Warn($"Failed to sync stale session {session.SessionId}. Will retry on next library sync.");
-                        }
-                        continue;
-                    }
-                    appLogger.Warn($"Session {session.SessionId} has an unknown status '{session.Status}' and will be deleted.");
-                    fileSystemService.FileDelete(file);
-                }
-                appLogger.Info("Sessions sync completed.");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                appLogger.Error(ex, "Failed to sync sessions.");
-                return false;
-            }
-        }
+            appLogger.Debug("Syncing pending sessions.");
 
-        public bool Sync(DateTime now)
-        {
-            var message = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
-            return ProgressService.ActivateGlobalProgress(
-                message,
-                false,
-                async (progress) =>
+            var pattern = $"*{config.SESSION_FILE_EXTENSION}";
+            var files = fileSystemService
+                .DirectoryGetFiles(systemConfig.SessionsDirPath, pattern);
+
+            foreach (var filePath in files)
+            {
+                GameSession session;
+
+                try
                 {
-                    progress.IsIndeterminate = true;
-                    return await SyncAsync(now);
+                    session = GetSessionFromFile(filePath);
                 }
-            );
+                catch (Exception ex)
+                {
+                    appLogger.Error($"Failed to parse file at {filePath} as a valid game session. The file will be deleted.", ex);
+                    fileSystemService.FileDelete(filePath);
+                    continue;
+                }
+
+                try
+                {
+                    await ProcessPendingSessionAsync(session, now, filePath);
+                }
+                catch (Exception ex)
+                {
+                    appLogger.Error($"Failed to process pending session {session.SessionId}", ex);
+                }
+            }
+            appLogger.Debug("Pending game sessions sync completed.");
         }
     }
 }
