@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace ExporterCommon.Application
 {
-    public class OpenGameSessionCommand
+    public class CloseGameSessionCommand
     {
         public GameSession GameSession { get; set; }
 
-        public OpenGameSessionCommand() { }
+        public CloseGameSessionCommand() { }
     }
 }

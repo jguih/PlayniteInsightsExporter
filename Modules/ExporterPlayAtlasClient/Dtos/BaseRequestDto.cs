@@ -7,8 +7,11 @@ using System.Threading.Tasks;
 
 namespace ExporterPlayAtlasClient.Dtos
 {
+    [JsonObject]
     public class BaseRequestDto
     {
+        public DateTime ClientUtcNow { get; } = DateTime.UtcNow;
+
         public string ToJsonString()
         {
             return JsonConvert.SerializeObject(

@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="Application\AppLoggerPort.cs" />
     <Compile Include="Application\ExporterPluginContextPort.cs" />
+    <Compile Include="Application\PlayAtlasHttpClient\CloseGameSessionCommand.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\OpenGameSessionCommand.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\SyncGamesCommand.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\SyncMediaFilesCommand.cs" />

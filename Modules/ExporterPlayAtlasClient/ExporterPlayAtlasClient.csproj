@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="Application\PlayAtlasHttpClient.cs" />
     <Compile Include="Dtos\BaseRequestDto.cs" />
+    <Compile Include="Dtos\CloseGameSessionRequestDto.cs" />
     <Compile Include="Dtos\OpenGameSessionRequestDto.cs" />
     <Compile Include="Dtos\SendGetManifestRequestDto.cs" />
     <Compile Include="Application\SyncGamesDtoMapper.cs" />
@@ -53,6 +54,7 @@
     <Compile Include="Dtos\SyncGamesRequestDto.cs" />
     <Compile Include="Dtos\SyncMediaFilesRequestDto.cs" />
     <Compile Include="Infra\BaseHttpContentBuilder.cs" />
+    <Compile Include="Infra\CloseGameSessionHttpContentBuilder.cs" />
     <Compile Include="Infra\HttpContentBuilderPort.cs" />
     <Compile Include="Infra\OpenGameSessionHttpContentBuilder.cs" />
     <Compile Include="Infra\SyncGamesHttpContentBuilder.cs" />

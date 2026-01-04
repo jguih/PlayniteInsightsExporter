@@ -25,6 +25,7 @@ namespace ExporterPlayAtlasClient.Application
         private readonly ISyncMediaFilesHttpContentBuilderPort syncMediaFilesHttpContentBuilder;
         private readonly ISyncGamesDtoMapperPort syncGamesDtoMapper;
         private readonly IOpenGameSessionHttpContentBuilderPort openGameSessionHttpContentBuilder;
+        private readonly ICloseGameSessionHttpContentBuilderPort closeGameSessionHttpContentBuilder;
         private readonly HttpClient httpClient;
 
         public PlayAtlasHttpClient(
@@ -36,7 +37,8 @@ namespace ExporterPlayAtlasClient.Application
             ISyncGamesHttpContentBuilderPort syncGamesHttpContentBuilder,
             ISyncMediaFilesHttpContentBuilderPort syncMediaFilesHttpContentBuilder,
             ISyncGamesDtoMapperPort syncGamesDtoMapper,
-            IOpenGameSessionHttpContentBuilderPort openGameSessionHttpContentBuilder
+            IOpenGameSessionHttpContentBuilderPort openGameSessionHttpContentBuilder,
+            ICloseGameSessionHttpContentBuilderPort closeGameSessionHttpContentBuilder
         )
         {
             this.appLogger = appLogger;
@@ -48,6 +50,7 @@ namespace ExporterPlayAtlasClient.Application
             this.syncMediaFilesHttpContentBuilder = syncMediaFilesHttpContentBuilder;
             this.syncGamesDtoMapper = syncGamesDtoMapper;
             this.openGameSessionHttpContentBuilder = openGameSessionHttpContentBuilder;
+            this.closeGameSessionHttpContentBuilder = closeGameSessionHttpContentBuilder;
 
             httpClient = new HttpClient()
             {
@@ -238,6 +241,45 @@ namespace ExporterPlayAtlasClient.Application
             catch (Exception ex)
             {
                 appLogger.Error("PlayAtlas request to open game session failed", ex);
+                throw;
+            }
+        }
+
+        public async Task CloseGameSessionAsync(CloseGameSessionCommand command)
+        {
+            try
+            {
+                string endpoint = CloseGameSessionRequestDto.ENDPOINT;
+                var requestDto = new CloseGameSessionRequestDto(
+                    sessionId: command.GameSession.SessionId,
+                    gameId: command.GameSession.GameId,
+                    startTime: command.GameSession.StartTime,
+                    endTime: command.GameSession.EndTime.Value,
+                    duration: command.GameSession.Duration.Value
+                );
+                var jsonString = requestDto.ToJsonString();
+                var contentHash = hashService.ComputeSHA256HashFromString(jsonString);
+
+                using (
+                    var jsonContent = closeGameSessionHttpContentBuilder.Build(requestDto)
+                )
+                using (
+                    var signedRequest = CreateSignedRequest(
+                        HttpMethod.Post,
+                        endpoint,
+                        jsonContent,
+                        contentHash
+                    )
+                )
+                using (var response = await httpClient.SendAsync(signedRequest))
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                appLogger.Error("PlayAtlas request to close game session failed", ex);
                 throw;
             }
         }
