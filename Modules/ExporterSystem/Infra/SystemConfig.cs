@@ -19,6 +19,7 @@ namespace ExporterSystem.Infra
 
         public string LibraryFilesDirPath { get; }
         public string SecurityDirPath { get; }
+        public string SessionsDirPath { get; }
         public string ExtensionRegistrationId { get; } = null;
 
         public SystemConfig(
@@ -33,6 +34,7 @@ namespace ExporterSystem.Infra
             string dataDir = pluginContext.GetExtensionDataDirPath();
             LibraryFilesDirPath = fileSystemService.PathCombine(configDir, "library", "files");
             SecurityDirPath = fileSystemService.PathCombine(dataDir, "security");
+            SessionsDirPath = fileSystemService.PathCombine(dataDir, "sessions");
             ExtensionRegistrationId = GetRegistrationIdFromFile();
         }
 

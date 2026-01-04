@@ -32,7 +32,8 @@ namespace ExporterSystem.Infra
         {
             var extensionDirs = new List<string>()
             {
-                systemConfig.SecurityDirPath
+                systemConfig.SecurityDirPath,
+                systemConfig.SessionsDirPath
             };
 
             foreach (var dirPath in extensionDirs)
