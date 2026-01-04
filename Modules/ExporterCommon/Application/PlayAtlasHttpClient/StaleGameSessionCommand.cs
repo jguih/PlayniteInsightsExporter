@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExporterCommon.Application.PlayAtlasHttpClient
+namespace ExporterCommon.Application
 {
     public class StaleGameSessionCommand
     {

@@ -1,6 +1,6 @@
 ﻿using ExporterCommon.Application;
-using ExporterCommon.Infra;
 using ExporterCommon.Domain;
+using ExporterCommon.Infra;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -21,11 +21,11 @@ namespace ExporterGameSessions.Application
         private readonly ISystemConfigPort systemConfig;
 
         public GameSessionService(
-            IAppLoggerPort appLogger, 
-            IHashServicePort hashService, 
-            IPlayAtlasHttpClientPort playAtlasClient, 
-            IFileSystemServicePort fileSystemService, 
-            GameSessionConfig config, 
+            IAppLoggerPort appLogger,
+            IHashServicePort hashService,
+            IPlayAtlasHttpClientPort playAtlasClient,
+            IFileSystemServicePort fileSystemService,
+            GameSessionConfig config,
             ISystemConfigPort systemConfig
         )
         {
@@ -37,43 +37,111 @@ namespace ExporterGameSessions.Application
             this.systemConfig = systemConfig;
         }
 
-        private async Task<bool> SendOpenSessionAsync(GameSession session)
+        private string GetInProgressSessionFilePath(string gameId)
         {
-            try
+            return fileSystemService.PathCombine(
+                            systemConfig.SessionsDirPath,
+                            $"{gameId}" +
+                            $"{config.IN_PROGRESS_SUFFIX}" +
+                            $"{config.SESSION_FILE_EXTENSION}"
+                        );
+        }
+
+        private string GetSessionFilePath(GameSession session)
+        {
+            switch (session.Status)
             {
-                var command = OpenSessionCommand.FromSession(session);
-                var result = await playAtlasClient.PostJson(
-                    WebAppEndpoints.OpenSession,
-                    command);
-                return result.IsSuccessStatusCode;
-            }
-            catch (Exception ex)
-            {
-                appLogger.Error("Failed to send open session command.", ex);
-                return false;
+                case GameSessionStatus.InProgress:
+                    {
+                        return GetInProgressSessionFilePath(session.GameId);
+                    }
+                case GameSessionStatus.Stale:
+                    {
+                        return fileSystemService.PathCombine(
+                            systemConfig.SessionsDirPath,
+                            $"{session.SessionId}" +
+                            $"{config.STALE_SUFFIX}" +
+                            $"{config.SESSION_FILE_EXTENSION}"
+                        );
+                    }
+                case GameSessionStatus.Closed:
+                    {
+                        return fileSystemService.PathCombine(
+                            systemConfig.SessionsDirPath,
+                            $"{session.SessionId}" +
+                            $"{config.CLOSED_SUFFIX}" +
+                            $"{config.SESSION_FILE_EXTENSION}"
+                        );
+                    }
+                default:
+                    throw new InvalidOperationException($"Invalid session status: {session.Status}");
             }
         }
 
-        private async Task<bool> SendCloseSessionAsync(GameSession session)
+        private string SerializeSessionToJsonString(GameSession session)
         {
-            try
+            return JsonConvert.SerializeObject(session, Formatting.Indented);
+        }
+
+        private void UpdateSessionFile(GameSession session)
+        {
+            var path = GetSessionFilePath(session);
+            var jsonString = SerializeSessionToJsonString(session);
+            fileSystemService.FileWriteAllText(path, jsonString);
+        }
+
+        private async Task SendSessionToServerAsync(GameSession session)
+        {
+            switch (session.Status)
             {
-                var command = CloseSessionCommand.FromSession(session);
-                var result = await playAtlasClient.PostJson(
-                    WebAppEndpoints.CloseSession,
-                    command);
-                return result.IsSuccessStatusCode;
-            } catch (Exception ex)
-            {
-                appLogger.Error("Failed to send close session command.", ex);
-                return false;
+                case GameSessionStatus.InProgress:
+                    {
+                        OpenGameSessionCommand command = new OpenGameSessionCommand
+                        {
+                            GameSession = session
+                        };
+                        await playAtlasClient.OpenGameSessionAsync(command);
+                        break;
+                    }
+                case GameSessionStatus.Stale:
+                    {
+                        StaleGameSessionCommand command = new StaleGameSessionCommand
+                        {
+                            GameSession = session
+                        };
+                        await playAtlasClient.StaleGameSessionAsync(command);
+                        break;
+                    }
+                case GameSessionStatus.Closed:
+                    {
+                        CloseGameSessionCommand command = new CloseGameSessionCommand
+                        {
+                            GameSession = session
+                        };
+                        await playAtlasClient.CloseGameSessionAsync(command);
+                        break;
+                    }
             }
+        }
+
+        private GameSession GetSessionFromFile(string path)
+        {
+            var existingJson = fileSystemService.FileReadAllText(path);
+            var existingSession = JsonConvert.DeserializeObject<GameSession>(existingJson);
+            return existingSession ??
+                 throw new InvalidDataException(
+                    $"Failed to deserialize GameSession from file '{path}'."
+                 );
         }
 
         private bool ShouldClose(DateTime now, GameSession session)
         {
+            if (session.Status != GameSessionStatus.InProgress)
+            {
+                return false;
+            }
             var sessionAge = now - session.StartTime;
-            return sessionAge <= TimeSpan.FromHours(3);
+            return sessionAge <= TimeSpan.FromHours(4);
         }
 
         private bool ShouldDelete(DateTime now, GameSession session)
@@ -84,33 +152,12 @@ namespace ExporterGameSessions.Application
 
         private bool ShouldStale(DateTime now, GameSession session)
         {
+            if (session.Status != GameSessionStatus.InProgress)
+            {
+                return false;
+            }
             var sessionAge = now - session.StartTime;
             return sessionAge.TotalHours > config.STALE_AFTER_HOURS;
-        }
-
-        private async Task CloseAndSendSession(GameSession session, ulong duration, DateTime now)
-        {
-            session.Close(now, duration);
-            var result = await SendCloseSessionAsync(session);
-            if (!result)
-            {
-                // Mark session as completed so it can be collected later
-                fileSystemService.FileWriteAllText(
-                    GetClosedSessionFilePath(session.SessionId),
-                    JsonConvert.SerializeObject(session));
-            }
-        }
-
-        private async Task StaleAndSendSession(GameSession session)
-        {
-            session.Stale();
-            var result = await SendCloseSessionAsync(session);
-            if (!result)
-            {
-                fileSystemService.FileWriteAllText(
-                    GetStaleSessionFilePath(session.SessionId),
-                    JsonConvert.SerializeObject(session));
-            }
         }
 
         public string GetSessionId(string gameId, DateTime now)
@@ -118,95 +165,58 @@ namespace ExporterGameSessions.Application
             return hashService.GetHashForGameSession(gameId, now);
         }
 
-        public string GetSessionFilePath(string gameId)
+        public async Task OpenSessionAsync(string gameId, DateTime now)
         {
-            return fileSystemService.PathCombine(systemConfig.SessionsDirPath,
-                $"{gameId}{config.IN_PROGRESS_SUFFIX}{config.SESSION_FILE_EXTENSION}");
-        }
+            var inProgressSessionFilePath = GetInProgressSessionFilePath(gameId);
 
-        public string GetStaleSessionFilePath(string sessionId)
-        {
-            return fileSystemService.PathCombine(systemConfig.SessionsDirPath,
-                $"{sessionId}{config.STALE_SUFFIX}{config.SESSION_FILE_EXTENSION}");
-        }
-
-        public string GetClosedSessionFilePath(string sessionId)
-        {
-            return fileSystemService.PathCombine(systemConfig.SessionsDirPath,
-                $"{sessionId}{config.CLOSED_SUFFIX}{config.SESSION_FILE_EXTENSION}");
-        }
-
-        public async Task<bool> OpenSessionAsync(string gameId, DateTime now)
-        {
-            try
+            if (fileSystemService.FileExists(inProgressSessionFilePath))
             {
-                var sessionFilePath = GetSessionFilePath(gameId);
-                if (fileSystemService.FileExists(sessionFilePath))
+                var existingSession = GetSessionFromFile(inProgressSessionFilePath);
+
+                if (ShouldClose(now, existingSession))
                 {
-                    var existingJson = fileSystemService.FileReadAllText(sessionFilePath);
-                    var existingSession = JsonConvert.DeserializeObject<GameSession>(existingJson);
-                    if (existingSession != null)
-                    {
-                        existingSession.Validate();
-                        if (ShouldClose(now, existingSession))
-                        {
-                            // Close session if it is 3 hours old or less
-                            var duration = (ulong)(now - existingSession.StartTime).TotalSeconds;
-                            await CloseAndSendSession(existingSession, duration, now);
-                        }
-                        else // Mark existing session as stale
-                        {
-                            await StaleAndSendSession(existingSession);
-                        }
-                    }
-                    fileSystemService.FileDelete(sessionFilePath);
+                    var duration = (ulong)(now - existingSession.StartTime).TotalSeconds;
+                    existingSession.Close(now, duration);
                 }
-                // Create new session
-                var sessionId = GetSessionId(gameId, now);
-                var session = new GameSession()
+                else if (ShouldStale(now, existingSession))
                 {
-                    gameId = gameId,
-                    sessionId = sessionId,
-                    startTime = now,
-                    status = GameSession.STATUS_IN_PROGRESS
-                };
-                fileSystemService.FileWriteAllText(sessionFilePath, JsonConvert.SerializeObject(session));
-                return await SendOpenSessionAsync(session);
+                    existingSession.Stale();
+                }
+
+                UpdateSessionFile(existingSession);
+                fileSystemService.FileDelete(inProgressSessionFilePath);
+                await SendSessionToServerAsync(existingSession);
             }
-            catch (Exception ex)
-            {
-                appLogger.Error(ex, $"Failed to create session for game {gameId}.");
-                return false;
-            }
+
+            var sessionId = GetSessionId(gameId, now);
+            var session = new GameSession(
+                    gameId: gameId,
+                    sessionId: sessionId,
+                    startTime: now
+                );
+            UpdateSessionFile(session);
+            await SendSessionToServerAsync(session);
         }
 
-        public async Task<bool> CloseSessionAsync(string gameId, ulong duration, DateTime now)
+        public async Task CloseSessionAsync(string gameId, ulong duration, DateTime now)
         {
-            try
+            var inProgressSessionFilePath = GetInProgressSessionFilePath(gameId);
+
+            if (!fileSystemService.FileExists(inProgressSessionFilePath))
             {
-                var sessionFilePath = GetSessionFilePath(gameId);
-                if (!fileSystemService.FileExists(sessionFilePath))
-                {
-                    appLogger.Warn($"No open session found for game {gameId} to close.");
-                    return false;
-                }
-                var sessionJson = fileSystemService.FileReadAllText(sessionFilePath);
-                var session = JsonConvert.DeserializeObject<GameSession>(sessionJson);
-                if (session == null || !session.IsValidInProgressSession())
-                {
-                    appLogger.Warn($"Session data for game {gameId} is invalid and its file will be deleted");
-                    fileSystemService.FileDelete(sessionFilePath);
-                    return false;
-                }
-                await CloseAndSendSession(session, duration, now);
-                fileSystemService.FileDelete(sessionFilePath);
-                return true;
+                appLogger.Error($"No open session found for game {gameId} to close.");
+                throw new FileNotFoundException(
+                    $"In-progress session file not found for game {gameId}.",
+                    inProgressSessionFilePath
+                );
             }
-            catch (Exception ex)
-            {
-                appLogger.Error(ex, "Failed to close session.");
-                return false;
-            }
+
+            var session = GetSessionFromFile(inProgressSessionFilePath);
+            session.Close(now, duration);
+
+            UpdateSessionFile(session);
+            fileSystemService.FileDelete(inProgressSessionFilePath);
+            await SendSessionToServerAsync(session);
         }
 
         public async Task<bool> SyncAsync(DateTime now)
@@ -288,8 +298,8 @@ namespace ExporterGameSessions.Application
         {
             var message = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
             return ProgressService.ActivateGlobalProgress(
-                message, 
-                false, 
+                message,
+                false,
                 async (progress) =>
                 {
                     progress.IsIndeterminate = true;

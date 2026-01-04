@@ -13,5 +13,7 @@ namespace ExporterCommon.Application
         Task SyncGamesAsync(SyncGamesCommand command);
         Task SyncMediaFilesAsync(SyncMediaFilesCommand command);
         Task OpenGameSessionAsync(OpenGameSessionCommand command);
+        Task CloseGameSessionAsync(CloseGameSessionCommand command);
+        Task StaleGameSessionAsync(StaleGameSessionCommand command);
     }
 }

@@ -12,15 +12,14 @@ namespace ExporterGameSessions.Application
         /// Opens a game session.
         /// </summary>
         /// <param name="gameId"></param>
-        /// <returns></returns>
-        Task<bool> OpenSessionAsync(string gameId, DateTime now);
+        Task OpenSessionAsync(string gameId, DateTime now);
         /// <summary>
         /// Closes a game session.
         /// </summary>
         /// <param name="gameId"></param>
         /// <param name="duration"></param>
         /// <returns></returns>
-        Task<bool> CloseSessionAsync(string gameId, ulong duration, DateTime now);
+        Task CloseSessionAsync(string gameId, ulong duration, DateTime now);
         /// <summary>
         /// Synchronizes remaining session data with the server.
         /// </summary>
