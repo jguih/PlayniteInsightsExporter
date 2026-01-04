@@ -45,6 +45,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Adapters\AppLoggerAdapter.cs" />
+    <Compile Include="Application\PlayniteGameExtractor.cs" />
+    <Compile Include="Application\PlayniteGameMapper.cs" />
+    <Compile Include="Application\PlayniteGameMapperPort.cs" />
     <Compile Include="Adapters\PlayniteGameRepositoryAdapter.cs" />
     <Compile Include="Application\ExporterBootstraper.cs" />
     <Compile Include="Application\ExporterConfigApi.cs" />
@@ -53,6 +56,7 @@
     <Compile Include="Application\ExporterLibrarySyncApi.cs" />
     <Compile Include="Application\ExporterPlayAtlasClientApi.cs" />
     <Compile Include="Application\ExporterPlayniteIntegrationApi.cs" />
+    <Compile Include="Application\PlayniteGameExtractorPort.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

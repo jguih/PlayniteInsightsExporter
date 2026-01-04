@@ -148,6 +148,14 @@ namespace ExporterSystem.Infra
                 AppendInfoArr(game.Platforms.Select(p => p.Name));
                 AppendInfoArr(game.Publishers.Select(p => p.Name));
 
+                AppendInfo(game.Id.ToString());
+                AppendInfo(game.Name.ToString(CultureInfo.InvariantCulture));
+                AppendInfo(game.InstallDirectory);
+                AppendInfo(
+                    game.ReleaseDate.HasValue 
+                        ? game.ReleaseDate?.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture)
+                        : ""
+                );
                 AppendInfo(game.Playtime.ToString(CultureInfo.InvariantCulture));
                 AppendInfo(
                     game.LastActivity.HasValue

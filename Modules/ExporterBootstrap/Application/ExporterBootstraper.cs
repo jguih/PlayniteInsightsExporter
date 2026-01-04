@@ -43,6 +43,7 @@ namespace ExporterBootstrap.Application
 
             IAppLoggerPort appLogger = new AppLoggerAdapter(logger);
             IFileSystemServicePort fileSystemService = new FileSystemService();
+            IPlayniteGameMapperPort gameMapper = new PlayniteGameMapper();
             // Config
             var systemConfig = new SystemConfig(plugin, fileSystemService);
             // Infra
@@ -61,6 +62,10 @@ namespace ExporterBootstrap.Application
                keyManager: keyManager,
                systemConfig: systemConfig,
                appLogger: appLogger
+            );
+            IPlayniteGameExtractorPort gameExtractor = new PlayniteGameExtractor(
+                hashService, 
+                gameMapper
             );
             // PlayAtlas Client
             var syncGamesHttpContentBuilder = new SyncGamesHttpContentBuilder();
@@ -113,7 +118,9 @@ namespace ExporterBootstrap.Application
                 librarySyncApi,
                 playniteIntegrationApi,
                 environmentInitializer,
-                appLogger
+                appLogger,
+                gameMapper,
+                gameExtractor
             );
             return Api;
         }

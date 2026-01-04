@@ -1,6 +1,8 @@
 ﻿using Core;
 using ExporterBootstrap.Application;
 using ExporterCommon.Application;
+using ExporterCommon.Domain;
+using ExporterLibraryExporter.Application;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Models;
@@ -13,6 +15,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
@@ -50,61 +53,39 @@ namespace PlayniteInsightsExporter
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
         }
 
-        private void OnItemCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> e)
+        private void OnItemCollectionChanged(
+            object sender, 
+            ItemCollectionChangedEventArgs<Game> e
+        )
         {
-            _ = Task.Run(async () =>
+            if (e.AddedItems.Any() || e.RemovedItems.Any())
             {
-                if (e.AddedItems.Any())
-                {
-                    try
-                    {
-                        var syncResult = await locator.LibExporter.RunLibrarySyncAsync(
-                            itemsToAdd: e.AddedItems,
-                            itemsToUpdate: new List<Game>(),
-                            itemsToRemove: new List<Game>());
-                        if (syncResult == true)
-                            await locator.LibExporter.RunMediaFilesSyncAsync(e.AddedItems);
-                    }
-                    catch (Exception ex)
-                    {
-                        PlayniteApi.MainView.UIDispatcher.Invoke(() =>
-                        {
-                            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-                            PlayniteApi.Notifications.Add(
-                                new NotificationMessage(
-                                    $"{Name} Error",
-                                    $"{loc_failed_syncClientServer}",
-                                    NotificationType.Error)
-                                );
-                        });
-                        logger.Error(ex, "Failed to sync added items with PlayAtlas Server.");
-                    }
-                }
-                if (e.RemovedItems.Any())
-                {
-                    try
-                    {
-                        await locator.LibExporter.RunLibrarySyncAsync(
-                            itemsToAdd: new List<Game>(),
-                            itemsToUpdate: new List<Game>(),
-                            itemsToRemove: e.RemovedItems);
-                    }
-                    catch (Exception ex)
-                    {
-                        PlayniteApi.MainView.UIDispatcher.Invoke(() =>
-                        {
-                            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-                            PlayniteApi.Notifications.Add(
-                                new NotificationMessage(
-                                    $"{Name} Error",
-                                    $"{loc_failed_syncClientServer}",
-                                    NotificationType.Error)
-                                );
-                        });
-                        logger.Error(ex, "Failed to sync removed items with PlayAtlas Server.");
-                    }
-                }
-            });
+                var syncItems = e.AddedItems?
+                    .Select(ExporterApi.PlayniteGameExtractor.Extract)
+                    .ToList()
+                    ?? new List<SyncGameCommandItem>();
+                var games = syncItems
+                    .Select(i => i.Game)
+                    .ToList();
+                var toDelete = e.RemovedItems?
+                    .Select(g => g.Id.ToString())
+                    .ToList()
+                    ?? new List<string>();
+                var loc_failedSyncGameLibrary = ResourceProvider.GetString("LOC_Failed_SyncGameLibrary");
+
+                GameLibrarySyncDiff diff = new GameLibrarySyncDiff(
+                        added: syncItems,
+                        updated: new List<SyncGameCommandItem>(),
+                        deleted: toDelete
+                    );
+
+                var sycnGamesResult = SyncGameLibrary.SyncGames(diff);
+                var syncGamesSuccess = SyncGameLibrary.HandleSyncGamesResult(sycnGamesResult);
+                if (!syncGamesSuccess) return;
+
+                var syncMediaFilesResult = SyncGameLibrary.SyncMediaFiles(games);
+                SyncGameLibrary.HandleSyncMediaFilesResult(syncMediaFilesResult);
+            }
         }
 
         public override void OnGameInstalled(OnGameInstalledEventArgs args)
@@ -113,31 +94,21 @@ namespace PlayniteInsightsExporter
             {
                 return;
             }
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await locator.LibExporter.RunLibrarySyncAsync(
-                        itemsToAdd: new List<Game>(),
-                        itemsToUpdate: new List<Game>() { args.Game },
-                        itemsToRemove: new List<Game>()
+
+            var syncItem = ExporterApi.PlayniteGameExtractor.Extract(args.Game);
+            GameLibrarySyncDiff diff = new GameLibrarySyncDiff(
+                        added: new List<SyncGameCommandItem>(),
+                        updated: new List<SyncGameCommandItem>() { syncItem },
+                        deleted: new List<string>()
                     );
-                }
-                catch (Exception ex)
-                {
-                    PlayniteApi.MainView.UIDispatcher.Invoke(() =>
-                    {
-                        var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-                        PlayniteApi.Notifications.Add(
-                            new NotificationMessage(
-                                $"{Name} Error",
-                                $"{loc_failed_syncClientServer}",
-                                NotificationType.Error)
-                            );
-                    });
-                    logger.Error(ex, "Failed to sync installed game with PlayAtlas Server.");
-                }
-            });
+            var games = new List<AppGame>() { syncItem.Game };
+
+            var sycnGamesResult = SyncGameLibrary.SyncGames(diff);
+            var syncGamesSuccess = SyncGameLibrary.HandleSyncGamesResult(sycnGamesResult);
+            if (!syncGamesSuccess) return;
+
+            var syncMediaFilesResult = SyncGameLibrary.SyncMediaFiles(games);
+            SyncGameLibrary.HandleSyncMediaFilesResult(syncMediaFilesResult);
         }
 
         public override void OnGameStarted(OnGameStartedEventArgs args)
@@ -146,32 +117,21 @@ namespace PlayniteInsightsExporter
             {
                 return;
             }
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await locator.GameSessionService.OpenSession(args.Game.Id.ToString(), DateTime.UtcNow);
-                    await locator.LibExporter.RunLibrarySyncAsync(
-                            itemsToAdd: new List<Game>(),
-                            itemsToUpdate: new List<Game>() { args.Game },
-                            itemsToRemove: new List<Game>()
+
+            var syncItem = ExporterApi.PlayniteGameExtractor.Extract(args.Game);
+            GameLibrarySyncDiff diff = new GameLibrarySyncDiff(
+                        added: new List<SyncGameCommandItem>(),
+                        updated: new List<SyncGameCommandItem>() { syncItem },
+                        deleted: new List<string>()
                     );
-                }
-                catch (Exception ex)
-                {
-                    PlayniteApi.MainView.UIDispatcher.Invoke(() =>
-                    {
-                        var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-                        PlayniteApi.Notifications.Add(
-                            new NotificationMessage(
-                                $"{Name} Error",
-                                $"{loc_failed_syncClientServer}",
-                                NotificationType.Error)
-                            );
-                    });
-                    logger.Error(ex, "Failed to sync started game with PlayAtlas server.");
-                }
-            });
+            var games = new List<AppGame>() { syncItem.Game };
+
+            var sycnGamesResult = SyncGameLibrary.SyncGames(diff);
+            var syncGamesSuccess = SyncGameLibrary.HandleSyncGamesResult(sycnGamesResult);
+            if (!syncGamesSuccess) return;
+
+            var syncMediaFilesResult = SyncGameLibrary.SyncMediaFiles(games);
+            SyncGameLibrary.HandleSyncMediaFilesResult(syncMediaFilesResult);
         }
 
         public override void OnGameStarting(OnGameStartingEventArgs args)
@@ -254,7 +214,7 @@ namespace PlayniteInsightsExporter
             try
             {
                 ExporterApi.EnvironmentInitializer.Initialize();
-            } 
+            }
             catch (Exception ex)
             {
                 ExporterApi.Logger.Error("Failed to initialize extension environment", ex);
@@ -270,8 +230,8 @@ namespace PlayniteInsightsExporter
                         {
                             var message = ResourceProvider.GetString("LOC_Success_Extension_Registration");
                             PlayniteApi.Dialogs.ShowMessage(
-                                message, 
-                                Name, 
+                                message,
+                                Name,
                                 System.Windows.MessageBoxButton.OK);
                         });
                 }

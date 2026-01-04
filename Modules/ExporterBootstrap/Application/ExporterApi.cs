@@ -1,4 +1,5 @@
-﻿using ExporterCommon.Application;
+﻿using ExporterBootstrap.Adapters;
+using ExporterCommon.Application;
 using ExporterCommon.Infra;
 using ExporterSystem.Infra;
 using System;
@@ -16,13 +17,17 @@ namespace ExporterBootstrap.Application
         public readonly ExporterPlayniteIntegrationApi PlayniteIntegration;
         public readonly InfraEnvironmentInitializer EnvironmentInitializer;
         public readonly IAppLoggerPort Logger;
+        public readonly IPlayniteGameMapperPort PlayniteGameMapper;
+        public readonly IPlayniteGameExtractorPort PlayniteGameExtractor;
 
         public ExporterApi(
             ExporterPlayAtlasClientApi playAtlasClientApi,
             ExporterLibrarySyncApi libraryExporterApi,
             ExporterPlayniteIntegrationApi playniteIntegrationApi,
             InfraEnvironmentInitializer environmentInitializer,
-            IAppLoggerPort appLogger
+            IAppLoggerPort appLogger,
+            IPlayniteGameMapperPort playniteGameMapper,
+            IPlayniteGameExtractorPort playniteGameExtractor
         )
         {
             this.PlayAtlasClient = playAtlasClientApi;
@@ -30,6 +35,8 @@ namespace ExporterBootstrap.Application
             this.PlayniteIntegration = playniteIntegrationApi;
             this.EnvironmentInitializer = environmentInitializer;
             this.Logger = appLogger;
+            this.PlayniteGameMapper = playniteGameMapper;
+            this.PlayniteGameExtractor = playniteGameExtractor;
         }
     }
 }
