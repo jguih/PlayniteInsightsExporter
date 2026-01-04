@@ -57,6 +57,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Src\Converters\InverseBooleanConverter.cs" />
+    <Compile Include="Src\Notifications\DialogFeedbackChannel.cs" />
+    <Compile Include="Src\Notifications\NotificationFeedbackChannel.cs" />
+    <Compile Include="Src\Notifications\SyncFeedbackChannelPort.cs" />
+    <Compile Include="Src\Notifications\SyncOutcome.cs" />
     <Compile Include="Src\PlayniteLogger.cs" />
     <Compile Include="Src\ServiceLocator.cs" />
     <Compile Include="PlayniteInsightsExporter.cs" />
@@ -127,5 +131,6 @@
       <Name>ExporterSystem</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

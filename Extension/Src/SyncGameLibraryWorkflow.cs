@@ -2,6 +2,7 @@
 using ExporterCommon.Domain;
 using ExporterLibraryExporter.Application;
 using Playnite.SDK;
+using PlayniteInsightsExporter.Src.Notifications;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -120,76 +121,100 @@ namespace PlayniteInsightsExporter.Src
             };
         }
 
-        public bool HandleSyncGamesResult(GlobalProgressResult result)
+        public SyncOutcome InterpretSyncGamesResult(GlobalProgressResult result)
         {
-            var loc_operationCanceledByUser = ResourceProvider.GetString("LOC_Operation_CanceledByUser");
-            var loc_failedSyncGameLibrary = ResourceProvider.GetString("LOC_Failed_SyncGameLibrary");
-
             if (result.Canceled)
             {
-                PlayniteApi.Dialogs.ShowMessage(
-                    loc_operationCanceledByUser,
-                    "Sync Games"
-                );
-                return false;
+                var loc_operationCanceledByUser = ResourceProvider.GetString("LOC_Operation_CanceledByUser");
+                return new SyncOutcome
+                {
+                    Message = loc_operationCanceledByUser,
+                    Title = "Sync Games",
+                    Severity = SyncSeverity.Warning,
+                    Success = false
+                };
             }
 
             if (result.Error != null)
             {
-                PlayniteApi.Dialogs.ShowErrorMessage(
-                    $"{loc_failedSyncGameLibrary}:\n\n{result.Error.Message}",
-                    "Sync Games"
-                );
-                return false;
+                var loc_failedSyncGameLibrary = ResourceProvider.GetString("LOC_Failed_SyncGameLibrary");
+                return new SyncOutcome
+                {
+                    Message = $"{loc_failedSyncGameLibrary}:\n\n{result.Error.Message}",
+                    Title = "Sync Games",
+                    Severity = SyncSeverity.Error,
+                    Success = false
+                };
             }
 
-            return true;
+            var loc_successSyncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
+            return new SyncOutcome
+            {
+                Message = loc_successSyncClientServer,
+                Title = "Sync Games",
+                Severity = SyncSeverity.Success,
+                Success = true
+            };
         }
 
-        public bool HandleSyncMediaFilesResult(SyncMediaFilesWorkflowResult result)
+        public SyncOutcome InterpretSyncMediaFilesResult(SyncMediaFilesWorkflowResult result)
         {
-            var loc_operationCanceledByUser = ResourceProvider.GetString("LOC_Operation_CanceledByUser");
-
             if (result.ProgressResult.Canceled)
             {
-                PlayniteApi.Dialogs.ShowMessage(
-                    loc_operationCanceledByUser,
-                    "Sync Media Files"
-                );
-                return false;
+                var loc_operationCanceledByUser = ResourceProvider.GetString("LOC_Operation_CanceledByUser");
+                return new SyncOutcome
+                {
+                    Message = loc_operationCanceledByUser,
+                    Title = "Sync Media Files",
+                    Severity = SyncSeverity.Warning,
+                    Success = false
+                };
             }
 
             if (result.ProgressResult.Error != null)
             {
-                PlayniteApi.Dialogs.ShowErrorMessage(
-                    $"Unexpected error while syncing media files:\n\n{result.ProgressResult.Error.Message}",
-                    "Sync Media Files"
-                );
-                return false;
+                return new SyncOutcome
+                {
+                    Message = $"Unexpected error while syncing media files:\n\n{result.ProgressResult.Error.Message}",
+                    Title = "Sync Media Files",
+                    Severity = SyncSeverity.Error,
+                    Success = false
+                };
             }
 
             if (result.SyncResult == null)
             {
-                PlayniteApi.Dialogs.ShowErrorMessage(
-                    "Sync media files was not executed.",
-                    "Sync Media Files"
-                );
-                return false;
+                return new SyncOutcome
+                {
+                    Message = "Sync media files was not executed.",
+                    Title = "Sync Media Files",
+                    Severity = SyncSeverity.Error,
+                    Success = false
+                };
             }
 
             if (!result.SyncResult.OperationSuccess)
             {
-                PlayniteApi.Dialogs.ShowErrorMessage(
-                    $"Media files sync finished with errors.\n\n" +
-                    $"Success: {result.SyncResult.Success}\n" +
-                    $"Skipped: {result.SyncResult.Skipped}\n" +
-                    $"Failed: {result.SyncResult.Failed}",
-                    "Sync Media Files"
-                );
-                return false;
+                return new SyncOutcome
+                {
+                    Message = $"Media files sync finished with errors.\n\n" +
+                        $"Success: {result.SyncResult.Success}\n" +
+                        $"Skipped: {result.SyncResult.Skipped}\n" +
+                        $"Failed: {result.SyncResult.Failed}",
+                    Title = "Sync Media Files",
+                    Severity = SyncSeverity.Error,
+                    Success = false
+                };
             }
 
-            return true;
+            var loc_successSyncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
+            return new SyncOutcome
+            {
+                Message = loc_successSyncClientServer,
+                Title = "Sync Games",
+                Severity = SyncSeverity.Success,
+                Success = true
+            };
         }
     }
 }

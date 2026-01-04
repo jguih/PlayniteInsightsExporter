@@ -10,6 +10,7 @@ using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteInsightsExporter.Lib;
 using PlayniteInsightsExporter.Src;
+using PlayniteInsightsExporter.Src.Notifications;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -87,6 +88,7 @@ namespace PlayniteInsightsExporter
 
         private readonly ExporterApi ExporterApi;
         private readonly SyncGameLibraryWorkflow SyncGameLibraryWorkflow;
+        private readonly ISyncFeedbackChannelPort DialogFeedbackChannel;
 
         // TODO: remove
         private readonly ServiceLocator ServiceLocator;
@@ -130,9 +132,11 @@ namespace PlayniteInsightsExporter
 
         public PlayniteInsightsExporterSettingsViewModel(
             PlayniteInsightsExporter plugin,
-            ILogger Logger,
             ServiceLocator locator,
-            ExporterApi exporterApi)
+            ExporterApi exporterApi,
+            SyncGameLibraryWorkflow syncGameLibraryWorkflow,
+            ISyncFeedbackChannelPort dialogFeedbackChannel
+        )
         {
             // Injecting your plugin instance is required for Save/Load method because Playnite saves data to a location based on what plugin requested the operation.
             this.Plugin = plugin;
@@ -150,7 +154,8 @@ namespace PlayniteInsightsExporter
             }
 
             ExporterApi = exporterApi;
-            SyncGameLibraryWorkflow = new SyncGameLibraryWorkflow(ExporterApi, PlayniteApi);
+            SyncGameLibraryWorkflow = syncGameLibraryWorkflow;
+            DialogFeedbackChannel = dialogFeedbackChannel;
 
             // TODO: remove
             ServiceLocator = locator;
@@ -205,21 +210,17 @@ namespace PlayniteInsightsExporter
         public void OnExportLibrary()
         {
             var syncGamesProgressResult = SyncGameLibraryWorkflow.SyncGames();
-            var syncGamesSuccess = SyncGameLibraryWorkflow.HandleSyncGamesResult(syncGamesProgressResult);
+            var syncGamesOutcome = SyncGameLibraryWorkflow.InterpretSyncGamesResult(syncGamesProgressResult);
 
-            if (!syncGamesSuccess) return;
+            if (!syncGamesOutcome.Success)
+            {
+                Plugin.PresentSyncOutcome(syncGamesOutcome, DialogFeedbackChannel);
+                return;
+            }
 
             var syncMediaFilesResult = SyncGameLibraryWorkflow.SyncMediaFiles();
-            var syncMediaFilesSuccess = SyncGameLibraryWorkflow.HandleSyncMediaFilesResult(syncMediaFilesResult);
-
-            if (!syncMediaFilesSuccess) return;
-
-            var loc_successSyncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
-
-            PlayniteApi.Dialogs.ShowMessage(
-                loc_successSyncClientServer,
-                "PlayAtlas Synchronization"
-            );
+            var syncMediaFilesOutcome = SyncGameLibraryWorkflow.InterpretSyncMediaFilesResult(syncMediaFilesResult);
+            Plugin.PresentSyncOutcome(syncMediaFilesOutcome, DialogFeedbackChannel);
         }
 
         public void OnBrowseShareXPath()

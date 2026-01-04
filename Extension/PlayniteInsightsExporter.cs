@@ -9,12 +9,14 @@ using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteInsightsExporter.Lib;
 using PlayniteInsightsExporter.Src;
+using PlayniteInsightsExporter.Src.Notifications;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Remoting.Channels;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,6 +33,8 @@ namespace PlayniteInsightsExporter
 
         private readonly ExporterApi ExporterApi;
         private readonly SyncGameLibraryWorkflow SyncGameLibrary;
+        private readonly ISyncFeedbackChannelPort DialogFeedbackChannel;
+        private readonly ISyncFeedbackChannelPort NotificationFeedbackChannel;
 
         public readonly string Name = "PlayAtlas Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
@@ -41,16 +45,48 @@ namespace PlayniteInsightsExporter
             var bootstrapper = new ExporterBootstraper(this, PlayniteApi, logger);
             ExporterApi = bootstrapper.BootstrapExporterApi();
             SyncGameLibrary = new SyncGameLibraryWorkflow(ExporterApi, PlayniteApi);
+            DialogFeedbackChannel = new DialogFeedbackChannel(PlayniteApi);
+            NotificationFeedbackChannel = new NotificationFeedbackChannel(PlayniteApi);
 
             // TODO: Remove
             locator = new ServiceLocator(this, logger);
 
-            Settings = new PlayniteInsightsExporterSettingsViewModel(this, logger, locator, ExporterApi);
+            Settings = new PlayniteInsightsExporterSettingsViewModel(
+                this, 
+                locator, 
+                ExporterApi,
+                SyncGameLibrary,
+                DialogFeedbackChannel
+            );
             Properties = new GenericPluginProperties
             {
                 HasSettings = true
             };
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
+        }
+
+        private void FullGameSync(Game game)
+        {
+            var syncItem = ExporterApi.PlayniteGameExtractor.Extract(game);
+            GameLibrarySyncDiff diff = new GameLibrarySyncDiff(
+                        added: new List<SyncGameCommandItem>(),
+                        updated: new List<SyncGameCommandItem>() { syncItem },
+                        deleted: new List<string>()
+                    );
+            var games = new List<AppGame>() { syncItem.Game };
+
+            var sycnGamesResult = SyncGameLibrary.SyncGames(diff);
+            var syncGamesOutcome = SyncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
+
+            if (!syncGamesOutcome.Success)
+            {
+                PresentSyncOutcome(syncGamesOutcome, NotificationFeedbackChannel);
+                return;
+            }
+
+            var syncMediaFilesResult = SyncGameLibrary.SyncMediaFiles(games);
+            var syncMediaFilesOutcome = SyncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
+            PresentSyncOutcome(syncMediaFilesOutcome, NotificationFeedbackChannel);
         }
 
         private void OnItemCollectionChanged(
@@ -80,11 +116,17 @@ namespace PlayniteInsightsExporter
                     );
 
                 var sycnGamesResult = SyncGameLibrary.SyncGames(diff);
-                var syncGamesSuccess = SyncGameLibrary.HandleSyncGamesResult(sycnGamesResult);
-                if (!syncGamesSuccess) return;
+                var syncGamesOutcome = SyncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
+
+                if (!syncGamesOutcome.Success)
+                {
+                    PresentSyncOutcome(syncGamesOutcome, NotificationFeedbackChannel);
+                    return;
+                }
 
                 var syncMediaFilesResult = SyncGameLibrary.SyncMediaFiles(games);
-                SyncGameLibrary.HandleSyncMediaFilesResult(syncMediaFilesResult);
+                var syncMediaFilesOutcome = SyncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
+                PresentSyncOutcome(syncMediaFilesOutcome, NotificationFeedbackChannel);
             }
         }
 
@@ -95,20 +137,7 @@ namespace PlayniteInsightsExporter
                 return;
             }
 
-            var syncItem = ExporterApi.PlayniteGameExtractor.Extract(args.Game);
-            GameLibrarySyncDiff diff = new GameLibrarySyncDiff(
-                        added: new List<SyncGameCommandItem>(),
-                        updated: new List<SyncGameCommandItem>() { syncItem },
-                        deleted: new List<string>()
-                    );
-            var games = new List<AppGame>() { syncItem.Game };
-
-            var sycnGamesResult = SyncGameLibrary.SyncGames(diff);
-            var syncGamesSuccess = SyncGameLibrary.HandleSyncGamesResult(sycnGamesResult);
-            if (!syncGamesSuccess) return;
-
-            var syncMediaFilesResult = SyncGameLibrary.SyncMediaFiles(games);
-            SyncGameLibrary.HandleSyncMediaFilesResult(syncMediaFilesResult);
+            FullGameSync(args.Game);
         }
 
         public override void OnGameStarted(OnGameStartedEventArgs args)
@@ -118,20 +147,7 @@ namespace PlayniteInsightsExporter
                 return;
             }
 
-            var syncItem = ExporterApi.PlayniteGameExtractor.Extract(args.Game);
-            GameLibrarySyncDiff diff = new GameLibrarySyncDiff(
-                        added: new List<SyncGameCommandItem>(),
-                        updated: new List<SyncGameCommandItem>() { syncItem },
-                        deleted: new List<string>()
-                    );
-            var games = new List<AppGame>() { syncItem.Game };
-
-            var sycnGamesResult = SyncGameLibrary.SyncGames(diff);
-            var syncGamesSuccess = SyncGameLibrary.HandleSyncGamesResult(sycnGamesResult);
-            if (!syncGamesSuccess) return;
-
-            var syncMediaFilesResult = SyncGameLibrary.SyncMediaFiles(games);
-            SyncGameLibrary.HandleSyncMediaFilesResult(syncMediaFilesResult);
+            FullGameSync(args.Game);
         }
 
         public override void OnGameStarting(OnGameStartingEventArgs args)
@@ -145,33 +161,8 @@ namespace PlayniteInsightsExporter
             {
                 return;
             }
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    var now = DateTime.UtcNow;
-                    await locator.GameSessionService.CloseSession(args.Game.Id.ToString(), args.ElapsedSeconds, now);
-                    await locator.LibExporter.RunLibrarySyncAsync(
-                        itemsToAdd: new List<Game>(),
-                        itemsToUpdate: new List<Game>() { args.Game },
-                        itemsToRemove: new List<Game>()
-                    );
-                }
-                catch (Exception ex)
-                {
-                    PlayniteApi.MainView.UIDispatcher.Invoke(() =>
-                    {
-                        var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-                        PlayniteApi.Notifications.Add(
-                            new NotificationMessage(
-                                $"{Name} Error",
-                                $"{loc_failed_syncClientServer}",
-                                NotificationType.Error)
-                            );
-                    });
-                    logger.Error(ex, "Failed to sync stopped game with PlayAtlas server.");
-                }
-            });
+
+            FullGameSync(args.Game);
         }
 
         public override void OnGameUninstalled(OnGameUninstalledEventArgs args)
@@ -180,31 +171,8 @@ namespace PlayniteInsightsExporter
             {
                 return;
             }
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await locator.LibExporter.RunLibrarySyncAsync(
-                        itemsToAdd: new List<Game>(),
-                        itemsToUpdate: new List<Game>() { args.Game },
-                        itemsToRemove: new List<Game>()
-                    );
-                }
-                catch (Exception ex)
-                {
-                    PlayniteApi.MainView.UIDispatcher.Invoke(() =>
-                    {
-                        var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-                        PlayniteApi.Notifications.Add(
-                            new NotificationMessage(
-                                $"{Name} Error",
-                                $"{loc_failed_syncClientServer}",
-                                NotificationType.Error)
-                            );
-                    });
-                    logger.Error(ex, "Failed to sync uninstalled game with PlayAtlas server.");
-                }
-            });
+
+            FullGameSync(args.Game);
         }
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
@@ -290,51 +258,20 @@ namespace PlayniteInsightsExporter
         {
             if (Settings?.Settings?.EnableLibrarySyncOnUpdate == true)
             {
-                _ = Task.Run(async () =>
+                var syncGamesProgressResult = SyncGameLibrary.SyncGames();
+                var syncGamesOutcome = SyncGameLibrary.InterpretSyncGamesResult(syncGamesProgressResult);
+
+                if (!syncGamesOutcome.Success)
                 {
-                    try
-                    {
-                        await locator.LibExporter.RunLibrarySyncAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        PlayniteApi.MainView.UIDispatcher.Invoke(() =>
-                        {
-                            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-                            PlayniteApi.Notifications.Add(
-                                new NotificationMessage(
-                                    $"{Name} Error",
-                                    $"{loc_failed_syncClientServer}",
-                                    NotificationType.Error)
-                                );
-                        });
-                        logger.Error(ex, "Failed to sync game library with PlayAtlas server.");
-                    }
-                });
+                    PresentSyncOutcome(syncGamesOutcome, NotificationFeedbackChannel);
+                    return;
+                }
             }
             if (Settings?.Settings?.EnableMediaFilesSyncOnUpdate == true)
             {
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await locator.LibExporter.RunMediaFilesSyncAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        PlayniteApi.MainView.UIDispatcher.Invoke(() =>
-                        {
-                            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-                            PlayniteApi.Notifications.Add(
-                                new NotificationMessage(
-                                    $"{Name} Error",
-                                    $"{loc_failed_syncClientServer}",
-                                    NotificationType.Error)
-                                );
-                        });
-                        logger.Error(ex, "Failed to sync media files with PlayAtlas server.");
-                    }
-                });
+                var syncMediaFilesResult = SyncGameLibrary.SyncMediaFiles();
+                var syncMediaFilesOutcome = SyncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
+                PresentSyncOutcome(syncMediaFilesOutcome, NotificationFeedbackChannel);
             }
             _ = Task.Run(async () =>
             {
@@ -361,27 +298,38 @@ namespace PlayniteInsightsExporter
 
         public override IEnumerable<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
         {
-            var loc_loading_syncClientServer = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
-            var loc_failed_syncClientServer = ResourceProvider.GetString("LOC_Failed_SyncClientServer");
-            var loc_success_syncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
             var loc_run_manual_sync = ResourceProvider.GetString("LOC_Label_MenuItem_ManualSync");
             yield return new GameMenuItem
             {
                 Description = loc_run_manual_sync,
                 Action = (_args) =>
                 {
-                    var games = _args.Games;
-                    if (!locator.LibExporter.RunGameListSync(games))
+                    if (_args == null || _args.Games == null) return;
+
+                    var syncItems = _args.Games
+                        .Select(ExporterApi.PlayniteGameExtractor.Extract)
+                        .ToList();
+                    GameLibrarySyncDiff diff = new GameLibrarySyncDiff(
+                                added: new List<SyncGameCommandItem>(),
+                                updated: syncItems,
+                                deleted: new List<string>()
+                            );
+                    var games = syncItems
+                        .Select(i => i.Game)
+                        .ToList();
+
+                    var syncGamesProgressResult = SyncGameLibrary.SyncGames(diff);
+                    var syncGamesOutcome = SyncGameLibrary.InterpretSyncGamesResult(syncGamesProgressResult);
+
+                    if (!syncGamesOutcome.Success)
                     {
-                        PlayniteApi.Dialogs.ShowErrorMessage(loc_failed_syncClientServer, Name);
+                        PresentSyncOutcome(syncGamesOutcome, DialogFeedbackChannel);
                         return;
                     }
-                    if (!locator.LibExporter.RunMediaFilesSync(games))
-                    {
-                        PlayniteApi.Dialogs.ShowErrorMessage(loc_failed_syncClientServer, Name);
-                        return;
-                    }
-                    PlayniteApi.Dialogs.ShowMessage(loc_success_syncClientServer);
+
+                    var syncMediaFilesResult = SyncGameLibrary.SyncMediaFiles(games);
+                    var syncMediaFilesOutcome = SyncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
+                    PresentSyncOutcome(syncMediaFilesOutcome, DialogFeedbackChannel);
                 }
             };
         }
@@ -448,6 +396,24 @@ namespace PlayniteInsightsExporter
         public string GetConfigurationDirPath()
         {
             return PlayniteApi.Paths.ConfigurationPath;
+        }
+
+        public void PresentSyncOutcome(SyncOutcome outcome, ISyncFeedbackChannelPort channel)
+        {
+            switch (outcome.Severity)
+            {
+                case SyncSeverity.Error:
+                    channel.ShowError(outcome.Message, outcome.Title);
+                    break;
+
+                case SyncSeverity.Warning:
+                    channel.ShowWarning(outcome.Message, outcome.Title);
+                    break;
+
+                case SyncSeverity.Success:
+                    channel.ShowSuccess(outcome.Message, outcome.Title);
+                    break;
+            }
         }
     }
 }
