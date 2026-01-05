@@ -13,6 +13,7 @@ namespace ExporterBootstrap.Application
         public readonly ExporterPlayAtlasClientApi PlayAtlasClient;
         public readonly ExporterLibrarySyncApi LibrarySync;
         public readonly ExporterPlayniteIntegrationApi PlayniteIntegration;
+        public readonly ExporterGameSessionApi GameSession;
         public readonly IEnvironmentInitializerPort EnvironmentInitializer;
         public readonly IAppLoggerPort Logger;
 
@@ -20,15 +21,17 @@ namespace ExporterBootstrap.Application
             ExporterPlayAtlasClientApi playAtlasClientApi,
             ExporterLibrarySyncApi libraryExporterApi,
             ExporterPlayniteIntegrationApi playniteIntegrationApi,
+            ExporterGameSessionApi gameSessionApi,
             IEnvironmentInitializerPort environmentInitializer,
             IAppLoggerPort appLogger
         )
         {
-            this.PlayAtlasClient = playAtlasClientApi;
-            this.LibrarySync = libraryExporterApi;
-            this.PlayniteIntegration = playniteIntegrationApi;
-            this.EnvironmentInitializer = environmentInitializer;
-            this.Logger = appLogger;
+            PlayAtlasClient = playAtlasClientApi;
+            LibrarySync = libraryExporterApi;
+            PlayniteIntegration = playniteIntegrationApi;
+            GameSession = gameSessionApi;
+            EnvironmentInitializer = environmentInitializer;
+            Logger = appLogger;
         }
     }
 }

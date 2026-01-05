@@ -188,7 +188,8 @@ namespace PlayniteInsightsExporter
 
             try
             {
-                exporterApi.EnvironmentInitializer.Initialize();
+                exporterApi.EnvironmentInitializer.EnsureDirectories();
+                exporterApi.EnvironmentInitializer.EnsureIdentity();
             }
             catch (Exception ex)
             {

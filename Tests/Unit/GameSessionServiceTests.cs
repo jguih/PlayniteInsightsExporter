@@ -5,6 +5,7 @@ using ExporterGameSessions.Application;
 using ExporterGameSessions.Infra;
 using ExporterSystem.Infra;
 using Moq;
+using Tests.Lib.Builders;
 
 namespace Tests.Unit;
 
@@ -14,77 +15,21 @@ namespace Tests.Unit;
 [Trait("Category", "Unit")]
 public class GameSessionServiceTests
 {
-    private readonly Mock<IAppLoggerPort> appLogger;
-    private readonly Mock<IPlayAtlasHttpClientPort> playAtlasClient;
-    private readonly Mock<IHashServicePort> hashService;
-    private readonly Mock<IFileSystemServicePort> fileSystemService;
-    private readonly ISystemConfigPort systemConfig;
-    private readonly IGameSessionSerializerPort gameSessionSerializer;
-    private readonly IGameSessionServicePort sessionsService;
-
-    public GameSessionServiceTests()
+    private bool IsClosedSessionJson(string json, IGameSessionSerializerPort serializer)
     {
-        var gameSessionConfig = new GameSessionConfig();
-        appLogger = new Mock<IAppLoggerPort>();
-        playAtlasClient = new Mock<IPlayAtlasHttpClientPort>();
-        gameSessionSerializer = new GameSessionSerializer();
-
-        hashService = new Mock<IHashServicePort>();
-        hashService
-            .Setup(hs => hs.ComputeHashForGameSession(It.IsAny<string>(), It.IsAny<DateTime>()))
-            .Returns((string gameId, DateTime startTime) =>
-            {
-                return $"{gameId}-{startTime:yyyyMMddHHmmss}";
-            });
-
-
-        fileSystemService = new Mock<IFileSystemServicePort>();
-        fileSystemService
-            .Setup(fs => fs.PathCombine(It.IsAny<string[]>()))
-            .Returns((string[] paths) => Path.Combine(paths));
-        fileSystemService
-            .Setup(fs => fs.DirectoryExists("/config"))
-            .Returns(true);
-        fileSystemService
-            .Setup(fs => fs.DirectoryExists("/data"))
-            .Returns(true);
-
-        systemConfig = new SystemConfig(
-            fileSystemService: fileSystemService.Object,
-            configDirPath: "/config",
-            dataDirPath: "/data"
-        );
-
-        fileSystemService
-            .Setup(fs => fs.DirectoryExists(systemConfig.SessionsDirPath))
-            .Returns(true);
-
-        sessionsService = new GameSessionService(
-            appLogger.Object,
-            hashService.Object,
-            playAtlasClient.Object,
-            fileSystemService.Object,
-            gameSessionConfig,
-            systemConfig,
-            gameSessionSerializer
-        );
-    }
-
-    private bool IsClosedSessionJson(string json)
-    {
-        var session = gameSessionSerializer.Deserialize(json);
+        var session = serializer.Deserialize(json);
         return session.Status == GameSessionStatus.Closed;
     }
 
-    private bool IsInProgressSessionJson(string json)
+    private bool IsInProgressSessionJson(string json, IGameSessionSerializerPort serializer)
     {
-        var session = gameSessionSerializer.Deserialize(json);
+        var session = serializer.Deserialize(json);
         return session?.Status == GameSessionStatus.InProgress;
     }
 
-    private bool IsStaleSessionJson(string json)
+    private bool IsStaleSessionJson(string json, IGameSessionSerializerPort serializer)
     {
-        var session = gameSessionSerializer.Deserialize(json);
+        var session = serializer.Deserialize(json);
         return session?.Status == GameSessionStatus.Stale;
     }
 
@@ -97,35 +42,45 @@ public class GameSessionServiceTests
     public async Task OpenSession_WhenExistingInProgressSessionExists_CompleteSession(int hoursAgo)
     {
         // Arrange
+        var builder = new GameSessionServiceTestBuilder();
+        GameSessionService sut = builder.Build();
+
         var gameId = Guid.NewGuid().ToString();
         var now = DateTime.UtcNow;
-        var sessionId = hashService.Object.ComputeHashForGameSession(gameId, now);
         var startTime = now - TimeSpan.FromHours(hoursAgo);
+
+        var sessionId = builder.HashService.Object.ComputeHashForGameSession(gameId, now);
+
         var existingSession = new GameSession(
                 gameId: gameId,
                 sessionId: sessionId,
                 startTime: startTime
             );
-        var sessionFilePath = sessionsService.GetSessionFilePath(existingSession);
-        fileSystemService
+
+        var sessionFilePath = sut.GetSessionFilePath(existingSession);
+
+        builder.FileSystem
             .Setup(fs => fs.FileExists(sessionFilePath))
             .Returns(true);
-        fileSystemService
+        builder.FileSystem
             .Setup(fs => fs.FileReadAllText(It.IsAny<string>()))
-            .Returns(gameSessionSerializer.Serialize(existingSession));
+            .Returns(builder.Serializer.Serialize(existingSession));
+
         // Act
-        await sessionsService.OpenSessionAsync(gameId, now);
+        await sut.OpenSessionAsync(gameId, now);
+
         // Assert
-        fileSystemService.Verify(fs => fs.FileWriteAllText(
-            It.Is<string>(p => p.Contains(sessionId)),
-            It.Is<string>(json => IsClosedSessionJson(json))
-        ), Times.Once);
-        fileSystemService
+        builder.FileSystem
+            .Verify(fs => fs.FileWriteAllText(
+                It.Is<string>(p => p.Contains(sessionId)),
+                It.Is<string>(json => IsClosedSessionJson(json, builder.Serializer))
+            ), Times.Once);
+        builder.FileSystem
             .Verify(fs => fs.FileDelete(sessionFilePath), Times.Once);
-        fileSystemService
+        builder.FileSystem
             .Verify(fs => fs.FileWriteAllText(
                 sessionFilePath,
-                It.Is<string>(json => IsInProgressSessionJson(json))
+                It.Is<string>(json => IsInProgressSessionJson(json, builder.Serializer))
             ), Times.Once);
     }
 
@@ -136,35 +91,45 @@ public class GameSessionServiceTests
     public async Task OpenSession_WhenExistingInProgressSessionExists_StaleSession(double hoursAgo)
     {
         // Arrange
+        var builder = new GameSessionServiceTestBuilder();
+        GameSessionService sut = builder.Build();
+
         var gameId = Guid.NewGuid().ToString();
         var now = DateTime.UtcNow;
-        var sessionId = hashService.Object.ComputeHashForGameSession(gameId, now);
         var startTime = now - TimeSpan.FromHours(hoursAgo);
+
+        var sessionId = builder.HashService.Object.ComputeHashForGameSession(gameId, now);
+
         var existingSession = new GameSession(
                 gameId: gameId,
                 sessionId: sessionId,
                 startTime: startTime
             );
-        var sessionFilePath = sessionsService.GetSessionFilePath(existingSession);
-        fileSystemService
+
+        var sessionFilePath = sut.GetSessionFilePath(existingSession);
+
+        builder.FileSystem
             .Setup(fs => fs.FileExists(sessionFilePath))
             .Returns(true);
-        fileSystemService
+        builder.FileSystem
             .Setup(fs => fs.FileReadAllText(It.IsAny<string>()))
-            .Returns(gameSessionSerializer.Serialize(existingSession));
+            .Returns(builder.Serializer.Serialize(existingSession));
+
         // Act
-        await sessionsService.OpenSessionAsync(gameId, now);
+        await sut.OpenSessionAsync(gameId, now);
+
         // Assert
-        fileSystemService.Verify(fs => fs.FileWriteAllText(
-            It.Is<string>(p => p.Contains(sessionId)),
-            It.Is<string>(json => IsStaleSessionJson(json))
-        ), Times.Once);
-        fileSystemService
+        builder.FileSystem
+            .Verify(fs => fs.FileWriteAllText(
+                It.Is<string>(p => p.Contains(sessionId)),
+                It.Is<string>(json => IsStaleSessionJson(json, builder.Serializer))
+            ), Times.Once);
+        builder.FileSystem
             .Verify(fs => fs.FileDelete(sessionFilePath), Times.Once);
-        fileSystemService
+        builder.FileSystem
             .Verify(fs => fs.FileWriteAllText(
                 sessionFilePath,
-                It.Is<string>(json => IsInProgressSessionJson(json))
+                It.Is<string>(json => IsInProgressSessionJson(json, builder.Serializer))
             ), Times.Once);
     }
 
@@ -172,20 +137,26 @@ public class GameSessionServiceTests
     public async Task OpenSession_WhenNoExistingSession_CreatesNewSession()
     {
         // Arrange
+        var builder = new GameSessionServiceTestBuilder();
+        GameSessionService sut = builder.Build();
+
         var now = DateTime.UtcNow;
         var gameId = "game123";
-        fileSystemService
+
+        builder.FileSystem
             .Setup(fs => fs.FileExists(It.Is<string>(s => s.Contains(gameId))))
             .Returns(false);
+
         // Act
-        await sessionsService.OpenSessionAsync(gameId, now);
+        await sut.OpenSessionAsync(gameId, now);
+
         // Assert
-        fileSystemService
+        builder.FileSystem
             .Verify(fs => fs.FileWriteAllText(
                 It.Is<string>(s => s.Contains(gameId)),
-                It.Is<string>(json => IsInProgressSessionJson(json))
+                It.Is<string>(json => IsInProgressSessionJson(json, builder.Serializer))
             ), Times.Once);
-        playAtlasClient
+        builder.Client
             .Verify(x => x.OpenGameSessionAsync(
                 It.IsAny<OpenGameSessionCommand>()
             ), Times.Once);
@@ -195,17 +166,23 @@ public class GameSessionServiceTests
     public async Task CloseSession_ShouldFail_WhenNoOpenedSessionExists()
     {
         // Arrange
+        var builder = new GameSessionServiceTestBuilder();
+        GameSessionService sut = builder.Build();
+
         var now = DateTime.UtcNow;
         var gameId = Guid.NewGuid().ToString();
-        var sessionId = hashService.Object.ComputeHashForGameSession(gameId, now);
         ulong duration = 2000;
-        fileSystemService
+
+        var sessionId = builder.HashService.Object.ComputeHashForGameSession(gameId, now);
+
+        builder.FileSystem
             .Setup(fs => fs.FileExists(It.Is<string>(s => s.Contains(sessionId))))
             .Returns(false);
+
         // Assert
         await Assert.ThrowsAsync<FileNotFoundException>( 
             // Act
-            async () => await sessionsService.CloseSessionAsync(gameId, duration, now)
+            async () => await sut.CloseSessionAsync(gameId, duration, now)
         );
     }
 }

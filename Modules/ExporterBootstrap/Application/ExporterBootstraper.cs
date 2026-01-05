@@ -16,6 +16,7 @@ namespace ExporterBootstrap.Application
         private readonly IPlayAtlasClientModulePort PlayAtlasClient;
         private readonly ILibrarySyncModulePort LibrarySync;
         private readonly IPlayniteIntegrationModulePort PlayniteIntegration;
+        private readonly IGameSessionModulePort GameSession;
         private ExporterApi Api { get; set; } = null;
 
         public ExporterBootstraper(
@@ -23,7 +24,8 @@ namespace ExporterBootstrap.Application
             IInfraModulePort infra,
             IPlayAtlasClientModulePort playAtlasClient,
             ILibrarySyncModulePort librarySync,
-            IPlayniteIntegrationModulePort playniteIntegration
+            IPlayniteIntegrationModulePort playniteIntegration,
+            IGameSessionModulePort gameSession
         )
         {
             AppLogger = appLogger;
@@ -31,6 +33,7 @@ namespace ExporterBootstrap.Application
             PlayAtlasClient = playAtlasClient;
             LibrarySync = librarySync;
             PlayniteIntegration = playniteIntegration;
+            GameSession = gameSession;
         }
 
         public ExporterApi BootstrapExporterApi()
@@ -41,20 +44,25 @@ namespace ExporterBootstrap.Application
             }
 
             var playAtlasClientApi = new ExporterPlayAtlasClientApi(PlayAtlasClient.Client);
+
             var librarySyncApi = new ExporterLibrarySyncApi(
                 LibrarySync.LibrarySyncService,
                 LibrarySync.GameSyncItemFactory
             );
+
             var playniteIntegrationApi = new ExporterPlayniteIntegrationApi(
                 query: new ExporterPlayniteIntegrationApiQuery(
                     PlayniteIntegration.GetAllGamesQueryHandler
                 )
             );
 
+            var gameSessionApi = new ExporterGameSessionApi(GameSession.GameSessionService);
+
             Api = new ExporterApi(
                 playAtlasClientApi,
                 librarySyncApi,
                 playniteIntegrationApi,
+                gameSessionApi,
                 Infra.EnvironmentInitializer,
                 AppLogger
             );

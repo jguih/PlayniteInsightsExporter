@@ -41,6 +41,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Application\ExporterGameSessionApi.cs" />
+    <Compile Include="Application\Modules\GameSessionModule.cs" />
+    <Compile Include="Application\Modules\GameSessionModulePort.cs" />
     <Compile Include="Application\Modules\InfraModule.cs" />
     <Compile Include="Application\Modules\InfraModulePort.cs" />
     <Compile Include="Application\Modules\LibrarySyncModule.cs" />
@@ -55,12 +58,15 @@
     <Compile Include="Application\ExporterPlayAtlasClientApi.cs" />
     <Compile Include="Application\ExporterPlayniteIntegrationApi.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Testing\TestExporterBootstrapper.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ExporterCommon\ExporterCommon.csproj">
       <Project>{0c45c5bf-6076-4d80-9dba-59edd13169b2}</Project>
       <Name>ExporterCommon</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ExporterGameSessions\ExporterGameSessions.csproj">
+      <Project>{e3501de5-f87c-4720-9159-1f5c2d06a93d}</Project>
+      <Name>ExporterGameSessions</Name>
     </ProjectReference>
     <ProjectReference Include="..\ExporterLibraryExporter\ExporterLibraryExporter.csproj">
       <Project>{4f2fed71-1797-4176-956a-c4db34c2c8ed}</Project>
@@ -79,5 +85,6 @@
       <Name>ExporterSystem</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

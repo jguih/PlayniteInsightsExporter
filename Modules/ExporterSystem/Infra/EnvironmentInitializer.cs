@@ -28,7 +28,7 @@ namespace ExporterSystem.Infra
             this.appLogger = appLogger;
         }
 
-        public void Initialize()
+        public void EnsureDirectories()
         {
             var extensionDirs = new List<string>()
             {
@@ -41,7 +41,10 @@ namespace ExporterSystem.Infra
                 if (!fileSystemService.DirectoryExists(dirPath))
                     fileSystemService.DirectoryCreate(dirPath);
             }
+        }
 
+        public void EnsureIdentity()
+        {
             if (!keyManager.KeyExistsAndIsValid())
             {
                 appLogger.Warn("Assymetric key pair is missing or invalid, trying to create a new pair...");
@@ -51,5 +54,4 @@ namespace ExporterSystem.Infra
             systemConfig.LoadRegistrationId();
         }
     }
-
 }

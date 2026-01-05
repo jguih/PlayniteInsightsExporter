@@ -8,6 +8,7 @@ namespace ExporterSystem.Infra
 {
     public interface IEnvironmentInitializerPort
     {
-        void Initialize();
+        void EnsureDirectories();
+        void EnsureIdentity();
     }
 }

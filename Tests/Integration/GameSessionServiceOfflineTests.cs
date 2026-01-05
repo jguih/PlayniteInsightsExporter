@@ -1,11 +1,20 @@
-﻿using ExporterCommon.Application;
+﻿using ExporterBootstrap.Application;
+using ExporterBootstrap.Application.Module;
+using ExporterBootstrap.Application.Modules;
+using ExporterCommon.Application;
 using ExporterCommon.Domain;
 using ExporterCommon.Infra;
 using ExporterGameSessions.Application;
 using ExporterGameSessions.Infra;
+using ExporterLibraryExporter.Application;
 using ExporterSystem.Infra;
 using Moq;
 using Newtonsoft.Json;
+using Playnite.SDK;
+using Playnite.SDK.Plugins;
+using Tests.Lib.Adapters;
+using Tests.Lib.Environment;
+using Tests.Lib.Modules;
 
 namespace Tests.Integration;
 
@@ -13,66 +22,19 @@ namespace Tests.Integration;
 /// Integration tests for GameSessionService in offline mode (no connection with Playnite Insights Web Server).
 /// </summary>
 [Trait("Category", "Integration")]
-public class GameSessionServiceOfflineTests : IDisposable
+public class GameSessionServiceOfflineTests
 {
-    private readonly Mock<IAppLoggerPort> appLogger;
-    private readonly Mock<IPlayAtlasHttpClientPort> playAtlasClient;
-    private readonly IHashServicePort hashService;
-    private readonly IFileSystemServicePort fileSystemService;
-    private readonly ISystemConfigPort systemConfig;
-    private readonly IGameSessionSerializerPort gameSessionSerializer;
-    private readonly IGameSessionServicePort sessionsService;
-    private readonly string WorkDir;
-
-    public GameSessionServiceOfflineTests()
-    {
-        WorkDir = Path.Join(Path.GetTempPath(), $"{Guid.NewGuid()}-playatlas-test");
-        var gameSessionConfig = new GameSessionConfig();
-        var configDirPath = Path.Join(WorkDir, "config");
-        appLogger = new Mock<IAppLoggerPort>();
-        playAtlasClient = new Mock<IPlayAtlasHttpClientPort>();
-        gameSessionSerializer = new GameSessionSerializer();
-        fileSystemService = new FileSystemService();
-
-        fileSystemService.DirectoryCreate(configDirPath);
-
-        hashService = new HashService(fileSystemService);
-        systemConfig = new SystemConfig(
-            fileSystemService: fileSystemService,
-            configDirPath: configDirPath,
-            dataDirPath: WorkDir
-        );
-
-        sessionsService = new GameSessionService(
-            appLogger.Object,
-            hashService,
-            playAtlasClient.Object,
-            fileSystemService,
-            gameSessionConfig,
-            systemConfig,
-            gameSessionSerializer
-        );
-    }
-
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
-        if (Directory.Exists(WorkDir))
-        {
-            Directory.Delete(path: WorkDir, recursive: true);
-        }
-    }
-
     [Fact]
     public async Task OnOpen_CreateSessionFile()
     {
         // Arrange
+        using var env = GameSessionTestEnvironment.Create();
         var gameId = Guid.NewGuid().ToString();
         var now = DateTime.UtcNow;
         // Act
-        var result = await sessionsService.OpenSessionAsync(gameId, now);
+        var result = await env.Api.GameSession.GameSessionService.OpenSessionAsync(gameId, now);
         var sessionContent = File.ReadAllText(result.SessionFilePath);
-        var session = gameSessionSerializer.Deserialize(sessionContent);
+        var session = env.Serializer.Deserialize(sessionContent);
         // Assert
         Assert.True(File.Exists(result.SessionFilePath), "Session file should exist after opening session.");
         Assert.NotNull(session);

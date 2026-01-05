@@ -72,12 +72,21 @@ namespace PlayniteInsightsExporter
             IPlayniteIntegrationModulePort playniteIntegration = 
                 new PlayniteIntegrationModule(gameRepository);
 
+            IGameSessionModulePort gameSession = new GameSessionModule(
+                    appLogger,
+                    infra.HashService,
+                    playAtlasClient.Client,
+                    fileSystem,
+                    systemConfig
+                );
+
             var bootstrapper = new ExporterBootstraper(
                     appLogger,
                     infra,
                     playAtlasClient,
                     librarySync,
-                    playniteIntegration
+                    playniteIntegration,
+                    gameSession
                 );
             return bootstrapper.BootstrapExporterApi();
         }
