@@ -29,6 +29,7 @@
 		<ProjectReference Include="..\Infra\Infra.csproj" />
 		<ProjectReference Include="..\Modules\ExporterBootstrap\ExporterBootstrap.csproj" />
 		<ProjectReference Include="..\Modules\ExporterCommon\ExporterCommon.csproj" />
+		<ProjectReference Include="..\Modules\ExporterGameSessions\ExporterGameSessions.csproj" />
 		<ProjectReference Include="..\Modules\ExporterLibraryExporter\ExporterLibraryExporter.csproj" />
 		<ProjectReference Include="..\Modules\ExporterPlayAtlasClient\ExporterPlayAtlasClient.csproj" />
 		<ProjectReference Include="..\Modules\ExporterPlayniteIntegration\ExporterPlayniteIntegration.csproj" />

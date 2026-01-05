@@ -20,7 +20,7 @@ namespace ExporterSystem.Infra
         public string LibraryFilesDirPath { get; }
         public string SecurityDirPath { get; }
         public string SessionsDirPath { get; }
-        public string ExtensionRegistrationId { get; } = null;
+        public string ExtensionRegistrationId { get; set; } = null;
 
         public SystemConfig(
             IExporterPluginContextPort pluginContext,
@@ -35,19 +35,26 @@ namespace ExporterSystem.Infra
             LibraryFilesDirPath = fileSystemService.PathCombine(configDir, "library", "files");
             SecurityDirPath = fileSystemService.PathCombine(dataDir, "security");
             SessionsDirPath = fileSystemService.PathCombine(dataDir, "sessions");
-            ExtensionRegistrationId = GetRegistrationIdFromFile();
         }
 
-        public string GetRegistrationIdFromFile()
+        public void LoadRegistrationId()
         {
             var registrationIdPath = fileSystemService.PathCombine(SecurityDirPath, "registrationId.txt");
+
             if (!fileSystemService.FileExists(registrationIdPath))
             {
-                return null;
+                throw new FileNotFoundException(registrationIdPath);
             }
+
             var jsonString = fileSystemService.FileReadAllText(registrationIdPath);
             var registration = JsonConvert.DeserializeObject<ExtensionRegistration>(jsonString);
-            return registration.RegistrationId;
+
+            if (registration == null)
+            {
+                throw new InvalidDataException($"Failed to parse extension registration from file '{registrationIdPath}'");
+            }
+
+            ExtensionRegistrationId = registration.RegistrationId;
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ExporterCommon.Domain;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -25,5 +26,6 @@ namespace ExporterGameSessions.Application
         /// </summary>
         /// <returns></returns>
         Task ProcessPendingSessionsAsync(DateTime now);
+        string GetSessionFilePath(GameSession session);
     }
 }

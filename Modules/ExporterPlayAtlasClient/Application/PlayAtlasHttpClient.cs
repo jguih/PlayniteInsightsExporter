@@ -1,5 +1,4 @@
 ﻿using ExporterCommon.Application;
-using ExporterCommon.Application.PlayAtlasHttpClient;
 using ExporterCommon.Infra;
 using ExporterPlayAtlasClient.Dtos;
 using ExporterPlayAtlasClient.Infra;

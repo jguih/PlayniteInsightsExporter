@@ -12,5 +12,7 @@ namespace ExporterCommon.Infra
         string ExtensionRegistrationId { get; }
         string SecurityDirPath { get; }
         string SessionsDirPath { get; }
+
+        void LoadRegistrationId();
     }
 }
