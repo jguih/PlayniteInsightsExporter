@@ -1,16 +1,14 @@
 ﻿using ExporterCommon.Application;
-using Playnite.SDK.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExporterBootstrap.Application
+namespace ExporterBootstrap.Application.Module
 {
-    public interface IPlayniteGameExtractorPort
+    public interface IPlayAtlasClientModulePort
     {
-        SyncGameCommandItem Extract(Game game);
+        IPlayAtlasHttpClientPort Client { get; }
     }
-
 }

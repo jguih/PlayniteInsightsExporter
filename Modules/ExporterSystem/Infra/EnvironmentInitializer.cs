@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ExporterSystem.Infra
 {
-    public sealed class InfraEnvironmentInitializer
+    public class InfraEnvironmentInitializer : IEnvironmentInitializerPort
     {
         private readonly IFileSystemServicePort fileSystemService;
         private readonly IKeyManagerPort keyManager;

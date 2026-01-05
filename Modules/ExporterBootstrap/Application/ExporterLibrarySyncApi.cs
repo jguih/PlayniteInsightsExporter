@@ -10,12 +10,15 @@ namespace ExporterBootstrap.Application
     public class ExporterLibrarySyncApi
     {
         public readonly ILibrarySyncServicePort LibrarySyncService;
+        public readonly IGameSyncItemFactoryPort GameSyncItemFactory;
 
         public ExporterLibrarySyncApi(
-            ILibrarySyncServicePort librarySyncService
+            ILibrarySyncServicePort librarySyncService,
+            IGameSyncItemFactoryPort gameSyncItemFactory
         )
         {
-            this.LibrarySyncService = librarySyncService;
+            LibrarySyncService = librarySyncService;
+            GameSyncItemFactory = gameSyncItemFactory;
         }
     }
 }

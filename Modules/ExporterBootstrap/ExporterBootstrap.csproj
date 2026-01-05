@@ -31,9 +31,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Playnite.SDK, Version=6.12.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\PlayniteSDK.6.12.0\lib\net462\Playnite.SDK.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -44,19 +41,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Adapters\AppLoggerAdapter.cs" />
-    <Compile Include="Application\PlayniteGameExtractor.cs" />
-    <Compile Include="Application\PlayniteGameMapper.cs" />
-    <Compile Include="Application\PlayniteGameMapperPort.cs" />
-    <Compile Include="Adapters\PlayniteGameRepositoryAdapter.cs" />
+    <Compile Include="Application\Modules\InfraModule.cs" />
+    <Compile Include="Application\Modules\InfraModulePort.cs" />
+    <Compile Include="Application\Modules\LibrarySyncModule.cs" />
+    <Compile Include="Application\Modules\LibrarySyncModulePort.cs" />
+    <Compile Include="Application\Modules\PlayAtlasClientModule.cs" />
+    <Compile Include="Application\Modules\PlayAtlasClientModulePort.cs" />
+    <Compile Include="Application\Modules\PlayniteIntegrationModule.cs" />
+    <Compile Include="Application\Modules\PlayniteIntegrationModulePort.cs" />
     <Compile Include="Application\ExporterBootstraper.cs" />
-    <Compile Include="Application\ExporterConfigApi.cs" />
     <Compile Include="Application\ExporterApi.cs" />
-    <Compile Include="Application\ExporterInfraApi.cs" />
     <Compile Include="Application\ExporterLibrarySyncApi.cs" />
     <Compile Include="Application\ExporterPlayAtlasClientApi.cs" />
     <Compile Include="Application\ExporterPlayniteIntegrationApi.cs" />
-    <Compile Include="Application\PlayniteGameExtractorPort.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Testing\TestExporterBootstrapper.cs" />
   </ItemGroup>
@@ -81,9 +78,6 @@
       <Project>{56a9fc4f-d3e0-47d5-a6a3-a20379584e0d}</Project>
       <Name>ExporterSystem</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

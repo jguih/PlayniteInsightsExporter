@@ -47,6 +47,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Application\GameSyncItemFactory.cs" />
+    <Compile Include="Application\GameSyncItemFactoryPort.cs" />
     <Compile Include="Application\SyncMediaFilesContext.cs" />
     <Compile Include="Application\SyncMediaFilesResult.cs" />
     <Compile Include="Application\LibrarySyncService.cs" />

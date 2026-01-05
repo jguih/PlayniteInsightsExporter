@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExporterBootstrap.Adapters
+namespace PlayniteInsightsExporter.Adapters
 {
     public class AppLoggerAdapter : IAppLoggerPort
     {

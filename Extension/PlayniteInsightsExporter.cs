@@ -7,9 +7,8 @@ using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
-using PlayniteInsightsExporter.Lib;
-using PlayniteInsightsExporter.Src;
-using PlayniteInsightsExporter.Src.Notifications;
+using PlayniteInsightsExporter.Adapters;
+using PlayniteInsightsExporter.Notifications;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -31,10 +30,11 @@ namespace PlayniteInsightsExporter
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
         private readonly ServiceLocator locator;
 
-        private readonly ExporterApi ExporterApi;
-        private readonly SyncGameLibraryWorkflow SyncGameLibrary;
-        private readonly ISyncFeedbackChannelPort DialogFeedbackChannel;
-        private readonly ISyncFeedbackChannelPort NotificationFeedbackChannel;
+        private readonly ExporterApi exporterApi;
+        private readonly SyncGameLibraryWorkflow syncGameLibrary;
+        private readonly ISyncFeedbackChannelPort dialogFeedbackChannel;
+        private readonly ISyncFeedbackChannelPort notificationFeedbackChannel;
+        private readonly IPlayniteGameMapperPort playniteGameMapper;
 
         public readonly string Name = "PlayAtlas Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
@@ -42,11 +42,16 @@ namespace PlayniteInsightsExporter
         public PlayniteInsightsExporter(IPlayniteAPI api) : base(api)
         {
             // New API
-            var bootstrapper = new ExporterBootstraper(this, PlayniteApi, logger);
-            ExporterApi = bootstrapper.BootstrapExporterApi();
-            SyncGameLibrary = new SyncGameLibraryWorkflow(ExporterApi, PlayniteApi);
-            DialogFeedbackChannel = new DialogFeedbackChannel(PlayniteApi);
-            NotificationFeedbackChannel = new NotificationFeedbackChannel(PlayniteApi);
+            var compositionRoot = new ExporterCompositionRoot(
+                logger,
+                PlayniteApi,
+                this
+            );
+            exporterApi = compositionRoot.Build();
+            syncGameLibrary = new SyncGameLibraryWorkflow(exporterApi, PlayniteApi);
+            dialogFeedbackChannel = new DialogFeedbackChannel(PlayniteApi);
+            notificationFeedbackChannel = new NotificationFeedbackChannel(PlayniteApi);
+            playniteGameMapper = new PlayniteGameMapper();
 
             // TODO: Remove
             locator = new ServiceLocator(this, logger);
@@ -54,9 +59,9 @@ namespace PlayniteInsightsExporter
             Settings = new PlayniteInsightsExporterSettingsViewModel(
                 this, 
                 locator, 
-                ExporterApi,
-                SyncGameLibrary,
-                DialogFeedbackChannel
+                exporterApi,
+                syncGameLibrary,
+                dialogFeedbackChannel
             );
             Properties = new GenericPluginProperties
             {
@@ -67,7 +72,8 @@ namespace PlayniteInsightsExporter
 
         private void FullGameSync(Game game)
         {
-            var syncItem = ExporterApi.PlayniteGameExtractor.Extract(game);
+            var entity = playniteGameMapper.Map(game);
+            var syncItem = exporterApi.LibrarySync.GameSyncItemFactory.Create(entity);
             GameLibrarySyncDiff diff = new GameLibrarySyncDiff(
                         added: new List<SyncGameCommandItem>(),
                         updated: new List<SyncGameCommandItem>() { syncItem },
@@ -75,18 +81,18 @@ namespace PlayniteInsightsExporter
                     );
             var games = new List<AppGame>() { syncItem.Game };
 
-            var sycnGamesResult = SyncGameLibrary.SyncGames(diff);
-            var syncGamesOutcome = SyncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
+            var sycnGamesResult = syncGameLibrary.SyncGames(diff);
+            var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
 
             if (!syncGamesOutcome.Success)
             {
-                PresentSyncOutcome(syncGamesOutcome, NotificationFeedbackChannel);
+                PresentSyncOutcome(syncGamesOutcome, notificationFeedbackChannel);
                 return;
             }
 
-            var syncMediaFilesResult = SyncGameLibrary.SyncMediaFiles(games);
-            var syncMediaFilesOutcome = SyncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
-            PresentSyncOutcome(syncMediaFilesOutcome, NotificationFeedbackChannel);
+            var syncMediaFilesResult = syncGameLibrary.SyncMediaFiles(games);
+            var syncMediaFilesOutcome = syncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
+            PresentSyncOutcome(syncMediaFilesOutcome, notificationFeedbackChannel);
         }
 
         private void OnItemCollectionChanged(
@@ -97,7 +103,8 @@ namespace PlayniteInsightsExporter
             if (e.AddedItems.Any() || e.RemovedItems.Any())
             {
                 var syncItems = e.AddedItems?
-                    .Select(ExporterApi.PlayniteGameExtractor.Extract)
+                    .Select(playniteGameMapper.Map)
+                    .Select(exporterApi.LibrarySync.GameSyncItemFactory.Create)
                     .ToList()
                     ?? new List<SyncGameCommandItem>();
                 var games = syncItems
@@ -115,18 +122,18 @@ namespace PlayniteInsightsExporter
                         deleted: toDelete
                     );
 
-                var sycnGamesResult = SyncGameLibrary.SyncGames(diff);
-                var syncGamesOutcome = SyncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
+                var sycnGamesResult = syncGameLibrary.SyncGames(diff);
+                var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
 
                 if (!syncGamesOutcome.Success)
                 {
-                    PresentSyncOutcome(syncGamesOutcome, NotificationFeedbackChannel);
+                    PresentSyncOutcome(syncGamesOutcome, notificationFeedbackChannel);
                     return;
                 }
 
-                var syncMediaFilesResult = SyncGameLibrary.SyncMediaFiles(games);
-                var syncMediaFilesOutcome = SyncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
-                PresentSyncOutcome(syncMediaFilesOutcome, NotificationFeedbackChannel);
+                var syncMediaFilesResult = syncGameLibrary.SyncMediaFiles(games);
+                var syncMediaFilesOutcome = syncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
+                PresentSyncOutcome(syncMediaFilesOutcome, notificationFeedbackChannel);
             }
         }
 
@@ -181,11 +188,11 @@ namespace PlayniteInsightsExporter
 
             try
             {
-                ExporterApi.EnvironmentInitializer.Initialize();
+                exporterApi.EnvironmentInitializer.Initialize();
             }
             catch (Exception ex)
             {
-                ExporterApi.Logger.Error("Failed to initialize extension environment", ex);
+                exporterApi.Logger.Error("Failed to initialize extension environment", ex);
             }
 
             _ = Task.Run(async () =>
@@ -258,20 +265,20 @@ namespace PlayniteInsightsExporter
         {
             if (Settings?.Settings?.EnableLibrarySyncOnUpdate == true)
             {
-                var syncGamesProgressResult = SyncGameLibrary.SyncGames();
-                var syncGamesOutcome = SyncGameLibrary.InterpretSyncGamesResult(syncGamesProgressResult);
+                var syncGamesProgressResult = syncGameLibrary.SyncGames();
+                var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(syncGamesProgressResult);
 
                 if (!syncGamesOutcome.Success)
                 {
-                    PresentSyncOutcome(syncGamesOutcome, NotificationFeedbackChannel);
+                    PresentSyncOutcome(syncGamesOutcome, notificationFeedbackChannel);
                     return;
                 }
             }
             if (Settings?.Settings?.EnableMediaFilesSyncOnUpdate == true)
             {
-                var syncMediaFilesResult = SyncGameLibrary.SyncMediaFiles();
-                var syncMediaFilesOutcome = SyncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
-                PresentSyncOutcome(syncMediaFilesOutcome, NotificationFeedbackChannel);
+                var syncMediaFilesResult = syncGameLibrary.SyncMediaFiles();
+                var syncMediaFilesOutcome = syncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
+                PresentSyncOutcome(syncMediaFilesOutcome, notificationFeedbackChannel);
             }
             _ = Task.Run(async () =>
             {
@@ -307,7 +314,8 @@ namespace PlayniteInsightsExporter
                     if (_args == null || _args.Games == null) return;
 
                     var syncItems = _args.Games
-                        .Select(ExporterApi.PlayniteGameExtractor.Extract)
+                        .Select(playniteGameMapper.Map)
+                        .Select(exporterApi.LibrarySync.GameSyncItemFactory.Create)
                         .ToList();
                     GameLibrarySyncDiff diff = new GameLibrarySyncDiff(
                                 added: new List<SyncGameCommandItem>(),
@@ -318,18 +326,18 @@ namespace PlayniteInsightsExporter
                         .Select(i => i.Game)
                         .ToList();
 
-                    var syncGamesProgressResult = SyncGameLibrary.SyncGames(diff);
-                    var syncGamesOutcome = SyncGameLibrary.InterpretSyncGamesResult(syncGamesProgressResult);
+                    var syncGamesProgressResult = syncGameLibrary.SyncGames(diff);
+                    var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(syncGamesProgressResult);
 
                     if (!syncGamesOutcome.Success)
                     {
-                        PresentSyncOutcome(syncGamesOutcome, DialogFeedbackChannel);
+                        PresentSyncOutcome(syncGamesOutcome, dialogFeedbackChannel);
                         return;
                     }
 
-                    var syncMediaFilesResult = SyncGameLibrary.SyncMediaFiles(games);
-                    var syncMediaFilesOutcome = SyncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
-                    PresentSyncOutcome(syncMediaFilesOutcome, DialogFeedbackChannel);
+                    var syncMediaFilesResult = syncGameLibrary.SyncMediaFiles(games);
+                    var syncMediaFilesOutcome = syncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
+                    PresentSyncOutcome(syncMediaFilesOutcome, dialogFeedbackChannel);
                 }
             };
         }

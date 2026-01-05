@@ -14,7 +14,6 @@ namespace ExporterSystem.Infra
 
     public class SystemConfig : ISystemConfigPort
     {
-        private readonly IExporterPluginContextPort pluginContext;
         private readonly IFileSystemServicePort fileSystemService;
 
         public string LibraryFilesDirPath { get; }
@@ -26,7 +25,7 @@ namespace ExporterSystem.Infra
             IFileSystemServicePort fileSystemService,
             string configDirPath,
             string dataDirPath
-        ) 
+        )
         {
             if (string.IsNullOrEmpty(configDirPath))
                 throw new ArgumentNullException(nameof(configDirPath));
@@ -55,13 +54,7 @@ namespace ExporterSystem.Infra
             }
 
             var jsonString = fileSystemService.FileReadAllText(registrationIdPath);
-            var registration = JsonConvert.DeserializeObject<ExtensionRegistration>(jsonString);
-
-            if (registration == null)
-            {
-                throw new InvalidDataException($"Failed to parse extension registration from file '{registrationIdPath}'");
-            }
-
+            var registration = JsonConvert.DeserializeObject<ExtensionRegistration>(jsonString) ?? throw new InvalidDataException($"Failed to parse extension registration from file '{registrationIdPath}'");
             ExtensionRegistrationId = registration.RegistrationId;
         }
     }

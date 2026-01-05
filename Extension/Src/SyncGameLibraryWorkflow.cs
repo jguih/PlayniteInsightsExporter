@@ -2,14 +2,14 @@
 using ExporterCommon.Domain;
 using ExporterLibraryExporter.Application;
 using Playnite.SDK;
-using PlayniteInsightsExporter.Src.Notifications;
+using PlayniteInsightsExporter.Notifications;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PlayniteInsightsExporter.Src
+namespace PlayniteInsightsExporter
 {
     public class SyncMediaFilesWorkflowResult
     {

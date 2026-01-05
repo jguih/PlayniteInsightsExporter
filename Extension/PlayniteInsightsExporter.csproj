@@ -56,11 +56,16 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Src\Adapters\AppLoggerAdapter.cs" />
+    <Compile Include="Src\Adapters\PlayniteGameMapper.cs" />
+    <Compile Include="Src\Adapters\PlayniteGameMapperPort.cs" />
+    <Compile Include="Src\Adapters\PlayniteGameRepositoryAdapter.cs" />
     <Compile Include="Src\Converters\InverseBooleanConverter.cs" />
     <Compile Include="Src\Notifications\DialogFeedbackChannel.cs" />
     <Compile Include="Src\Notifications\NotificationFeedbackChannel.cs" />
     <Compile Include="Src\Notifications\SyncFeedbackChannelPort.cs" />
     <Compile Include="Src\Notifications\SyncOutcome.cs" />
+    <Compile Include="Src\ExporterCompositionRoot.cs" />
     <Compile Include="Src\PlayniteLogger.cs" />
     <Compile Include="Src\ServiceLocator.cs" />
     <Compile Include="PlayniteInsightsExporter.cs" />

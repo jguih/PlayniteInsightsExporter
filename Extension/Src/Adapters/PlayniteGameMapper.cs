@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExporterBootstrap.Application
+namespace PlayniteInsightsExporter.Adapters
 {
     internal sealed class PlayniteGameMapper : IPlayniteGameMapperPort
     {

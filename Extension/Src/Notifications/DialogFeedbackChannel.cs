@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PlayniteInsightsExporter.Src.Notifications
+namespace PlayniteInsightsExporter.Notifications
 {
     public class DialogFeedbackChannel : ISyncFeedbackChannelPort
     {

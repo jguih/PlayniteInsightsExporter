@@ -3,7 +3,6 @@ using Core.ExtensionRegistration;
 using Core.Screencapture;
 using Infra;
 using Playnite.SDK;
-using PlayniteInsightsExporter.Lib.Logger;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PlayniteInsightsExporter.Lib
+namespace PlayniteInsightsExporter
 {
     public class ServiceLocator
     {
