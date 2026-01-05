@@ -15,9 +15,8 @@ namespace Tests.Unit;
 public class GameSessionServiceTests
 {
     private readonly Mock<IAppLoggerPort> appLogger;
-    private readonly Mock<IExporterPluginContextPort> pluginContext;
-    private readonly Mock<IHashServicePort> hashService;
     private readonly Mock<IPlayAtlasHttpClientPort> playAtlasClient;
+    private readonly Mock<IHashServicePort> hashService;
     private readonly Mock<IFileSystemServicePort> fileSystemService;
     private readonly ISystemConfigPort systemConfig;
     private readonly IGameSessionSerializerPort gameSessionSerializer;
@@ -29,14 +28,6 @@ public class GameSessionServiceTests
         appLogger = new Mock<IAppLoggerPort>();
         playAtlasClient = new Mock<IPlayAtlasHttpClientPort>();
         gameSessionSerializer = new GameSessionSerializer();
-
-        pluginContext = new Mock<IExporterPluginContextPort>();
-        pluginContext
-            .Setup(x => x.GetConfigurationDirPath())
-            .Returns("/config");
-        pluginContext
-            .Setup(x => x.GetExtensionDataDirPath())
-            .Returns("/data");
 
         hashService = new Mock<IHashServicePort>();
         hashService
@@ -51,8 +42,18 @@ public class GameSessionServiceTests
         fileSystemService
             .Setup(fs => fs.PathCombine(It.IsAny<string[]>()))
             .Returns((string[] paths) => Path.Combine(paths));
+        fileSystemService
+            .Setup(fs => fs.DirectoryExists("/config"))
+            .Returns(true);
+        fileSystemService
+            .Setup(fs => fs.DirectoryExists("/data"))
+            .Returns(true);
 
-        systemConfig = new SystemConfig(pluginContext.Object, fileSystemService.Object);
+        systemConfig = new SystemConfig(
+            fileSystemService: fileSystemService.Object,
+            configDirPath: "/config",
+            dataDirPath: "/data"
+        );
 
         fileSystemService
             .Setup(fs => fs.DirectoryExists(systemConfig.SessionsDirPath))
@@ -190,50 +191,21 @@ public class GameSessionServiceTests
             ), Times.Once);
     }
 
-    //[Fact]
-    //public async Task CloseSession_WhenNoOpenedSessionExists_ReturnsFalse()
-    //{
-    //    // Arrange
-    //    var now = DateTime.UtcNow;
-    //    var gameId = Guid.NewGuid().ToString();
-    //    var sessionFilePath = sessionsService.GetSessionFilePath(gameId);
-    //    ulong duration = 2000;
-    //    fileSystemService
-    //        .Setup(fs => fs.FileExists(sessionFilePath))
-    //        .Returns(false);
-    //    // Act
-    //    var result = await sessionsService.CloseSession(gameId, duration, now);
-    //    // Assert
-    //    Assert.False(result);
-    //    WebServiceMock.Verify(ws => ws.PostJson(WebAppEndpoints.CloseSession, It.Is<CloseSessionCommand>(s => s.GameId == gameId)), Times.Never);
-    //}
-
-    //[Fact]
-    //public async Task OnClose_WhenInProgressSessionIsInvalid_DeleteFile()
-    //{
-    //    // Arrange
-    //    var now = DateTime.UtcNow;
-    //    var gameId = Guid.NewGuid().ToString();
-    //    var sessionId = sessionsService.GetSessionId(gameId, now);
-    //    GameSession session = new()
-    //    {
-    //        GameId = null,
-    //        StartTime = now,
-    //        SessionId = sessionId,
-    //        Status = "Invalid Status",
-    //    };
-    //    var sessionFilePath = sessionsService.GetSessionFilePath(gameId);
-    //    ulong duration = 3000;
-    //    fileSystemService
-    //        .Setup(fs => fs.FileExists(sessionFilePath))
-    //        .Returns(true);
-    //    fileSystemService
-    //        .Setup(fs => fs.FileReadAllText(sessionFilePath))
-    //        .Returns(JsonConvert.SerializeObject(session));
-    //    var result = await sessionsService.CloseSession(gameId, duration, now);
-    //    Assert.False(result, "CloseSession should return false for invalid session.");
-    //    fileSystemService.Verify(fs => fs.FileDelete(sessionFilePath), Times.Once);
-    //    WebServiceMock
-    //        .Verify(ws => ws.PostJson(WebAppEndpoints.CloseSession, It.IsAny<object>()), Times.Never);
-    //}
+    [Fact]
+    public async Task CloseSession_ShouldFail_WhenNoOpenedSessionExists()
+    {
+        // Arrange
+        var now = DateTime.UtcNow;
+        var gameId = Guid.NewGuid().ToString();
+        var sessionId = hashService.Object.ComputeHashForGameSession(gameId, now);
+        ulong duration = 2000;
+        fileSystemService
+            .Setup(fs => fs.FileExists(It.Is<string>(s => s.Contains(sessionId))))
+            .Returns(false);
+        // Assert
+        await Assert.ThrowsAsync<FileNotFoundException>( 
+            // Act
+            async () => await sessionsService.CloseSessionAsync(gameId, duration, now)
+        );
+    }
 }

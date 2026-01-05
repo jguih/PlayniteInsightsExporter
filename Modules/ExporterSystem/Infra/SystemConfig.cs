@@ -23,18 +23,26 @@ namespace ExporterSystem.Infra
         public string ExtensionRegistrationId { get; set; } = null;
 
         public SystemConfig(
-            IExporterPluginContextPort pluginContext,
-            IFileSystemServicePort fileSystemService
+            IFileSystemServicePort fileSystemService,
+            string configDirPath,
+            string dataDirPath
         ) 
         {
-            this.fileSystemService = fileSystemService;
-            this.pluginContext = pluginContext;
+            if (string.IsNullOrEmpty(configDirPath))
+                throw new ArgumentNullException(nameof(configDirPath));
+            if (string.IsNullOrEmpty(dataDirPath))
+                throw new ArgumentNullException(nameof(dataDirPath));
 
-            string configDir = pluginContext.GetConfigurationDirPath();
-            string dataDir = pluginContext.GetExtensionDataDirPath();
-            LibraryFilesDirPath = fileSystemService.PathCombine(configDir, "library", "files");
-            SecurityDirPath = fileSystemService.PathCombine(dataDir, "security");
-            SessionsDirPath = fileSystemService.PathCombine(dataDir, "sessions");
+            this.fileSystemService = fileSystemService;
+
+            if (!fileSystemService.DirectoryExists(configDirPath))
+                throw new DirectoryNotFoundException(nameof(configDirPath));
+            if (!fileSystemService.DirectoryExists(dataDirPath))
+                throw new DirectoryNotFoundException(nameof(dataDirPath));
+
+            LibraryFilesDirPath = fileSystemService.PathCombine(configDirPath, "library", "files");
+            SecurityDirPath = fileSystemService.PathCombine(dataDirPath, "security");
+            SessionsDirPath = fileSystemService.PathCombine(dataDirPath, "sessions");
         }
 
         public void LoadRegistrationId()

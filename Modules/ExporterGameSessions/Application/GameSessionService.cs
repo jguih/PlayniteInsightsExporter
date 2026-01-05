@@ -209,7 +209,7 @@ namespace ExporterGameSessions.Application
             }
         }
 
-        public async Task OpenSessionAsync(string gameId, DateTime now)
+        public async Task<GameSessionOperationResult> OpenSessionAsync(string gameId, DateTime now)
         {
             var inProgressSessionFilePath = GetInProgressSessionFilePath(gameId);
 
@@ -221,14 +221,6 @@ namespace ExporterGameSessions.Application
                     var duration = (ulong)(now - existingSession.StartTime).TotalSeconds;
                     await ProcessPendingSessionAsync(existingSession, now, duration);
                 }
-            }
-            catch (IOException ex)
-            {
-                appLogger.Error($"Failed to process pending session (IO)", ex);
-            }
-            catch (HttpRequestException ex)
-            {
-                appLogger.Error($"Failed to sync pending session (network)", ex);
             }
             catch (Exception ex)
             {
@@ -243,9 +235,10 @@ namespace ExporterGameSessions.Application
                 );
             UpdateSessionFile(session);
             await SendSessionToServerAsync(session);
+            return new GameSessionOperationResult(inProgressSessionFilePath, session);
         }
 
-        public async Task CloseSessionAsync(string gameId, ulong duration, DateTime now)
+        public async Task<GameSessionOperationResult> CloseSessionAsync(string gameId, ulong duration, DateTime now)
         {
             var inProgressSessionFilePath = GetInProgressSessionFilePath(gameId);
 
@@ -263,6 +256,7 @@ namespace ExporterGameSessions.Application
             UpdateSessionFile(session);
             fileSystemService.FileDelete(inProgressSessionFilePath);
             await SendSessionToServerAsync(session);
+            return new GameSessionOperationResult(GetSessionFilePath(session), session);
         }
 
         public async Task ProcessPendingSessionsAsync(DateTime now)
@@ -291,14 +285,6 @@ namespace ExporterGameSessions.Application
                 try
                 {
                     await ProcessPendingSessionAsync(session, now);
-                }
-                catch (IOException ex)
-                {
-                    appLogger.Error($"Failed to process pending session {session.SessionId} (IO)", ex);
-                }
-                catch (HttpRequestException ex)
-                {
-                    appLogger.Error($"Failed to sync pending session {session.SessionId} (network)", ex);
                 }
                 catch (Exception ex)
                 {

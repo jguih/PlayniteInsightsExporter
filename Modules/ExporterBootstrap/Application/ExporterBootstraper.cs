@@ -45,7 +45,11 @@ namespace ExporterBootstrap.Application
             IFileSystemServicePort fileSystemService = new FileSystemService();
             IPlayniteGameMapperPort gameMapper = new PlayniteGameMapper();
             // Config
-            var systemConfig = new SystemConfig(plugin, fileSystemService);
+            var systemConfig = new SystemConfig(
+                fileSystemService: fileSystemService,
+                configDirPath: plugin.GetConfigurationDirPath(),
+                dataDirPath: plugin.GetExtensionDataDirPath()
+            );
             // Infra
             var keyManager = new KeyManager(systemConfig, fileSystemService, appLogger);
             var hashService = new HashService(fileSystemService);

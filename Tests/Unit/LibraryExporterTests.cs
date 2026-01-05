@@ -17,7 +17,6 @@ public class LibraryExporterTests
     private readonly Mock<IPlayAtlasHttpClientPort> playAtlasHttpClient;
     private readonly Mock<IHashServicePort> hashService;
     private readonly Mock<IFileSystemServicePort> fileSystemService;
-    private readonly Mock<IExporterPluginContextPort> pluginContext;
     private readonly Mock<IPlayniteGameRepositoryPort> gameRepository;
     private readonly ISystemConfigPort systemConfig;
 
@@ -40,19 +39,12 @@ public class LibraryExporterTests
             .Setup(fs => fs.PathCombine(It.IsAny<string[]>()))
             .Returns((string[] paths) => Path.Combine(paths));
 
-        pluginContext = new Mock<IExporterPluginContextPort>();
-        pluginContext
-            .Setup(x => x.GetConfigurationDirPath())
-            .Returns(faker.System.DirectoryPath());
-        pluginContext
-            .Setup(x => x.GetExtensionDataDirPath())
-            .Returns(faker.System.DirectoryPath());
-
         gameRepository = new Mock<IPlayniteGameRepositoryPort>();
 
         systemConfig = new SystemConfig(
-            pluginContext.Object, 
-            fileSystemService.Object
+            fileSystemService: fileSystemService.Object,
+            configDirPath: faker.System.DirectoryPath(),
+            dataDirPath: faker.System.DirectoryPath()
         );
 
         libraryExporter = new LibrarySyncService(
