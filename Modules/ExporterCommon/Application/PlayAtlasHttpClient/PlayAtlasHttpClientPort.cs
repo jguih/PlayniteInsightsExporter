@@ -14,5 +14,6 @@ namespace ExporterCommon.Application
         Task OpenGameSessionAsync(OpenGameSessionCommand command);
         Task CloseGameSessionAsync(CloseGameSessionCommand command);
         Task StaleGameSessionAsync(StaleGameSessionCommand command);
+        Task RegisterExtensionAsync(RegisterExtensionCommand command);
     }
 }

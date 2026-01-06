@@ -1,7 +1,9 @@
 ﻿using ExporterCommon.Application;
 using ExporterCommon.Infra;
 using ExporterPlayAtlasClient.Application;
+using ExporterPlayAtlasClient.Commands.RegisterExtension;
 using ExporterPlayAtlasClient.Infra;
+using ExporterSystem.Infra;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +15,7 @@ namespace ExporterBootstrap.Application.Module
     public class PlayAtlasClientModule : IPlayAtlasClientModulePort
     {
         public IPlayAtlasHttpClientPort Client { get; }
+        public IRegisterExtensionCommandHandlerPort RegisterExtensionCommandHandler { get; }
 
         public PlayAtlasClientModule(
             IFileSystemServicePort fileSystem,
@@ -20,15 +23,13 @@ namespace ExporterBootstrap.Application.Module
             IAppLoggerPort appLogger,
             ISystemConfigPort systemConfig,
             ISignatureServicePort signatureService,
-            IHashServicePort hashService
+            IHashServicePort hashService,
+            IKeyManagerPort keyManager
         )
         {
-            var syncGamesHttpContentBuilder = new SyncGamesHttpContentBuilder();
             var syncMediaFilesHttpContentBuilder = new SyncMediaFilesHttpContentBuilder(fileSystem);
             var syncGamesDtoMapper = new SyncGamesDtoMapper();
-            var openGameSessionHttpContentBuilder = new OpenGameSessionHttpContentBuilder();
-            var closeGameSessionHttpContentBuilder = new CloseGameSessionHttpContentBuilder();
-            var staleGameSessionHttpContentBuilder = new StaleGameSessionHttpContentBuilder();
+            var jsonHttpContentBuilder = new JsonHttpContentBuilder();
 
             Client = new PlayAtlasHttpClient(
                 appLogger: appLogger,
@@ -36,12 +37,15 @@ namespace ExporterBootstrap.Application.Module
                 systemConfig: systemConfig,
                 signatureService: signatureService,
                 hashService: hashService,
-                syncGamesHttpContentBuilder: syncGamesHttpContentBuilder,
                 syncMediaFilesHttpContentBuilder: syncMediaFilesHttpContentBuilder,
                 syncGamesDtoMapper: syncGamesDtoMapper,
-                openGameSessionHttpContentBuilder: openGameSessionHttpContentBuilder,
-                closeGameSessionHttpContentBuilder: closeGameSessionHttpContentBuilder,
-                staleGameSessionHttpContentBuilder: staleGameSessionHttpContentBuilder
+                jsonHttpContentBuilder: jsonHttpContentBuilder
+            );
+
+            RegisterExtensionCommandHandler = new RegisterExtensionCommandHandler(
+                pluginContext: pluginContext,
+                keyManager: keyManager,
+                playAtlasHttpClient: Client
             );
         }
     }

@@ -20,12 +20,9 @@ namespace ExporterPlayAtlasClient.Application
         private readonly ISystemConfigPort systemConfig;
         private readonly ISignatureServicePort signatureService;
         private readonly IHashServicePort hashService;
-        private readonly ISyncGamesHttpContentBuilderPort syncGamesHttpContentBuilder;
         private readonly ISyncMediaFilesHttpContentBuilderPort syncMediaFilesHttpContentBuilder;
         private readonly ISyncGamesDtoMapperPort syncGamesDtoMapper;
-        private readonly IOpenGameSessionHttpContentBuilderPort openGameSessionHttpContentBuilder;
-        private readonly ICloseGameSessionHttpContentBuilderPort closeGameSessionHttpContentBuilder;
-        private readonly IStaleGameSessionHttpContentBuilderPort staleGameSessionHttpContentBuilder;
+        private readonly IJsonHttpContentBuilderPort jsonHttpContentBuilder;
         private readonly HttpClient httpClient;
 
         public PlayAtlasHttpClient(
@@ -34,12 +31,9 @@ namespace ExporterPlayAtlasClient.Application
             ISystemConfigPort systemConfig,
             ISignatureServicePort signatureService,
             IHashServicePort hashService,
-            ISyncGamesHttpContentBuilderPort syncGamesHttpContentBuilder,
             ISyncMediaFilesHttpContentBuilderPort syncMediaFilesHttpContentBuilder,
             ISyncGamesDtoMapperPort syncGamesDtoMapper,
-            IOpenGameSessionHttpContentBuilderPort openGameSessionHttpContentBuilder,
-            ICloseGameSessionHttpContentBuilderPort closeGameSessionHttpContentBuilder,
-            IStaleGameSessionHttpContentBuilderPort staleGameSessionHttpContentBuilder
+            IJsonHttpContentBuilderPort jsonHttpContentBuilder
         )
         {
             this.appLogger = appLogger;
@@ -47,12 +41,9 @@ namespace ExporterPlayAtlasClient.Application
             this.systemConfig = systemConfig;
             this.signatureService = signatureService;
             this.hashService = hashService;
-            this.syncGamesHttpContentBuilder = syncGamesHttpContentBuilder;
             this.syncMediaFilesHttpContentBuilder = syncMediaFilesHttpContentBuilder;
             this.syncGamesDtoMapper = syncGamesDtoMapper;
-            this.openGameSessionHttpContentBuilder = openGameSessionHttpContentBuilder;
-            this.closeGameSessionHttpContentBuilder = closeGameSessionHttpContentBuilder;
-            this.staleGameSessionHttpContentBuilder = staleGameSessionHttpContentBuilder;
+            this.jsonHttpContentBuilder = jsonHttpContentBuilder;
 
             httpClient = new HttpClient()
             {
@@ -145,7 +136,7 @@ namespace ExporterPlayAtlasClient.Application
                 var contentHash = hashService.ComputeSHA256Base64(jsonString);
 
                 using (
-                    var jsonContent = syncGamesHttpContentBuilder.Build(requestDto)
+                    var jsonContent = jsonHttpContentBuilder.Build(requestDto)
                 )
                 using (
                     var signedRequest = CreateSignedRequest(
@@ -224,7 +215,7 @@ namespace ExporterPlayAtlasClient.Application
                 var contentHash = hashService.ComputeSHA256Base64(jsonString);
 
                 using (
-                    var jsonContent = openGameSessionHttpContentBuilder.Build(requestDto)
+                    var jsonContent = jsonHttpContentBuilder.Build(requestDto)
                 )
                 using (
                     var signedRequest = CreateSignedRequest(
@@ -263,7 +254,7 @@ namespace ExporterPlayAtlasClient.Application
                 var contentHash = hashService.ComputeSHA256Base64(jsonString);
 
                 using (
-                    var jsonContent = closeGameSessionHttpContentBuilder.Build(requestDto)
+                    var jsonContent = jsonHttpContentBuilder.Build(requestDto)
                 )
                 using (
                     var signedRequest = CreateSignedRequest(
@@ -300,7 +291,7 @@ namespace ExporterPlayAtlasClient.Application
                 var contentHash = hashService.ComputeSHA256Base64(jsonString);
 
                 using (
-                    var jsonContent = staleGameSessionHttpContentBuilder.Build(requestDto)
+                    var jsonContent = jsonHttpContentBuilder.Build(requestDto)
                 )
                 using (
                     var signedRequest = CreateSignedRequest(
@@ -319,6 +310,45 @@ namespace ExporterPlayAtlasClient.Application
             catch (Exception ex)
             {
                 appLogger.Error("PlayAtlas request to stale game session failed", ex);
+                throw;
+            }
+        }
+
+        public async Task RegisterExtensionAsync(RegisterExtensionCommand command)
+        {
+            try
+            {
+                string endpoint = RegisterExtensionRequestDto.ENDPOINT;
+                var requestDto = new RegisterExtensionRequestDto(
+                    extensionId: command.ExtensionId,
+                    publicKey: command.PublicKeyPem,
+                    hostname: command.Hostname,
+                    os: command.Os,
+                    extensionVersion: command.ExtensionVersion
+                );
+                var jsonString = requestDto.ToJsonString();
+                var contentHash = hashService.ComputeSHA256Base64(jsonString);
+
+                using (
+                    var jsonContent = jsonHttpContentBuilder.Build(requestDto)
+                )
+                using (
+                    var signedRequest = CreateSignedRequest(
+                        HttpMethod.Post,
+                        endpoint,
+                        jsonContent,
+                        contentHash
+                    )
+                )
+                using (var response = await httpClient.SendAsync(signedRequest))
+                {
+                    response.EnsureSuccessStatusCode();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                appLogger.Error("PlayAtlas request to register extension failed", ex);
                 throw;
             }
         }

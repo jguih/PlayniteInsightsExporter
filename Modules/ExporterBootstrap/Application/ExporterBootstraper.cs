@@ -43,7 +43,10 @@ namespace ExporterBootstrap.Application
                 return Api;
             }
 
-            var playAtlasClientApi = new ExporterPlayAtlasClientApi(PlayAtlasClient.Client);
+            var playAtlasClientApi = new ExporterPlayAtlasClientApi(
+                    PlayAtlasClient.Client,
+                    PlayAtlasClient.RegisterExtensionCommandHandler
+                );
 
             var librarySyncApi = new ExporterLibrarySyncApi(
                 LibrarySync.LibrarySyncService,

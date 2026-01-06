@@ -57,7 +57,8 @@ namespace PlayniteInsightsExporter
                 appLogger,
                 systemConfig,
                 infra.SignatureService,
-                infra.HashService
+                infra.HashService,
+                infra.KeyManager
             );
 
             ILibrarySyncModulePort librarySync = new LibrarySyncModule(

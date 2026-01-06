@@ -48,7 +48,7 @@
     <Compile Include="Application\GameSessionService.cs" />
     <Compile Include="Application\GameSessionServicePort.cs" />
     <Compile Include="Application\GameSessionOperationResult.cs" />
-    <Compile Include="Error\InvalidStateException.cs" />
+    <Compile Include="Error\GameSessionNotFoundException.cs" />
     <Compile Include="Infra\GameSessionSerializer.cs" />
     <Compile Include="Infra\GameSessionSerializerPort.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

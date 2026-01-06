@@ -45,21 +45,21 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Application\PlayAtlasHttpClient.cs" />
+    <Compile Include="Commands\RegisterExtension\RegisterExtensionCommandHandler.cs" />
     <Compile Include="Dtos\BaseRequestDto.cs" />
     <Compile Include="Dtos\CloseGameSessionRequestDto.cs" />
     <Compile Include="Dtos\OpenGameSessionRequestDto.cs" />
+    <Compile Include="Dtos\RegisterExtensionRequestDto.cs" />
     <Compile Include="Dtos\SendGetManifestRequestDto.cs" />
     <Compile Include="Application\SyncGamesDtoMapper.cs" />
     <Compile Include="Application\SyncGamesDtoMapperPort.cs" />
     <Compile Include="Dtos\StaleGameSessionRequestDto.cs" />
     <Compile Include="Dtos\SyncGamesRequestDto.cs" />
     <Compile Include="Dtos\SyncMediaFilesRequestDto.cs" />
+    <Compile Include="Error\ExtensionAlreadyRegisteredException.cs" />
     <Compile Include="Infra\BaseHttpContentBuilder.cs" />
-    <Compile Include="Infra\CloseGameSessionHttpContentBuilder.cs" />
     <Compile Include="Infra\HttpContentBuilderPort.cs" />
-    <Compile Include="Infra\OpenGameSessionHttpContentBuilder.cs" />
-    <Compile Include="Infra\StaleGameSessionHttpContentBuilder.cs" />
-    <Compile Include="Infra\SyncGamesHttpContentBuilder.cs" />
+    <Compile Include="Infra\JsonHttpContentBuilder.cs" />
     <Compile Include="Infra\SyncMediaFilesHttpContentBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

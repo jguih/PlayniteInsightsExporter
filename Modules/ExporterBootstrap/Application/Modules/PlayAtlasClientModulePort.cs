@@ -1,4 +1,5 @@
 ﻿using ExporterCommon.Application;
+using ExporterPlayAtlasClient.Commands.RegisterExtension;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,5 +11,6 @@ namespace ExporterBootstrap.Application.Module
     public interface IPlayAtlasClientModulePort
     {
         IPlayAtlasHttpClientPort Client { get; }
+        IRegisterExtensionCommandHandlerPort RegisterExtensionCommandHandler { get; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using ExporterBootstrap.Application.Module;
 using ExporterCommon.Application;
+using ExporterPlayAtlasClient.Commands.RegisterExtension;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,7 @@ namespace Tests.Lib.Modules;
 public sealed class TestPlayAtlasClientModule : IPlayAtlasClientModulePort
 {
     public IPlayAtlasHttpClientPort Client { get; }
+    public IRegisterExtensionCommandHandlerPort RegisterExtensionCommandHandler => throw new NotImplementedException();
 
     public TestPlayAtlasClientModule(
         IPlayAtlasHttpClientPort? client = null    
