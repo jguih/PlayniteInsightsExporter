@@ -19,7 +19,7 @@ namespace ExporterLibraryExporter.Application
 
         public SyncGameCommandItem Create(AppGame game)
         {
-            string contentHash = hashService.ComputeHashFromGame(game);
+            string contentHash = hashService.ComputeSHA256Base64(game);
             return new SyncGameCommandItem(game, contentHash);
         }
     }

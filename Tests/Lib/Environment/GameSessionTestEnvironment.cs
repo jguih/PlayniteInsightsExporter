@@ -23,7 +23,7 @@ internal sealed class GameSessionTestEnvironment : IDisposable
     public ExporterApi Api { get; }
     public IGameSessionSerializerPort Serializer { get; }
 
-    private readonly string workDir;
+    public readonly string WorkDir;
 
     private GameSessionTestEnvironment(
         ExporterApi api,
@@ -33,7 +33,7 @@ internal sealed class GameSessionTestEnvironment : IDisposable
     {
         Api = api;
         Serializer = serializer;
-        this.workDir = workDir;
+        WorkDir = workDir;
     }
 
     public static GameSessionTestEnvironment Create()
@@ -108,8 +108,8 @@ internal sealed class GameSessionTestEnvironment : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(workDir))
-            Directory.Delete(workDir, recursive: true);
+        if (Directory.Exists(WorkDir))
+            Directory.Delete(WorkDir, recursive: true);
     }
 }
 

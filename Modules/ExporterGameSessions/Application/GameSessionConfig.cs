@@ -9,9 +9,6 @@ namespace ExporterGameSessions.Application
 {
     public class GameSessionConfig
     {
-        public string InProgressSuffix { get; } = "-in-progress";
-        public string ClosedSuffix { get; } = "-closed";
-        public string StaleSuffix { get; } = "-stale";
         public string SessionFileExtension { get; } = ".json";
         public TimeSpan MaxRetention { get; } = TimeSpan.FromDays(7);
 

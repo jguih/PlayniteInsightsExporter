@@ -9,14 +9,14 @@ namespace ExporterCommon.Application
 {
     public interface IHashServicePort
     {
-        string ComputeHashFromFolderContents(string path);
-        string ComputeHashFromGame(AppGame game);
-        string ComputeCanonicalHashForGameMediaFiles(
+        string ComputeSHA256Base64FromFolderContents(string path);
+        string ComputeSHA256Base64(AppGame game);
+        string ComputeCanonicalSHA256ForGameMediaFiles(
             string gameId,
             string contentHash,
             string mediaFolderPath
         );
-        string ComputeSHA256HashFromString(string input);
-        string ComputeHashForGameSession(string gameId, DateTime startTime);
+        string ComputeSHA256Base64(string input);
+        string ComputeSHA256Hex(string gameId, DateTime startTime);
     }
 }

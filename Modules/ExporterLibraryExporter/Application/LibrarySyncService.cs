@@ -151,7 +151,7 @@ namespace ExporterLibraryExporter.Application
             try
             {
                 contentHash = hashService
-                    .ComputeHashFromFolderContents(mediaFolderPath);
+                    .ComputeSHA256Base64FromFolderContents(mediaFolderPath);
             }
             catch (Exception ex)
             {
@@ -345,7 +345,7 @@ namespace ExporterLibraryExporter.Application
 
                 try
                 {
-                    contentHash = hashService.ComputeHashFromGame(localGame);
+                    contentHash = hashService.ComputeSHA256Base64(localGame);
                 }
                 catch (Exception ex)
                 {

@@ -36,7 +36,18 @@ namespace ExporterSystem.Infra
             sha256.TransformBlock(SEP, 0, SEP.Length, null, 0);
         }
 
-        public string ComputeCanonicalHashForGameMediaFiles(string gameId, string contentHash, string mediaFolderPath)
+        private static string ToHexString(byte[] bytes)
+        {
+            var sb = new StringBuilder(bytes.Length * 2);
+            foreach (var b in bytes)
+            {
+                sb.Append(b.ToString("x2", CultureInfo.InvariantCulture));
+            }
+            return sb.ToString();
+        }
+
+
+        public string ComputeCanonicalSHA256ForGameMediaFiles(string gameId, string contentHash, string mediaFolderPath)
         {
             using (var sha256 = SHA256.Create())
             {
@@ -79,7 +90,7 @@ namespace ExporterSystem.Infra
             }
         }
 
-        public string ComputeHashFromFolderContents(string path)
+        public string ComputeSHA256Base64FromFolderContents(string path)
         {
             if (string.IsNullOrEmpty(path))
                 throw new ArgumentNullException(nameof(path));
@@ -123,7 +134,7 @@ namespace ExporterSystem.Infra
             }
         }
 
-        public string ComputeHashFromGame(AppGame game)
+        public string ComputeSHA256Base64(AppGame game)
         {
             using (var sha256 = SHA256.Create())
             {
@@ -172,7 +183,7 @@ namespace ExporterSystem.Infra
             }
         }
 
-        public string ComputeSHA256HashFromString(string input)
+        public string ComputeSHA256Base64(string input)
         {
             using (var sha256 = SHA256.Create())
             {
@@ -182,7 +193,7 @@ namespace ExporterSystem.Infra
             }
         }
 
-        public string ComputeHashForGameSession(string gameId, DateTime startTime)
+        public string ComputeSHA256Hex(string gameId, DateTime startTime)
         {
             using (var sha256 = SHA256.Create())
             {
@@ -199,7 +210,7 @@ namespace ExporterSystem.Infra
                 );
 
                 sha256.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-                return Convert.ToBase64String(sha256.Hash);
+                return ToHexString(sha256.Hash);
             }
         }
     }

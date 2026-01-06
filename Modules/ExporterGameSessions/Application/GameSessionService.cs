@@ -1,6 +1,7 @@
 ﻿using ExporterCommon.Application;
 using ExporterCommon.Domain;
 using ExporterCommon.Infra;
+using ExporterGameSessions.Error;
 using ExporterGameSessions.Infra;
 using Newtonsoft.Json;
 using System;
@@ -29,7 +30,7 @@ namespace ExporterGameSessions.Application
         private readonly IFileSystemServicePort fileSystemService;
         private readonly GameSessionConfig config;
         private readonly ISystemConfigPort systemConfig;
-        private readonly IGameSessionSerializerPort gameSessionSerializer;
+        private readonly IGameSessionSerializerPort serializer;
 
         public GameSessionService(
             IAppLoggerPort appLogger,
@@ -47,7 +48,30 @@ namespace ExporterGameSessions.Application
             this.fileSystemService = fileSystemService;
             this.config = config;
             this.systemConfig = systemConfig;
-            this.gameSessionSerializer = gameSessionSerializer;
+            this.serializer = gameSessionSerializer;
+        }
+
+        private string GetActiveIndexFilePath()
+        {
+            var path = fileSystemService.PathCombine(
+                systemConfig.SessionsDirPath,
+                "activeIndex.json"
+            );
+            return path;
+        }
+
+        private Dictionary<string, string> LoadActiveSessionsIndex()
+        {
+            var path = GetActiveIndexFilePath();
+
+            if (fileSystemService.FileExists(path))
+            {
+                var jsonString = fileSystemService.FileReadAllText(path);
+                var activeIndex = serializer.DeserializeActiveSessionsIndex(jsonString);
+                return activeIndex;
+            }
+
+            return new Dictionary<string, string>();
         }
 
         private PendingSessionAction DecidePendingSessionAction(
@@ -70,21 +94,17 @@ namespace ExporterGameSessions.Application
             return PendingSessionAction.CloseAndSend;
         }
 
-
-        private string GetInProgressSessionFilePath(string gameId)
-        {
-            return fileSystemService.PathCombine(
-                            systemConfig.SessionsDirPath,
-                            $"{gameId}" +
-                            $"{config.InProgressSuffix}" +
-                            $"{config.SessionFileExtension}"
-                        );
-        }
-
-        private void UpdateSessionFile(GameSession session)
+        private void SaveSession(GameSession session)
         {
             var path = GetSessionFilePath(session);
-            var jsonString = gameSessionSerializer.Serialize(session);
+            var jsonString = serializer.Serialize(session);
+            fileSystemService.FileWriteAllText(path, jsonString);
+        }
+
+        private void SaveActiveIndex(Dictionary<string, string> activeIndex)
+        {
+            var path = GetActiveIndexFilePath();
+            var jsonString = serializer.Serialize(activeIndex);
             fileSystemService.FileWriteAllText(path, jsonString);
         }
 
@@ -122,10 +142,13 @@ namespace ExporterGameSessions.Application
             }
         }
 
-        private GameSession GetSessionFromFile(string path)
+        private GameSession LoadSession(string sessionId)
         {
+            var path = GetSessionFilePath(sessionId);
+            if (!fileSystemService.FileExists(path))
+                throw new FileNotFoundException(nameof(path));
             var json = fileSystemService.FileReadAllText(path);
-            return gameSessionSerializer.Deserialize(json);
+            return serializer.Deserialize(json);
         }
 
         private async Task ProcessPendingSessionAsync(
@@ -137,12 +160,25 @@ namespace ExporterGameSessions.Application
             var filePath = GetSessionFilePath(session);
             var action = DecidePendingSessionAction(now, session);
 
+            void UpdateActiveIndex()
+            {
+                var activeIndex = LoadActiveSessionsIndex();
+                if (activeIndex.TryGetValue(session.GameId, out var activeSessionId) &&
+                    activeSessionId == session.SessionId)
+                {
+                    activeIndex.Remove(session.GameId);
+                    SaveActiveIndex(activeIndex);
+                }
+            }
+
             switch (action)
             {
                 case PendingSessionAction.StaleAndSend:
                     session.Stale();
-                    UpdateSessionFile(session);
-                    fileSystemService.FileDelete(filePath);
+                    SaveSession(session);
+
+                    UpdateActiveIndex();
+
                     await SendSessionToServerAsync(session);
                     break;
 
@@ -167,9 +203,12 @@ namespace ExporterGameSessions.Application
                     {
                         break;
                     }
+
                     session.Close(now, duration.Value);
-                    UpdateSessionFile(session);
-                    fileSystemService.FileDelete(filePath);
+                    SaveSession(session);
+
+                    UpdateActiveIndex();
+
                     await SendSessionToServerAsync(session);
                     break;
 
@@ -180,44 +219,31 @@ namespace ExporterGameSessions.Application
 
         public string GetSessionFilePath(GameSession session)
         {
-            switch (session.Status)
-            {
-                case GameSessionStatus.InProgress:
-                    {
-                        return GetInProgressSessionFilePath(session.GameId);
-                    }
-                case GameSessionStatus.Stale:
-                    {
-                        return fileSystemService.PathCombine(
+            return fileSystemService.PathCombine(
                             systemConfig.SessionsDirPath,
                             $"{session.SessionId}" +
-                            $"{config.StaleSuffix}" +
                             $"{config.SessionFileExtension}"
                         );
-                    }
-                case GameSessionStatus.Closed:
-                    {
-                        return fileSystemService.PathCombine(
+        }
+
+        public string GetSessionFilePath(string sessionId)
+        {
+            return fileSystemService.PathCombine(
                             systemConfig.SessionsDirPath,
-                            $"{session.SessionId}" +
-                            $"{config.ClosedSuffix}" +
+                            $"{sessionId}" +
                             $"{config.SessionFileExtension}"
                         );
-                    }
-                default:
-                    throw new InvalidOperationException($"Invalid session status: {session.Status}");
-            }
         }
 
         public async Task<GameSessionOperationResult> OpenSessionAsync(string gameId, DateTime now)
         {
-            var inProgressSessionFilePath = GetInProgressSessionFilePath(gameId);
+            var activeIndex = LoadActiveSessionsIndex();
 
             try
             {
-                if (fileSystemService.FileExists(inProgressSessionFilePath))
+                if (activeIndex.TryGetValue(gameId, out var activeSessionId))
                 {
-                    var existingSession = GetSessionFromFile(inProgressSessionFilePath);
+                    var existingSession = LoadSession(activeSessionId);
                     var duration = (ulong)(now - existingSession.StartTime).TotalSeconds;
                     await ProcessPendingSessionAsync(existingSession, now, duration);
                 }
@@ -227,36 +253,43 @@ namespace ExporterGameSessions.Application
                 appLogger.Error($"Failed to process pending session", ex);
             }
 
-            var sessionId = hashService.ComputeHashForGameSession(gameId, now);
+            var sessionId = hashService.ComputeSHA256Hex(gameId, now);
             var session = new GameSession(
                     gameId: gameId,
                     sessionId: sessionId,
                     startTime: now
                 );
-            UpdateSessionFile(session);
+
+            SaveSession(session);
+            activeIndex[gameId] = sessionId;
+            SaveActiveIndex(activeIndex);
+
             await SendSessionToServerAsync(session);
-            return new GameSessionOperationResult(inProgressSessionFilePath, session);
+
+            return new GameSessionOperationResult(GetSessionFilePath(sessionId), session);
         }
 
         public async Task<GameSessionOperationResult> CloseSessionAsync(string gameId, ulong duration, DateTime now)
         {
-            var inProgressSessionFilePath = GetInProgressSessionFilePath(gameId);
+            var activeIndex = LoadActiveSessionsIndex();
 
-            if (!fileSystemService.FileExists(inProgressSessionFilePath))
+            if (activeIndex.TryGetValue(gameId, out var activeSessionId))
             {
-                appLogger.Error($"No open session found for game {gameId} to close.");
-                throw new FileNotFoundException(
-                    $"In-progress session file not found for game {gameId}.",
-                    inProgressSessionFilePath
-                );
+                var session = LoadSession(activeSessionId);
+                session.Close(now, duration);
+
+                SaveSession(session);
+                activeIndex.Remove(gameId);
+                SaveActiveIndex(activeIndex);
+
+                await SendSessionToServerAsync(session);
+                return new GameSessionOperationResult(GetSessionFilePath(session), session);
             }
 
-            var session = GetSessionFromFile(inProgressSessionFilePath);
-            session.Close(now, duration);
-            UpdateSessionFile(session);
-            fileSystemService.FileDelete(inProgressSessionFilePath);
-            await SendSessionToServerAsync(session);
-            return new GameSessionOperationResult(GetSessionFilePath(session), session);
+            appLogger.Error($"No open session found for game {gameId} while closing session.");
+            throw new GameSessionNotFoundException(
+                $"No open session found for game {gameId} while closing session."
+            );
         }
 
         public async Task ProcessPendingSessionsAsync(DateTime now)
@@ -273,7 +306,7 @@ namespace ExporterGameSessions.Application
 
                 try
                 {
-                    session = GetSessionFromFile(filePath);
+                    session = LoadSession(filePath);
                 }
                 catch (Exception ex)
                 {

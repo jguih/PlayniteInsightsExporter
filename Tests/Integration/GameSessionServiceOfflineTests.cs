@@ -29,12 +29,15 @@ public class GameSessionServiceOfflineTests
     {
         // Arrange
         using var env = GameSessionTestEnvironment.Create();
+
         var gameId = Guid.NewGuid().ToString();
         var now = DateTime.UtcNow;
+
         // Act
         var result = await env.Api.GameSession.GameSessionService.OpenSessionAsync(gameId, now);
         var sessionContent = File.ReadAllText(result.SessionFilePath);
         var session = env.Serializer.Deserialize(sessionContent);
+
         // Assert
         Assert.True(File.Exists(result.SessionFilePath), "Session file should exist after opening session.");
         Assert.NotNull(session);
@@ -46,112 +49,110 @@ public class GameSessionServiceOfflineTests
         Assert.Null(session.Duration);
     }
 
-    //[Fact]
-    //public async Task OnClose_WhenInProgressSessionExists_CloseSession()
-    //{
-    //    // Arrange
-    //    var gameId = Guid.NewGuid().ToString();
-    //    var now = DateTime.UtcNow;
-    //    var endTime = now.AddHours(2);
-    //    var sessionId = SessionsService.GetSessionId(gameId, now);
-    //    ulong duration = (ulong)(endTime - now).TotalSeconds;
-    //    var sessionFilePath = SessionsService.GetClosedSessionFilePath(sessionId);
-    //    // Act
-    //    await SessionsService.OpenSession(gameId, now);
-    //    await SessionsService.CloseSession(gameId, duration, endTime);
-    //    // Assert
-    //    Assert.True(File.Exists(sessionFilePath), "Session file should exist after closing session.");
-    //    var sessionContent = File.ReadAllText(sessionFilePath);
-    //    var session = JsonConvert.DeserializeObject<GameSession>(sessionContent);
-    //    Assert.NotNull(session);
-    //    Assert.Equal(gameId, session.GameId);
-    //    Assert.Equal(sessionId, session.SessionId);
-    //    Assert.Equal(GameSession.STATUS_CLOSED, session.Status);
-    //    Assert.Equal(now, session.StartTime);
-    //    Assert.Equal(endTime, session.EndTime);
-    //    Assert.Equal(duration, session.Duration);
-    //}
+    /// <summary>
+    /// Sessions should be marked as Stale if a new session is opened while an in-progress session exists, and the existing session is older than the configured stale threshold (default 3 hours).
+    /// </summary>
+    [Theory]
+    [InlineData(3.1)]
+    [InlineData(4)]
+    [InlineData(24)]
+    public async Task OnOpen_WhenInProgressSessionExists_StaleSession(double hoursAfter)
+    {
+        // Arrange
+        using var env = GameSessionTestEnvironment.Create();
 
-    ///// <summary>
-    ///// Sessions should be marked as Stale if a new session is opened while an in-progress session exists, and the existing session is older than the configured stale threshold (default 3 hours).
-    ///// </summary>
-    //[Theory]
-    //[InlineData(3.1)]
-    //[InlineData(4)]
-    //[InlineData(24)]
-    //public async Task OnOpen_WhenInProgressSessionExists_StaleSession(double hoursAfter)
-    //{
-    //    // Arrange
-    //    var gameId = Guid.NewGuid().ToString();
-    //    var now = DateTime.UtcNow;
-    //    var sessionId = SessionsService.GetSessionId(gameId, now.AddHours(hoursAfter));
-    //    var inProgressFilePath = SessionsService.GetSessionFilePath(gameId);
-    //    var staleSessionId = SessionsService.GetSessionId(gameId, now);
-    //    var staleFilePath = SessionsService.GetStaleSessionFilePath(staleSessionId);
-    //    // Act
-    //    await SessionsService.OpenSession(gameId, now);
-    //    await SessionsService.OpenSession(gameId, now.AddHours(hoursAfter));
-    //    // Assert
-    //    Assert.True(File.Exists(staleFilePath), "Stale session file should exist.");
-    //    var staleSessionContent = File.ReadAllText(staleFilePath);
-    //    var staleSession = JsonConvert.DeserializeObject<GameSession>(staleSessionContent);
-    //    Assert.NotNull(staleSession);
-    //    Assert.Equal(gameId, staleSession.GameId);
-    //    Assert.Equal(now, staleSession.StartTime);
-    //    Assert.Equal(staleSessionId, staleSession.SessionId);
-    //    Assert.Equal(GameSession.STATUS_STALE, staleSession.Status);
-    //    Assert.True(File.Exists(inProgressFilePath), "In-progress session file should be created.");
-    //    var inProgressSessionContent = File.ReadAllText(inProgressFilePath);
-    //    var inProgressSession = JsonConvert.DeserializeObject<GameSession>(inProgressSessionContent);
-    //    Assert.NotNull(inProgressSession);
-    //    Assert.Equal(gameId, inProgressSession.GameId);
-    //    Assert.Equal(sessionId, inProgressSession.SessionId);
-    //    Assert.Equal(GameSession.STATUS_IN_PROGRESS, inProgressSession.Status);
-    //    Assert.Equal(now.AddHours(hoursAfter), inProgressSession.StartTime);
-    //}
+        var gameId = Guid.NewGuid().ToString();
+        var now = DateTime.UtcNow;
 
-    ///// <summary>
-    ///// In progress session should be closed when a new session is opened, if the existing session is not older than or has an age equivalent to the configured stale threshold (default 3 hours).
-    ///// </summary>
-    ///// <param name="hoursAfter"></param>
-    ///// <returns></returns>
-    //[Theory]
-    //[InlineData(3)]
-    //[InlineData(2)]
-    //[InlineData(0.5)]
-    //public async Task OnOpen_WhenInProgressSessionExists_CloseSession(double hoursAfter)
-    //{
-    //    // Arrange
-    //    var gameId = Guid.NewGuid().ToString();
-    //    var now = DateTime.UtcNow;
-    //    var sessionId = SessionsService.GetSessionId(gameId, now.AddHours(hoursAfter));
-    //    var inProgressFilePath = SessionsService.GetSessionFilePath(gameId);
-    //    var closedSessionId = SessionsService.GetSessionId(gameId, now);
-    //    var closedFilePath = SessionsService.GetClosedSessionFilePath(closedSessionId);
-    //    var duration = (ulong)(now.AddHours(hoursAfter) - now).TotalSeconds;
-    //    // Act
-    //    await SessionsService.OpenSession(gameId, now);
-    //    await SessionsService.OpenSession(gameId, now.AddHours(hoursAfter));
-    //    // Assert
-    //    Assert.True(File.Exists(closedFilePath), "Closed session file should exist.");
-    //    var closedSessionContent = File.ReadAllText(closedFilePath);
-    //    var closedSession = JsonConvert.DeserializeObject<GameSession>(closedSessionContent);
-    //    Assert.NotNull(closedSession);
-    //    Assert.Equal(gameId, closedSession.GameId);
-    //    Assert.Equal(closedSessionId, closedSession.SessionId);
-    //    Assert.Equal(now, closedSession.StartTime);
-    //    Assert.Equal(GameSession.STATUS_CLOSED, closedSession.Status);
-    //    Assert.Equal(now.AddHours(hoursAfter), closedSession.EndTime);
-    //    Assert.Equal(duration, closedSession.Duration);
-    //    Assert.True(File.Exists(inProgressFilePath), "In-progress session file should exist.");
-    //    var inProgressSessionContent = File.ReadAllText(inProgressFilePath);
-    //    var inProgressSession = JsonConvert.DeserializeObject<GameSession>(inProgressSessionContent);
-    //    Assert.NotNull(inProgressSession);
-    //    Assert.Equal(gameId, inProgressSession.GameId);
-    //    Assert.Equal(sessionId, inProgressSession.SessionId);
-    //    Assert.Equal(now.AddHours(hoursAfter), inProgressSession.StartTime);
-    //    Assert.Equal(GameSession.STATUS_IN_PROGRESS, inProgressSession.Status);
-    //}
+        // Act
+        var staleResult = await env.Api.GameSession.GameSessionService.OpenSessionAsync(gameId, now);
+        var openResult = await env.Api.GameSession.GameSessionService.OpenSessionAsync(gameId, now.AddHours(hoursAfter));
+
+        // Assert
+        Assert.True(File.Exists(staleResult.SessionFilePath), "Stale session file should exist.");
+        var staleSessionContent = File.ReadAllText(staleResult.SessionFilePath);
+        var staleSession = env.Serializer.Deserialize(staleSessionContent);
+        Assert.NotNull(staleSession);
+        Assert.Equal(gameId, staleSession.GameId);
+        Assert.Equal(now, staleSession.StartTime);
+        Assert.Equal(staleResult.Session.SessionId, staleSession.SessionId);
+        Assert.Equal(GameSessionStatus.Stale, staleSession.Status);
+        Assert.True(File.Exists(openResult.SessionFilePath), "In-progress session file should be created.");
+        var inProgressSessionContent = File.ReadAllText(openResult.SessionFilePath);
+        var inProgressSession = env.Serializer.Deserialize(inProgressSessionContent);
+        Assert.NotNull(inProgressSession);
+        Assert.Equal(gameId, inProgressSession.GameId);
+        Assert.Equal(openResult.Session.SessionId, inProgressSession.SessionId);
+        Assert.Equal(GameSessionStatus.InProgress, inProgressSession.Status);
+        Assert.Equal(now.AddHours(hoursAfter), inProgressSession.StartTime);
+    }
+
+    [Fact]
+    public async Task SessionFilePath_IsStable_AcrossStateTransitions()
+    {
+        // Arrange
+        using var env = GameSessionTestEnvironment.Create();
+
+        var gameId = Guid.NewGuid().ToString();
+        var now = DateTime.UtcNow;
+        var endTime = now.AddHours(2);
+        ulong duration = (ulong)(endTime - now).TotalSeconds;
+
+        // Act
+        var openResult = await env.Api.GameSession.GameSessionService.OpenSessionAsync(gameId, now);
+        var closeResult = await env.Api.GameSession.GameSessionService.CloseSessionAsync(gameId, duration, endTime);
+        // Assert
+        Assert.True(File.Exists(openResult.SessionFilePath));
+        Assert.True(File.Exists(closeResult.SessionFilePath));
+        Assert.Equal(openResult.SessionFilePath, closeResult.SessionFilePath);
+        var sessionContent = File.ReadAllText(openResult.SessionFilePath);
+        var session = env.Serializer.Deserialize(sessionContent);
+        Assert.Equal(GameSessionStatus.Closed, session.Status);
+    }
+
+
+    /// <summary>
+    /// In progress session should be closed when a new session is opened, if the existing session is not older than or has an age equivalent to the configured stale threshold (default 3 hours).
+    /// </summary>
+    /// <param name="hoursAfter"></param>
+    /// <returns></returns>
+    [Theory]
+    [InlineData(3)]
+    [InlineData(2)]
+    [InlineData(0.5)]
+    public async Task OnOpen_WhenInProgressSessionExists_CloseSession(double hoursAfter)
+    {
+        // Arrange
+        using var env = GameSessionTestEnvironment.Create();
+
+        var gameId = Guid.NewGuid().ToString();
+        var now = DateTime.UtcNow;
+        var duration = (ulong)(now.AddHours(hoursAfter) - now).TotalSeconds;
+
+        // Act
+        var closedResult = await env.Api.GameSession.GameSessionService.OpenSessionAsync(gameId, now);
+        var openResult = await env.Api.GameSession.GameSessionService.OpenSessionAsync(gameId, now.AddHours(hoursAfter));
+        // Assert
+        Assert.True(File.Exists(closedResult.SessionFilePath), "Closed session file should exist.");
+        var closedSessionContent = File.ReadAllText(closedResult.SessionFilePath);
+        var closedSession = env.Serializer.Deserialize(closedSessionContent);
+        Assert.NotNull(closedSession);
+        Assert.Equal(gameId, closedSession.GameId);
+        Assert.Equal(closedResult.Session.SessionId, closedSession.SessionId);
+        Assert.Equal(now, closedSession.StartTime);
+        Assert.Equal(GameSessionStatus.Closed, closedSession.Status);
+        Assert.Equal(now.AddHours(hoursAfter), closedSession.EndTime);
+        Assert.Equal(duration, closedSession.Duration);
+
+        Assert.True(File.Exists(openResult.SessionFilePath), "In-progress session file should exist.");
+        var inProgressSessionContent = File.ReadAllText(openResult.SessionFilePath);
+        var inProgressSession = env.Serializer.Deserialize(inProgressSessionContent);
+        Assert.NotNull(inProgressSession);
+        Assert.Equal(gameId, inProgressSession.GameId);
+        Assert.Equal(openResult.Session.SessionId, inProgressSession.SessionId);
+        Assert.Equal(now.AddHours(hoursAfter), inProgressSession.StartTime);
+        Assert.Equal(GameSessionStatus.InProgress, inProgressSession.Status);
+    }
 
     //[Theory]
     //[InlineData(48.1)]

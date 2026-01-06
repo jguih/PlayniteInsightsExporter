@@ -18,9 +18,20 @@ namespace ExporterGameSessions.Infra
                  throw new InvalidDataException("Failed to deserialize GameSession.");
         }
 
+        public Dictionary<string, string> DeserializeActiveSessionsIndex(string json)
+        {
+            var activeIndex = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+            return activeIndex ?? new Dictionary<string, string>();
+        }
+
         public string Serialize(GameSession session)
         {
             return JsonConvert.SerializeObject(session, Formatting.Indented);
+        }
+
+        public string Serialize(Dictionary<string, string> activeIndex)
+        {
+            return JsonConvert.SerializeObject(activeIndex, Formatting.Indented);
         }
     }
 }

@@ -31,7 +31,7 @@ public class LibraryExporterTests
 
         hashService = new Mock<IHashServicePort>();
         hashService
-            .Setup(hs => hs.ComputeHashFromFolderContents(It.IsAny<string>()))
+            .Setup(hs => hs.ComputeSHA256Base64FromFolderContents(It.IsAny<string>()))
             .Returns(faker.Random.Hash());
 
         fileSystemService = new Mock<IFileSystemServicePort>();
@@ -123,13 +123,13 @@ public class LibraryExporterTests
             .Setup(x => x.GetManifestAsync())
             .ReturnsAsync(manifest);
         hashService
-            .Setup(x => x.ComputeHashFromGame(It.Is<AppGame>(g => g.Id.Equals(gameA.Id))))
+            .Setup(x => x.ComputeSHA256Base64(It.Is<AppGame>(g => g.Id.Equals(gameA.Id))))
             .Returns("hash-a");
         hashService
-            .Setup(x => x.ComputeHashFromGame(It.Is<AppGame>(g => g.Id.Equals(gameB.Id))))
+            .Setup(x => x.ComputeSHA256Base64(It.Is<AppGame>(g => g.Id.Equals(gameB.Id))))
             .Returns("hash-b");
         hashService
-            .Setup(x => x.ComputeHashFromGame(It.Is<AppGame>(g => g.Id.Equals(gameC.Id))))
+            .Setup(x => x.ComputeSHA256Base64(It.Is<AppGame>(g => g.Id.Equals(gameC.Id))))
             .Returns("hash-c-local");
 
         // Act

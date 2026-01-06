@@ -37,7 +37,7 @@ internal sealed class GameSessionServiceTestBuilder
             .Returns(true);
 
         HashService
-            .Setup(hs => hs.ComputeHashForGameSession(
+            .Setup(hs => hs.ComputeSHA256Hex(
                 It.IsAny<string>(),
                 It.IsAny<DateTime>()
             ))

@@ -15,19 +15,19 @@ namespace Tests.Unit;
 [Trait("Category", "Unit")]
 public class GameSessionServiceTests
 {
-    private bool IsClosedSessionJson(string json, IGameSessionSerializerPort serializer)
+    private static bool IsClosedSessionJson(string json, IGameSessionSerializerPort serializer)
     {
         var session = serializer.Deserialize(json);
         return session.Status == GameSessionStatus.Closed;
     }
 
-    private bool IsInProgressSessionJson(string json, IGameSessionSerializerPort serializer)
+    private static bool IsInProgressSessionJson(string json, IGameSessionSerializerPort serializer)
     {
         var session = serializer.Deserialize(json);
         return session?.Status == GameSessionStatus.InProgress;
     }
 
-    private bool IsStaleSessionJson(string json, IGameSessionSerializerPort serializer)
+    private static bool IsStaleSessionJson(string json, IGameSessionSerializerPort serializer)
     {
         var session = serializer.Deserialize(json);
         return session?.Status == GameSessionStatus.Stale;
@@ -49,7 +49,7 @@ public class GameSessionServiceTests
         var now = DateTime.UtcNow;
         var startTime = now - TimeSpan.FromHours(hoursAgo);
 
-        var sessionId = builder.HashService.Object.ComputeHashForGameSession(gameId, now);
+        var sessionId = builder.HashService.Object.ComputeSHA256Hex(gameId, now);
 
         var existingSession = new GameSession(
                 gameId: gameId,
@@ -98,7 +98,7 @@ public class GameSessionServiceTests
         var now = DateTime.UtcNow;
         var startTime = now - TimeSpan.FromHours(hoursAgo);
 
-        var sessionId = builder.HashService.Object.ComputeHashForGameSession(gameId, now);
+        var sessionId = builder.HashService.Object.ComputeSHA256Hex(gameId, now);
 
         var existingSession = new GameSession(
                 gameId: gameId,
@@ -173,7 +173,7 @@ public class GameSessionServiceTests
         var gameId = Guid.NewGuid().ToString();
         ulong duration = 2000;
 
-        var sessionId = builder.HashService.Object.ComputeHashForGameSession(gameId, now);
+        var sessionId = builder.HashService.Object.ComputeSHA256Hex(gameId, now);
 
         builder.FileSystem
             .Setup(fs => fs.FileExists(It.Is<string>(s => s.Contains(sessionId))))

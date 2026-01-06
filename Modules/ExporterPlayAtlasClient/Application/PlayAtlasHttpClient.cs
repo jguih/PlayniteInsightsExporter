@@ -142,7 +142,7 @@ namespace ExporterPlayAtlasClient.Application
                 string endpoint = SyncGamesRequestDto.ENDPOINT;
                 var requestDto = syncGamesDtoMapper.Map(command);
                 var jsonString = requestDto.ToJsonString();
-                var contentHash = hashService.ComputeSHA256HashFromString(jsonString);
+                var contentHash = hashService.ComputeSHA256Base64(jsonString);
 
                 using (
                     var jsonContent = syncGamesHttpContentBuilder.Build(requestDto)
@@ -173,7 +173,7 @@ namespace ExporterPlayAtlasClient.Application
             try
             {
                 string endpoint = SyncMediaFilesRequestDto.ENDPOINT;
-                var canonicalHash = hashService.ComputeCanonicalHashForGameMediaFiles(
+                var canonicalHash = hashService.ComputeCanonicalSHA256ForGameMediaFiles(
                         gameId: command.GameId,
                         contentHash: command.ContentHash,
                         mediaFolderPath: command.MediaFolderPath
@@ -221,7 +221,7 @@ namespace ExporterPlayAtlasClient.Application
                     startTime: command.GameSession.StartTime
                 );
                 var jsonString = requestDto.ToJsonString();
-                var contentHash = hashService.ComputeSHA256HashFromString(jsonString);
+                var contentHash = hashService.ComputeSHA256Base64(jsonString);
 
                 using (
                     var jsonContent = openGameSessionHttpContentBuilder.Build(requestDto)
@@ -260,7 +260,7 @@ namespace ExporterPlayAtlasClient.Application
                     duration: command.GameSession.Duration.Value
                 );
                 var jsonString = requestDto.ToJsonString();
-                var contentHash = hashService.ComputeSHA256HashFromString(jsonString);
+                var contentHash = hashService.ComputeSHA256Base64(jsonString);
 
                 using (
                     var jsonContent = closeGameSessionHttpContentBuilder.Build(requestDto)
@@ -297,7 +297,7 @@ namespace ExporterPlayAtlasClient.Application
                     startTime: command.GameSession.StartTime
                 );
                 var jsonString = requestDto.ToJsonString();
-                var contentHash = hashService.ComputeSHA256HashFromString(jsonString);
+                var contentHash = hashService.ComputeSHA256Base64(jsonString);
 
                 using (
                     var jsonContent = staleGameSessionHttpContentBuilder.Build(requestDto)
