@@ -55,7 +55,7 @@ namespace ExporterGameSessions.Application
         {
             var path = fileSystemService.PathCombine(
                 systemConfig.SessionsDirPath,
-                "activeIndex.json"
+                config.ActiveIndexFileName
             );
             return path;
         }
@@ -306,7 +306,10 @@ namespace ExporterGameSessions.Application
 
                 try
                 {
-                    session = LoadSession(filePath);
+                    if (!fileSystemService.FileExists(filePath))
+                        throw new FileNotFoundException(nameof(filePath));
+                    var json = fileSystemService.FileReadAllText(filePath);
+                    session = serializer.Deserialize(json);
                 }
                 catch (Exception ex)
                 {

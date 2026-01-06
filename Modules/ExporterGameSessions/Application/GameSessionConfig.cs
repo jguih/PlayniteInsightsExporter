@@ -9,8 +9,9 @@ namespace ExporterGameSessions.Application
 {
     public class GameSessionConfig
     {
-        public string SessionFileExtension { get; } = ".json";
-        public TimeSpan MaxRetention { get; } = TimeSpan.FromDays(7);
+        public string SessionFileExtension { get; } = ".session.json";
+        public string ActiveIndexFileName { get; } = "active-index.json";
+        public TimeSpan MaxRetention { get; } = TimeSpan.FromDays(14);
 
         public GameSessionConfig()
         {
