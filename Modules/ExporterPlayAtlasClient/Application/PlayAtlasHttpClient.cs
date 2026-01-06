@@ -1,6 +1,8 @@
 ﻿using ExporterCommon.Application;
 using ExporterCommon.Infra;
+using ExporterGameSessions.Error;
 using ExporterPlayAtlasClient.Dtos;
+using ExporterPlayAtlasClient.Error;
 using ExporterPlayAtlasClient.Infra;
 using Newtonsoft.Json;
 using System;
@@ -342,6 +344,9 @@ namespace ExporterPlayAtlasClient.Application
                 )
                 using (var response = await httpClient.SendAsync(signedRequest))
                 {
+                    if (response.StatusCode == HttpStatusCode.Conflict)
+                        throw new ExtensionAlreadyRegisteredException();
+
                     response.EnsureSuccessStatusCode();
                 }
 

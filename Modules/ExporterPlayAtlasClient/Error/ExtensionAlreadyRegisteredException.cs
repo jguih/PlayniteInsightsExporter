@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExporterGameSessions.Error
+namespace ExporterPlayAtlasClient.Error
 {
     public class ExtensionAlreadyRegisteredException : Exception
     {

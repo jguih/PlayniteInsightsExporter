@@ -11,6 +11,11 @@ namespace ExporterCommon.Application
         void Execute();
     }
 
+    public interface IAsyncCommandHandlerPort
+    {
+        Task ExecuteAsync();
+    }
+
     public interface ICommandHandlerPort<TResult>
     {
         TResult Execute();

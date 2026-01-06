@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace ExporterPlayAtlasClient.Commands.RegisterExtension
 {
-    public interface IRegisterExtensionCommandHandlerPort : ICommandHandlerPort { }
+    public interface IRegisterExtensionCommandHandlerPort : IAsyncCommandHandlerPort { }
 
     public class RegisterExtensionCommandHandler : IRegisterExtensionCommandHandlerPort
     {
@@ -27,7 +27,7 @@ namespace ExporterPlayAtlasClient.Commands.RegisterExtension
             this.playAtlasHttpClient = playAtlasHttpClient;
         }
 
-        public async void Execute()
+        public async Task ExecuteAsync()
         {
             string hostname = Environment.MachineName;
             string os = Environment.OSVersion.ToString();
