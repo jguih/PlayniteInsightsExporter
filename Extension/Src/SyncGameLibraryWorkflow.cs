@@ -245,12 +245,12 @@ namespace PlayniteInsightsExporter
             };
         }
 
-        public SyncOutcome InterpretSyncGamesResult(GlobalProgressResult result)
+        public OperationOutcome InterpretSyncGamesResult(GlobalProgressResult result)
         {
             if (result.Canceled)
             {
-                var loc_operationCanceledByUser = ResourceProvider.GetString("LOC_Operation_CanceledByUser");
-                return new SyncOutcome
+                var loc_operationCanceledByUser = ResourceProvider.GetString("LOC_SyncOperation_CanceledByUser");
+                return new OperationOutcome
                 {
                     Message = loc_operationCanceledByUser,
                     Title = "Sync Games",
@@ -262,7 +262,7 @@ namespace PlayniteInsightsExporter
             if (result.Error != null)
             {
                 var loc_failedSyncGameLibrary = ResourceProvider.GetString("LOC_Failed_SyncGameLibrary");
-                return new SyncOutcome
+                return new OperationOutcome
                 {
                     Message = $"{loc_failedSyncGameLibrary}:\n\n{result.Error.Message}",
                     Title = "Sync Games",
@@ -271,8 +271,8 @@ namespace PlayniteInsightsExporter
                 };
             }
 
-            var loc_successSyncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
-            return new SyncOutcome
+            var loc_successSyncClientServer = ResourceProvider.GetString("LOC_Success_SyncGameLibrary");
+            return new OperationOutcome
             {
                 Message = loc_successSyncClientServer,
                 Title = "Sync Games",
@@ -281,12 +281,12 @@ namespace PlayniteInsightsExporter
             };
         }
 
-        public SyncOutcome InterpretSyncMediaFilesResult(SyncMediaFilesWorkflowResult result)
+        public OperationOutcome InterpretSyncMediaFilesResult(SyncMediaFilesWorkflowResult result)
         {
             if (result.ProgressResult.Canceled)
             {
-                var loc_operationCanceledByUser = ResourceProvider.GetString("LOC_Operation_CanceledByUser");
-                return new SyncOutcome
+                var loc_operationCanceledByUser = ResourceProvider.GetString("LOC_SyncOperation_CanceledByUser");
+                return new OperationOutcome
                 {
                     Message = loc_operationCanceledByUser,
                     Title = "Sync Media Files",
@@ -297,7 +297,7 @@ namespace PlayniteInsightsExporter
 
             if (result.ProgressResult.Error != null)
             {
-                return new SyncOutcome
+                return new OperationOutcome
                 {
                     Message = $"Unexpected error while syncing media files:\n\n{result.ProgressResult.Error.Message}",
                     Title = "Sync Media Files",
@@ -308,7 +308,7 @@ namespace PlayniteInsightsExporter
 
             if (result.SyncResult == null)
             {
-                return new SyncOutcome
+                return new OperationOutcome
                 {
                     Message = "Sync media files was not executed.",
                     Title = "Sync Media Files",
@@ -319,7 +319,7 @@ namespace PlayniteInsightsExporter
 
             if (!result.SyncResult.OperationSuccess)
             {
-                return new SyncOutcome
+                return new OperationOutcome
                 {
                     Message = $"Media files sync finished with errors.\n\n" +
                         $"Success: {result.SyncResult.Success}\n" +
@@ -331,11 +331,11 @@ namespace PlayniteInsightsExporter
                 };
             }
 
-            var loc_successSyncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
-            return new SyncOutcome
+            var loc_successSyncClientServer = ResourceProvider.GetString("LOC_Success_SyncMediaFiles");
+            return new OperationOutcome
             {
                 Message = loc_successSyncClientServer,
-                Title = "Sync Games",
+                Title = "Sync Media Games",
                 Severity = SyncSeverity.Success,
                 Success = true
             };

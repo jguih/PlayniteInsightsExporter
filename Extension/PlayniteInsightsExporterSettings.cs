@@ -207,13 +207,27 @@ namespace PlayniteInsightsExporter
 
             if (!syncGamesOutcome.Success)
             {
-                Plugin.PresentSyncOutcome(syncGamesOutcome, DialogFeedbackChannel);
+                Plugin.PresentOperationOutcome(syncGamesOutcome, DialogFeedbackChannel);
                 return;
             }
 
             var syncMediaFilesResult = SyncGameLibraryWorkflow.SyncMediaFiles();
             var syncMediaFilesOutcome = SyncGameLibraryWorkflow.InterpretSyncMediaFilesResult(syncMediaFilesResult);
-            Plugin.PresentSyncOutcome(syncMediaFilesOutcome, DialogFeedbackChannel);
+
+            if (!syncMediaFilesOutcome.Success)
+            {
+                Plugin.PresentOperationOutcome(syncMediaFilesOutcome, DialogFeedbackChannel);
+                return;
+            }
+
+            var loc_successSyncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
+            Plugin.PresentOperationOutcome(
+                new OperationOutcome(
+                    true,
+                    SyncSeverity.Success,
+                    loc_successSyncClientServer,
+                    "Library Sync"
+                ), DialogFeedbackChannel);
         }
 
         public void OnBrowseShareXPath()

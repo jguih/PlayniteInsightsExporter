@@ -3,22 +3,12 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     
     <!-- Library Sync -->
-    <sys:String x:Key="LOC_Operation_CanceledByUser">Operation was canceled</sys:String>
+    <sys:String x:Key="LOC_SyncOperation_CanceledByUser">Game library sychronization with PlayAtlas was canceled.</sys:String>
     <sys:String x:Key="LOC_Loading_SyncClientServer">Syncing library with server...</sys:String>
     <sys:String x:Key="LOC_Failed_SyncGameLibrary">Unexpected error while syncing games library</sys:String>
-    <sys:String x:Key="LOC_Failed_SyncClientServer">
-        Failed to sync your library with PlayAtlas.
-        Make sure your PlayAtlas server is reachable and the extension is registered and trusted. Check logs for more details.
-    </sys:String>
-    <sys:String x:Key="LOC_Failed_SyncMediaFiles">
-        Failed to sync your media files with PlayAtlas.
-        Make sure your PlayAtlas server is reachable and the extension is registered and trusted. Check logs for more details.
-    </sys:String>
-    <sys:String x:Key="LOC_Failed_SyncSessions">
-        Failed to sync your game sessions with PlayAtlas.
-        Make sure your PlayAtlas server is reachable and the extension is registered and trusted. Check logs for more details.
-    </sys:String>
     <sys:String x:Key="LOC_Success_SyncClientServer">Synchronization with PlayAtlas server completed successfully.</sys:String>
+    <sys:String x:Key="LOC_Success_SyncGameLibrary">Game library synchronization with PlayAtlas server completed successfully.</sys:String>
+    <sys:String x:Key="LOC_Success_SyncMediaFiles">Game media files synchronization with PlayAtlas server completed successfully.</sys:String>
     <sys:String x:Key="LOC_Progress_SyncingMediaFiles">Syncing media files {{current}} of {{total}}: {{gameName}}</sys:String>
     <sys:String x:Key="LOC_Progress_SyncingGames">Syncing {{total}} games with PlayAtlas server</sys:String>
 

@@ -61,10 +61,11 @@
     <Compile Include="Src\Adapters\PlayniteGameMapperPort.cs" />
     <Compile Include="Src\Adapters\PlayniteGameRepositoryAdapter.cs" />
     <Compile Include="Src\Converters\InverseBooleanConverter.cs" />
+    <Compile Include="Src\GameSessionWorkflow.cs" />
     <Compile Include="Src\Notifications\DialogFeedbackChannel.cs" />
     <Compile Include="Src\Notifications\NotificationFeedbackChannel.cs" />
     <Compile Include="Src\Notifications\SyncFeedbackChannelPort.cs" />
-    <Compile Include="Src\Notifications\SyncOutcome.cs" />
+    <Compile Include="Src\Notifications\OperationOutcome.cs" />
     <Compile Include="Src\ExporterCompositionRoot.cs" />
     <Compile Include="Src\PlayniteLogger.cs" />
     <Compile Include="Src\ServiceLocator.cs" />
@@ -118,6 +119,10 @@
     <ProjectReference Include="..\Modules\ExporterCommon\ExporterCommon.csproj">
       <Project>{0c45c5bf-6076-4d80-9dba-59edd13169b2}</Project>
       <Name>ExporterCommon</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Modules\ExporterGameSessions\ExporterGameSessions.csproj">
+      <Project>{e3501de5-f87c-4720-9159-1f5c2d06a93d}</Project>
+      <Name>ExporterGameSessions</Name>
     </ProjectReference>
     <ProjectReference Include="..\Modules\ExporterLibraryExporter\ExporterLibraryExporter.csproj">
       <Project>{4f2fed71-1797-4176-956a-c4db34c2c8ed}</Project>

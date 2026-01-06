@@ -13,16 +13,16 @@ namespace PlayniteInsightsExporter.Notifications
         Warning
     }
 
-    public class SyncOutcome
+    public class OperationOutcome
     {
         public bool Success { get; set; }
         public SyncSeverity Severity { get; set; }
         public string Message { get; set; }
         public string Title { get; set; }
 
-        public SyncOutcome() { }
+        public OperationOutcome() { }
 
-        public SyncOutcome(bool success, SyncSeverity severity, string message, string title)
+        public OperationOutcome(bool success, SyncSeverity severity, string message, string title)
         {
             Success = success;
             Severity = severity;
