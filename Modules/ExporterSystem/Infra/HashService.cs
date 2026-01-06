@@ -109,6 +109,8 @@ namespace ExporterSystem.Infra
                     AppendHashInfo(data, sha256);
                 }
 
+                AppendInfo("media-files-hash.v1");
+
                 foreach (var fileName in fileNames)
                 {
                     var filePath = fileSystemService.PathCombine(path, fileName);

@@ -1,10 +1,14 @@
 ﻿using ExporterBootstrap.Application;
+using ExporterCommon.Application;
 using ExporterCommon.Domain;
 using ExporterLibraryExporter.Application;
 using Playnite.SDK;
+using Playnite.SDK.Models;
+using PlayniteInsightsExporter.Adapters;
 using PlayniteInsightsExporter.Notifications;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,6 +25,7 @@ namespace PlayniteInsightsExporter
 
     public class SyncGameLibraryWorkflow
     {
+        private readonly PlayniteGameMapper GameMapper = new PlayniteGameMapper();
         private readonly ExporterApi ExporterApi;
         private readonly IPlayniteAPI PlayniteApi;
 
@@ -31,6 +36,74 @@ namespace PlayniteInsightsExporter
         {
             this.ExporterApi = exporterApi;
             this.PlayniteApi = playniteApi;
+        }
+
+        public GlobalProgressResult SyncGames()
+        {
+            try
+            {
+                return SyncGames(overrideDiff: null);
+            }
+            catch (Exception ex)
+            {
+                return new GlobalProgressResult(false, false, ex);
+            }
+        }
+
+        public GlobalProgressResult SyncGames(Game game)
+        {
+            try
+            {
+                var entity = GameMapper.Map(game);
+                var syncItem = ExporterApi.LibrarySync.GameSyncItemFactory.Create(entity);
+                GameLibrarySyncDiff diff = new GameLibrarySyncDiff(
+                            added: new List<SyncGameCommandItem>(),
+                            updated: new List<SyncGameCommandItem>() { syncItem },
+                            deleted: new List<string>()
+                        );
+                return SyncGames(diff);
+            }
+            catch (Exception ex)
+            {
+                return new GlobalProgressResult(false, false, ex);
+            }
+        }
+
+        public GlobalProgressResult SyncGames(
+            List<Game> toAdd = null,
+            List<Game> toUpdate = null,
+            List<Game> toDelete = null
+        )
+        {
+            try
+            {
+                var _added = toAdd ?? new List<Game>();
+                var _updated = toUpdate ?? new List<Game>();
+                var _deleted = toDelete ?? new List<Game>();
+                var added = _added
+                    .Select(GameMapper.Map)
+                    .Select(ExporterApi.LibrarySync.GameSyncItemFactory.Create)
+                    .ToList();
+                var updated = _updated
+                    .Select(GameMapper.Map)
+                    .Select(ExporterApi.LibrarySync.GameSyncItemFactory.Create)
+                    .ToList();
+                var deleted = _deleted
+                    .Select(g => g.Id.ToString())
+                    .ToList();
+
+                GameLibrarySyncDiff diff = new GameLibrarySyncDiff(
+                            added: added,
+                            updated: updated,
+                            deleted: deleted
+                        );
+
+                return SyncGames(diff);
+            }
+            catch (Exception ex)
+            {
+                return new GlobalProgressResult(false, false, ex);
+            }
         }
 
         public GlobalProgressResult SyncGames(GameLibrarySyncDiff overrideDiff = null)
@@ -64,6 +137,57 @@ namespace PlayniteInsightsExporter
                 }, syncGamesProgressOptions);
 
             return syncGamesProgressResult;
+        }
+
+        public SyncMediaFilesWorkflowResult SyncMediaFiles(Game game)
+        {
+            try
+            {
+                var entity = GameMapper.Map(game);
+                var games = new List<AppGame>() { entity };
+                return SyncMediaFiles(games);
+            }
+            catch (Exception ex)
+            {
+                return new SyncMediaFilesWorkflowResult()
+                {
+                    ProgressResult = new GlobalProgressResult(false, false, ex),
+                    SyncResult = new SyncMediaFilesResult(
+                        ex.Message, 
+                        SyncMediaFilesResultReasonCode.OneOrMoreFailed,
+                        false,
+                        0,
+                        0,
+                        0
+                    )
+                };
+            }
+        }
+
+        public SyncMediaFilesWorkflowResult SyncMediaFiles(List<Game> game)
+        {
+            try
+            {
+                var games = game
+                    .Select(GameMapper.Map)
+                    .ToList();
+                return SyncMediaFiles(games);
+            }
+            catch (Exception ex)
+            {
+                return new SyncMediaFilesWorkflowResult()
+                {
+                    ProgressResult = new GlobalProgressResult(false, false, ex),
+                    SyncResult = new SyncMediaFilesResult(
+                        ex.Message,
+                        SyncMediaFilesResultReasonCode.OneOrMoreFailed,
+                        false,
+                        0,
+                        0,
+                        0
+                    )
+                };
+            }
         }
 
         public SyncMediaFilesWorkflowResult SyncMediaFiles(List<AppGame> overrideGames = null)

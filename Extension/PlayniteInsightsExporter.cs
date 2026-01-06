@@ -70,29 +70,20 @@ namespace PlayniteInsightsExporter
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
         }
 
-        private void FullGameSync(Game game)
+        private void FullGameSync(Game game, ISyncFeedbackChannelPort channel)
         {
-            var entity = playniteGameMapper.Map(game);
-            var syncItem = exporterApi.LibrarySync.GameSyncItemFactory.Create(entity);
-            GameLibrarySyncDiff diff = new GameLibrarySyncDiff(
-                        added: new List<SyncGameCommandItem>(),
-                        updated: new List<SyncGameCommandItem>() { syncItem },
-                        deleted: new List<string>()
-                    );
-            var games = new List<AppGame>() { syncItem.Game };
-
-            var sycnGamesResult = syncGameLibrary.SyncGames(diff);
+            var sycnGamesResult = syncGameLibrary.SyncGames(game);
             var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
 
             if (!syncGamesOutcome.Success)
             {
-                PresentSyncOutcome(syncGamesOutcome, notificationFeedbackChannel);
+                PresentSyncOutcome(syncGamesOutcome, channel);
                 return;
             }
 
-            var syncMediaFilesResult = syncGameLibrary.SyncMediaFiles(games);
+            var syncMediaFilesResult = syncGameLibrary.SyncMediaFiles(game);
             var syncMediaFilesOutcome = syncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
-            PresentSyncOutcome(syncMediaFilesOutcome, notificationFeedbackChannel);
+            PresentSyncOutcome(syncMediaFilesOutcome, channel);
         }
 
         private void OnItemCollectionChanged(
@@ -102,27 +93,10 @@ namespace PlayniteInsightsExporter
         {
             if (e.AddedItems.Any() || e.RemovedItems.Any())
             {
-                var syncItems = e.AddedItems?
-                    .Select(playniteGameMapper.Map)
-                    .Select(exporterApi.LibrarySync.GameSyncItemFactory.Create)
-                    .ToList()
-                    ?? new List<SyncGameCommandItem>();
-                var games = syncItems
-                    .Select(i => i.Game)
-                    .ToList();
-                var toDelete = e.RemovedItems?
-                    .Select(g => g.Id.ToString())
-                    .ToList()
-                    ?? new List<string>();
-                var loc_failedSyncGameLibrary = ResourceProvider.GetString("LOC_Failed_SyncGameLibrary");
-
-                GameLibrarySyncDiff diff = new GameLibrarySyncDiff(
-                        added: syncItems,
-                        updated: new List<SyncGameCommandItem>(),
-                        deleted: toDelete
+                var sycnGamesResult = syncGameLibrary.SyncGames(
+                        toAdd: e.AddedItems,
+                        toDelete: e.RemovedItems
                     );
-
-                var sycnGamesResult = syncGameLibrary.SyncGames(diff);
                 var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
 
                 if (!syncGamesOutcome.Success)
@@ -131,7 +105,7 @@ namespace PlayniteInsightsExporter
                     return;
                 }
 
-                var syncMediaFilesResult = syncGameLibrary.SyncMediaFiles(games);
+                var syncMediaFilesResult = syncGameLibrary.SyncMediaFiles(e.AddedItems);
                 var syncMediaFilesOutcome = syncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
                 PresentSyncOutcome(syncMediaFilesOutcome, notificationFeedbackChannel);
             }
@@ -144,7 +118,7 @@ namespace PlayniteInsightsExporter
                 return;
             }
 
-            FullGameSync(args.Game);
+            FullGameSync(args.Game, notificationFeedbackChannel);
         }
 
         public override void OnGameStarted(OnGameStartedEventArgs args)
@@ -154,7 +128,7 @@ namespace PlayniteInsightsExporter
                 return;
             }
 
-            FullGameSync(args.Game);
+            FullGameSync(args.Game, notificationFeedbackChannel);
         }
 
         public override void OnGameStarting(OnGameStartingEventArgs args)
@@ -169,7 +143,7 @@ namespace PlayniteInsightsExporter
                 return;
             }
 
-            FullGameSync(args.Game);
+            FullGameSync(args.Game, notificationFeedbackChannel);
         }
 
         public override void OnGameUninstalled(OnGameUninstalledEventArgs args)
@@ -179,7 +153,7 @@ namespace PlayniteInsightsExporter
                 return;
             }
 
-            FullGameSync(args.Game);
+            FullGameSync(args.Game, notificationFeedbackChannel);
         }
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
