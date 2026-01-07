@@ -1,6 +1,5 @@
 ﻿using ExporterCommon.Application;
 using ExporterCommon.Infra;
-using ExporterGameSessions.Error;
 using ExporterPlayAtlasClient.Dtos;
 using ExporterPlayAtlasClient.Error;
 using ExporterPlayAtlasClient.Infra;
@@ -11,6 +10,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ExporterPlayAtlasClient.Application
@@ -128,7 +128,10 @@ namespace ExporterPlayAtlasClient.Application
             }
         }
 
-        public async Task SyncGamesAsync(SyncGamesCommand command)
+        public async Task SyncGamesAsync(
+            SyncGamesCommand command, 
+            CancellationToken cancellationToken = default
+        )
         {
             try
             {
@@ -148,7 +151,7 @@ namespace ExporterPlayAtlasClient.Application
                         contentHash
                     )
                 )
-                using (var response = await httpClient.SendAsync(signedRequest))
+                using (var response = await httpClient.SendAsync(signedRequest, cancellationToken))
                 {
                     response.EnsureSuccessStatusCode();
                 }
@@ -161,7 +164,10 @@ namespace ExporterPlayAtlasClient.Application
             }
         }
 
-        public async Task SyncMediaFilesAsync(SyncMediaFilesCommand command)
+        public async Task SyncMediaFilesAsync(
+            SyncMediaFilesCommand command, 
+            CancellationToken cancellationToken = default
+        )
         {
             try
             {
@@ -190,7 +196,7 @@ namespace ExporterPlayAtlasClient.Application
                         canonicalHash
                     )
                 )
-                using (var response = await httpClient.SendAsync(signedRequest))
+                using (var response = await httpClient.SendAsync(signedRequest, cancellationToken))
                 {
                     response.EnsureSuccessStatusCode();
                 }
@@ -203,7 +209,10 @@ namespace ExporterPlayAtlasClient.Application
             }
         }
 
-        public async Task OpenGameSessionAsync(OpenGameSessionCommand command)
+        public async Task OpenGameSessionAsync(
+            OpenGameSessionCommand command, 
+            CancellationToken cancellationToken = default
+        )
         {
             try
             {
@@ -227,7 +236,7 @@ namespace ExporterPlayAtlasClient.Application
                         contentHash
                     )
                 )
-                using (var response = await httpClient.SendAsync(signedRequest))
+                using (var response = await httpClient.SendAsync(signedRequest, cancellationToken))
                 {
                     response.EnsureSuccessStatusCode();
                 }
@@ -240,7 +249,10 @@ namespace ExporterPlayAtlasClient.Application
             }
         }
 
-        public async Task CloseGameSessionAsync(CloseGameSessionCommand command)
+        public async Task CloseGameSessionAsync(
+            CloseGameSessionCommand command, 
+            CancellationToken cancellationToken = default
+        )
         {
             try
             {
@@ -266,7 +278,7 @@ namespace ExporterPlayAtlasClient.Application
                         contentHash
                     )
                 )
-                using (var response = await httpClient.SendAsync(signedRequest))
+                using (var response = await httpClient.SendAsync(signedRequest, cancellationToken))
                 {
                     response.EnsureSuccessStatusCode();
                 }
@@ -279,7 +291,10 @@ namespace ExporterPlayAtlasClient.Application
             }
         }
 
-        public async Task StaleGameSessionAsync(StaleGameSessionCommand command)
+        public async Task StaleGameSessionAsync(
+            StaleGameSessionCommand command, 
+            CancellationToken cancellationToken = default
+        )
         {
             try
             {
@@ -303,7 +318,7 @@ namespace ExporterPlayAtlasClient.Application
                         contentHash
                     )
                 )
-                using (var response = await httpClient.SendAsync(signedRequest))
+                using (var response = await httpClient.SendAsync(signedRequest, cancellationToken))
                 {
                     response.EnsureSuccessStatusCode();
                 }
@@ -316,7 +331,10 @@ namespace ExporterPlayAtlasClient.Application
             }
         }
 
-        public async Task RegisterExtensionAsync(RegisterExtensionCommand command)
+        public async Task RegisterExtensionAsync(
+            RegisterExtensionCommand command,
+            CancellationToken cancellationToken = default
+        )
         {
             try
             {
@@ -342,7 +360,7 @@ namespace ExporterPlayAtlasClient.Application
                         contentHash
                     )
                 )
-                using (var response = await httpClient.SendAsync(signedRequest))
+                using (var response = await httpClient.SendAsync(signedRequest, cancellationToken))
                 {
                     if (response.StatusCode == HttpStatusCode.Conflict)
                         throw new ExtensionAlreadyRegisteredException();

@@ -4,6 +4,7 @@ using Microsoft.Win32;
 using Playnite.SDK;
 using Playnite.SDK.Data;
 using PlayniteInsightsExporter.Notifications;
+using PlayniteInsightsExporter.Src;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -70,18 +71,21 @@ namespace PlayniteInsightsExporter
         public RelayCommand HttpServerStop { get; set; }
         [DontSerialize]
         public RelayCommand BrowsePlayAtlasServerPubKey { get; set; }
+        [DontSerialize]
+        public RelayCommand RegisterExtensionButton { get; set; }
     }
 
     public class PlayniteInsightsExporterSettingsViewModel : ObservableObject, ISettings
     {
-        private readonly PlayniteInsightsExporter Plugin;
-        private readonly IPlayniteAPI PlayniteApi;
+        private readonly PlayniteInsightsExporter plugin;
+        private readonly IPlayniteAPI playniteApi;
         private PlayniteInsightsExporterSettings editingClone { get; set; }
         private PlayniteInsightsExporterSettings settings;
 
-        private readonly ExporterApi ExporterApi;
-        private readonly SyncGameLibraryWorkflow SyncGameLibraryWorkflow;
-        private readonly ISyncFeedbackChannelPort DialogFeedbackChannel;
+        private readonly ExporterApi exporterApi;
+        private readonly SyncGameLibraryWorkflow syncGameLibrary;
+        private readonly ISyncFeedbackChannelPort dialogFeedbackChannel;
+        private readonly RegisterExtensionWorkflow registerExtension;
 
         // TODO: remove
         private readonly ServiceLocator ServiceLocator;
@@ -100,6 +104,7 @@ namespace PlayniteInsightsExporter
                 settings.HttpServerStart = new RelayCommand(() => OnHttpServerStart());
                 settings.HttpServerStop = new RelayCommand(() => OnHttpServerStop());
                 settings.BrowsePlayAtlasServerPubKey = new RelayCommand(() => OnBrowsePlayAtlasServerPubKey());
+                settings.RegisterExtensionButton = new RelayCommand(() => OnRegisterExtension());
                 OnPropertyChanged();
             }
         }
@@ -132,8 +137,8 @@ namespace PlayniteInsightsExporter
         )
         {
             // Injecting your plugin instance is required for Save/Load method because Playnite saves data to a location based on what plugin requested the operation.
-            this.Plugin = plugin;
-            this.PlayniteApi = plugin.PlayniteApi;
+            this.plugin = plugin;
+            this.playniteApi = plugin.PlayniteApi;
             // Load saved settings.
             var savedSettings = plugin.LoadPluginSettings<PlayniteInsightsExporterSettings>();
             // LoadPluginSettings returns null if no saved data is available.
@@ -146,9 +151,10 @@ namespace PlayniteInsightsExporter
                 Settings = new PlayniteInsightsExporterSettings();
             }
 
-            ExporterApi = exporterApi;
-            SyncGameLibraryWorkflow = syncGameLibraryWorkflow;
-            DialogFeedbackChannel = dialogFeedbackChannel;
+            this.exporterApi = exporterApi;
+            syncGameLibrary = syncGameLibraryWorkflow;
+            this.dialogFeedbackChannel = dialogFeedbackChannel;
+            registerExtension = new RegisterExtensionWorkflow(exporterApi, playniteApi);
 
             // TODO: remove
             ServiceLocator = locator;
@@ -188,7 +194,7 @@ namespace PlayniteInsightsExporter
         {
             // Code executed when user decides to confirm changes made since BeginEdit was called.
             // This method should save settings made to Option1 and Option2.
-            Plugin.SavePluginSettings(Settings);
+            plugin.SavePluginSettings(Settings);
         }
 
         public bool VerifySettings(out List<string> errors)
@@ -202,32 +208,32 @@ namespace PlayniteInsightsExporter
 
         public void OnExportLibrary()
         {
-            var syncGamesProgressResult = SyncGameLibraryWorkflow.SyncGames();
-            var syncGamesOutcome = SyncGameLibraryWorkflow.InterpretSyncGamesResult(syncGamesProgressResult);
+            var syncGamesProgressResult = syncGameLibrary.SyncGames();
+            var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(syncGamesProgressResult);
 
             if (!syncGamesOutcome.Success)
             {
-                Plugin.PresentOperationOutcome(syncGamesOutcome, DialogFeedbackChannel);
+                plugin.PresentOperationOutcome(syncGamesOutcome, dialogFeedbackChannel);
                 return;
             }
 
-            var syncMediaFilesResult = SyncGameLibraryWorkflow.SyncMediaFiles();
-            var syncMediaFilesOutcome = SyncGameLibraryWorkflow.InterpretSyncMediaFilesResult(syncMediaFilesResult);
+            var syncMediaFilesResult = syncGameLibrary.SyncMediaFiles();
+            var syncMediaFilesOutcome = syncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
 
             if (!syncMediaFilesOutcome.Success)
             {
-                Plugin.PresentOperationOutcome(syncMediaFilesOutcome, DialogFeedbackChannel);
+                plugin.PresentOperationOutcome(syncMediaFilesOutcome, dialogFeedbackChannel);
                 return;
             }
 
             var loc_successSyncClientServer = ResourceProvider.GetString("LOC_Success_SyncClientServer");
-            Plugin.PresentOperationOutcome(
+            plugin.PresentOperationOutcome(
                 new OperationOutcome(
                     true,
                     SyncSeverity.Success,
                     loc_successSyncClientServer,
                     "Library Sync"
-                ), DialogFeedbackChannel);
+                ), dialogFeedbackChannel);
         }
 
         public void OnBrowseShareXPath()
@@ -251,7 +257,7 @@ namespace PlayniteInsightsExporter
 
             if (string.IsNullOrWhiteSpace(port))
             {
-                PlayniteApi.Dialogs.ShowErrorMessage("Please, choose a port to reserve");
+                playniteApi.Dialogs.ShowErrorMessage("Please, choose a port to reserve");
                 return;
             }
 
@@ -275,8 +281,8 @@ namespace PlayniteInsightsExporter
             catch (Exception)
             {
                 var LOC_Label_HttpServer_Failed_To_Start = ResourceProvider.GetString("LOC_Label_HttpServer_Failed_To_Start");
-                PlayniteApi.Dialogs.ShowErrorMessage(
-                        LOC_Label_HttpServer_Failed_To_Start, Plugin.Name);
+                playniteApi.Dialogs.ShowErrorMessage(
+                        LOC_Label_HttpServer_Failed_To_Start, plugin.Name);
             }
         }
 
@@ -290,8 +296,8 @@ namespace PlayniteInsightsExporter
             catch (Exception)
             {
                 var LOC_Label_HttpServer_Failed_To_Stop = ResourceProvider.GetString("LOC_Label_HttpServer_Failed_To_Stop");
-                PlayniteApi.Dialogs.ShowErrorMessage(
-                    LOC_Label_HttpServer_Failed_To_Stop, Plugin.Name);
+                playniteApi.Dialogs.ShowErrorMessage(
+                    LOC_Label_HttpServer_Failed_To_Stop, plugin.Name);
             }
         }
 
@@ -308,6 +314,13 @@ namespace PlayniteInsightsExporter
             {
                 Settings.PlayAtlasServerPubKeyPath = dialog.FileName;
             }
+        }
+
+        public void OnRegisterExtension()
+        {
+            var result = registerExtension.Register();
+            var outcome = registerExtension.InterpretRegisterResult(result);
+            plugin.PresentOperationOutcome(outcome, dialogFeedbackChannel);
         }
     }
 }

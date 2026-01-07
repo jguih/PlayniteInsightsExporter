@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ExporterCommon.Application
@@ -13,7 +14,7 @@ namespace ExporterCommon.Application
 
     public interface IAsyncCommandHandlerPort
     {
-        Task ExecuteAsync();
+        Task ExecuteAsync(CancellationToken cancellationToken = default);
     }
 
     public interface ICommandHandlerPort<TResult>

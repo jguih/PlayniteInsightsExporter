@@ -33,7 +33,8 @@
     <sys:String x:Key="LOC_Label_HttpServer_Server_Is_Running_Status_Text">Server is running and listening on port {{port}}</sys:String>
     <sys:String x:Key="LOC_Label_HttpServer_Server_Is_Not_Running_Status_Text">Server is not running</sys:String>
     <sys:String x:Key="LOC_Label_HttpServer_Get_Pub_File_Command">Run this command in the Docker host to copy the server's public key file:</sys:String>
-
+    <sys:String x:Key="LOC_Label_RegisterExtension">Register Extension</sys:String>
+    
     <!-- Failure -->
     <sys:String x:Key="LOC_Label_HttpServer_Failed_To_Start">Failed to start HTTP server. The chosen port should be reserved for current user. Check extension logs.</sys:String>
     <sys:String x:Key="LOC_Label_HttpServer_Failed_To_Stop">Failed to stop HTTP server. Check extension logs.</sys:String>

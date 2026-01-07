@@ -10,13 +10,13 @@ namespace ExporterBootstrap.Application
 {
     public class ExporterPlayAtlasClientCommandsApi
     {
-        public readonly IRegisterExtensionCommandHandlerPort RegisterExtensionCommandHandlerPort;
+        public readonly IRegisterExtensionCommandHandlerPort RegisterExtensionCommandHandler;
 
         public ExporterPlayAtlasClientCommandsApi(
             IRegisterExtensionCommandHandlerPort registerExtensionCommandHandlerPort
         )
         {
-            RegisterExtensionCommandHandlerPort = registerExtensionCommandHandlerPort;
+            RegisterExtensionCommandHandler = registerExtensionCommandHandlerPort;
         }
     }
 

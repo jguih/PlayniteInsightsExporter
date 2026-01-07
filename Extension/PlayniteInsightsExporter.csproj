@@ -68,6 +68,7 @@
     <Compile Include="Src\Notifications\OperationOutcome.cs" />
     <Compile Include="Src\ExporterCompositionRoot.cs" />
     <Compile Include="Src\PlayniteLogger.cs" />
+    <Compile Include="Src\RegisterExtensionWorkflow.cs" />
     <Compile Include="Src\ServiceLocator.cs" />
     <Compile Include="PlayniteInsightsExporter.cs" />
     <Compile Include="PlayniteInsightsExporterSettings.cs" />

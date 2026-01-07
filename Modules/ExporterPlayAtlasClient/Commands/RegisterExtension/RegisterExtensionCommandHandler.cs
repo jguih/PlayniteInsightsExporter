@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Remoting.Contexts;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ExporterPlayAtlasClient.Commands.RegisterExtension
@@ -27,7 +28,7 @@ namespace ExporterPlayAtlasClient.Commands.RegisterExtension
             this.playAtlasHttpClient = playAtlasHttpClient;
         }
 
-        public async Task ExecuteAsync()
+        public async Task ExecuteAsync(CancellationToken cancellationToken = default)
         {
             string hostname = Environment.MachineName;
             string os = Environment.OSVersion.ToString();
@@ -44,7 +45,7 @@ namespace ExporterPlayAtlasClient.Commands.RegisterExtension
                 PublicKeyPem = key
             };
 
-            await playAtlasHttpClient.RegisterExtensionAsync(command);
+            await playAtlasHttpClient.RegisterExtensionAsync(command, cancellationToken);
         }
     }
 }
