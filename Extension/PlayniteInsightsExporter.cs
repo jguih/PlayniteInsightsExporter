@@ -1,5 +1,4 @@
-﻿using Core;
-using ExporterBootstrap.Application;
+﻿using ExporterBootstrap.Application;
 using ExporterCommon.Application;
 using ExporterCommon.Domain;
 using ExporterLibraryExporter.Application;
@@ -19,17 +18,17 @@ using System.Reflection;
 using System.Runtime.Remoting.Channels;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Shapes;
 
 namespace PlayniteInsightsExporter
 {
-    public class PlayniteInsightsExporter : GenericPlugin, IPlayAtlasExporterContext, IExporterPluginContextPort
+    public class PlayniteInsightsExporter : GenericPlugin, IExporterPluginContextPort
     {
         private static readonly ILogger logger = LogManager.GetLogger();
         private PlayniteInsightsExporterSettingsViewModel Settings { get; set; }
-        private readonly ServiceLocator locator;
 
         private readonly ExporterApi exporterApi;
         private readonly SyncGameLibraryWorkflow syncGameLibrary;
@@ -37,13 +36,13 @@ namespace PlayniteInsightsExporter
         private readonly ISyncFeedbackChannelPort dialogFeedbackChannel;
         private readonly ISyncFeedbackChannelPort notificationFeedbackChannel;
         private readonly IPlayniteGameMapperPort playniteGameMapper;
+        private readonly CancellationTokenSource cts = new CancellationTokenSource();
 
         public readonly string Name = "PlayAtlas Exporter";
         public override Guid Id { get; } = Guid.Parse("ccbe324c-c160-4ad5-b749-5c64f8cbc113");
 
         public PlayniteInsightsExporter(IPlayniteAPI api) : base(api)
         {
-            // New API
             var compositionRoot = new ExporterCompositionRoot(
                 logger,
                 PlayniteApi,
@@ -56,12 +55,8 @@ namespace PlayniteInsightsExporter
             notificationFeedbackChannel = new NotificationFeedbackChannel(PlayniteApi);
             playniteGameMapper = new PlayniteGameMapper();
 
-            // TODO: Remove
-            locator = new ServiceLocator(this, logger);
-
             Settings = new PlayniteInsightsExporterSettingsViewModel(
                 this, 
-                locator, 
                 exporterApi,
                 syncGameLibrary,
                 dialogFeedbackChannel
@@ -177,22 +172,30 @@ namespace PlayniteInsightsExporter
             }
             catch (Exception ex)
             {
-                exporterApi.Logger.Error("Failed to initialize extension environment", ex);
+                OperationOutcome outcome = new OperationOutcome(
+                    false, 
+                    SyncSeverity.Error,
+                    $"Failed to initialize extension environment: {ex.Message}",
+                    "PlayAtlas Exporter"
+                );
+                exporterApi.Logger.Error(outcome.Message, ex);
+                PresentOperationOutcome(outcome, notificationFeedbackChannel);
             }
 
-            var shouldStartHttpServer = Settings?.Settings?.HttpServerStartOnStartUp ?? false;
-            if (shouldStartHttpServer)
+            try
             {
-                try
-                {
-                    locator.HttpServer.Start();
-                }
-                catch (Exception)
-                {
-                    var LOC_Label_HttpServer_Failed_To_Start = ResourceProvider.GetString("LOC_Label_HttpServer_Failed_To_Start");
-                    PlayniteApi.Dialogs.ShowErrorMessage(
-                            LOC_Label_HttpServer_Failed_To_Start, Name);
-                }
+                exporterApi.PlayAtlasClient.EventStream.StartAsync(cts.Token);
+            }
+            catch (Exception ex)
+            {
+                OperationOutcome outcome = new OperationOutcome(
+                    false,
+                    SyncSeverity.Error,
+                    $"Failed to create event stream with PlayAtlas server: {ex.Message}",
+                    "PlayAtlas Exporter"
+                );
+                exporterApi.Logger.Error(outcome.Message, ex);
+                PresentOperationOutcome(outcome, notificationFeedbackChannel);
             }
         }
 
@@ -200,21 +203,7 @@ namespace PlayniteInsightsExporter
         {
             // Add code to be executed when Playnite is shutting down.
             PlayniteApi.Database.Games.ItemCollectionChanged -= OnItemCollectionChanged;
-            var shouldStopHttpServer = Settings?.HttpServerRunning ?? false;
-            if (shouldStopHttpServer)
-            {
-                try
-                {
-                    locator.HttpServer.Stop();
-                }
-                catch (Exception)
-                {
-                    var LOC_Label_HttpServer_Failed_To_Stop = ResourceProvider.GetString("LOC_Label_HttpServer_Failed_To_Stop");
-                    PlayniteApi.Dialogs.ShowErrorMessage(
-                        LOC_Label_HttpServer_Failed_To_Stop, Name);
-
-                }
-            }
+            cts.Cancel();
         }
 
         public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
@@ -231,17 +220,7 @@ namespace PlayniteInsightsExporter
                 var syncMediaFilesOutcome = syncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
                 PresentOperationOutcome(syncMediaFilesOutcome, notificationFeedbackChannel);
             }
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await locator.GameSessionService.SyncAsync(DateTime.UtcNow);
-                }
-                catch (Exception ex)
-                {
-                    logger.Error(ex, "Failed to sync game sessions with PlayAtlas server.");
-                }
-            });
+            // TODO: Process pending sessions
         }
 
         public override ISettings GetSettings(bool firstRunSettings)
@@ -325,22 +304,6 @@ namespace PlayniteInsightsExporter
             var path = Settings?.Settings?.ShareXExePath ?? string.Empty;
             if (string.IsNullOrWhiteSpace(path))
                 throw new InvalidOperationException("ShareX executable path is not set in settings.");
-            return path;
-        }
-
-        public string GetWebServerPublicKeyPath()
-        {
-            var path = Settings?.Settings?.PlayAtlasServerPubKeyPath ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(path))
-                throw new InvalidOperationException("PlayAtlas server public key path is not set in settings.");
-            return path;
-        }
-
-        public string GetHttpServerPort()
-        {
-            var path = Settings?.Settings?.HttpServerPort ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(path))
-                throw new InvalidOperationException("HTTP server port is not set in settings.");
             return path;
         }
 

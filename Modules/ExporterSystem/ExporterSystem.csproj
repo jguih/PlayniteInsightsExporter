@@ -53,6 +53,7 @@
     <Compile Include="Infra\FileSystemService.cs" />
     <Compile Include="Infra\HashService.cs" />
     <Compile Include="Infra\KeyManager.cs" />
+    <Compile Include="Infra\ShareXService.cs" />
     <Compile Include="Infra\SignatureService.cs" />
     <Compile Include="Infra\SystemConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{01DB3512-7DBB-49B3-B095-153EE27A04C5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infra", "Infra\Infra.csproj", "{FF9D2F20-E8B8-460D-B166-D5E4622639FA}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Itens de Solução", "Itens de Solução", "{380A7511-A354-6D7A-0CC0-8FA1F1BA7B6C}"
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\build-test.yml = .github\workflows\build-test.yml
@@ -52,10 +50,6 @@ Global
 		{01DB3512-7DBB-49B3-B095-153EE27A04C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{01DB3512-7DBB-49B3-B095-153EE27A04C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{01DB3512-7DBB-49B3-B095-153EE27A04C5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FF9D2F20-E8B8-460D-B166-D5E4622639FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FF9D2F20-E8B8-460D-B166-D5E4622639FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FF9D2F20-E8B8-460D-B166-D5E4622639FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FF9D2F20-E8B8-460D-B166-D5E4622639FA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4F2FED71-1797-4176-956A-C4DB34C2C8ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4F2FED71-1797-4176-956A-C4DB34C2C8ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4F2FED71-1797-4176-956A-C4DB34C2C8ED}.Release|Any CPU.ActiveCfg = Release|Any CPU

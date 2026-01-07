@@ -67,9 +67,7 @@
     <Compile Include="Src\Notifications\SyncFeedbackChannelPort.cs" />
     <Compile Include="Src\Notifications\OperationOutcome.cs" />
     <Compile Include="Src\ExporterCompositionRoot.cs" />
-    <Compile Include="Src\PlayniteLogger.cs" />
     <Compile Include="Src\RegisterExtensionWorkflow.cs" />
-    <Compile Include="Src\ServiceLocator.cs" />
     <Compile Include="PlayniteInsightsExporter.cs" />
     <Compile Include="PlayniteInsightsExporterSettings.cs" />
     <Compile Include="PlayniteInsightsExporterSettingsView.xaml.cs">
@@ -108,10 +106,6 @@
     <ProjectReference Include="..\Core\Core.csproj">
       <Project>{01db3512-7dbb-49b3-b095-153ee27a04c5}</Project>
       <Name>Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Infra\Infra.csproj">
-      <Project>{ff9d2f20-e8b8-460d-b166-d5e4622639fa}</Project>
-      <Name>Infra</Name>
     </ProjectReference>
     <ProjectReference Include="..\Modules\ExporterBootstrap\ExporterBootstrap.csproj">
       <Project>{bd220e5d-a3e9-42d9-9842-28102e2e34d8}</Project>

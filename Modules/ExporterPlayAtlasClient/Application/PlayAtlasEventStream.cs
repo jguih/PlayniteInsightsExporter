@@ -34,7 +34,7 @@ namespace ExporterPlayAtlasClient.Application
 
         private HttpRequestMessage CreateSseRequest(string lastEventId = null)
         {
-            var endpoint = "/api/extension/events";
+            var endpoint = "/api/extension/event";
 
             var request = requestSigner.CreateSignedRequest(HttpMethod.Get, endpoint);
             request.Headers.Accept.ParseAdd("text/event-stream");
@@ -83,16 +83,19 @@ namespace ExporterPlayAtlasClient.Application
             while (!cancellationToken.IsCancellationRequested &&
                    (line = await reader.ReadLineAsync()) != null)
             {
-                if (line.Length == 0)
+                if (line.Length == 0 && dataBuilder.Length > 0)
                 {
-                    if (dataBuilder.Length > 0)
+                    if (string.IsNullOrEmpty(eventType))
                     {
-                        if (string.IsNullOrEmpty(eventType))
-                        {
-                            eventType = "message";
-                        }
+                        eventType = "message";
+                    }
 
+                    try
+                    {
                         DispatchEvent(eventType, dataBuilder.ToString(), eventId);
+                    }
+                    finally
+                    {
                         dataBuilder.Clear();
                     }
 
@@ -101,7 +104,11 @@ namespace ExporterPlayAtlasClient.Application
                     continue;
                 }
 
-                if (line.StartsWith("id:"))
+                if (line.StartsWith(":"))
+                {
+                    continue; // keep-alive
+                }
+                else if (line.StartsWith("id:"))
                 {
                     eventId = line.Substring(3).Trim();
                     onEventId(eventId);
@@ -112,7 +119,7 @@ namespace ExporterPlayAtlasClient.Application
                 }
                 else if (line.StartsWith("data:"))
                 {
-                    dataBuilder.AppendLine(line.Substring(5).Trim());
+                    dataBuilder.Append(line.Substring(5).Trim());
                 }
             }
         }
@@ -145,10 +152,17 @@ namespace ExporterPlayAtlasClient.Application
                 {
                     break;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    appLogger.Error("SSE connection lost, retrying...", ex);
-                    await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
+                    appLogger.Info("SSE connection lost, retrying...");
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                 }
             }
         }

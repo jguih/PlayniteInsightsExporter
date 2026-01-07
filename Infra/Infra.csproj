@@ -61,7 +61,6 @@
     <Compile Include="PlayniteProgressService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ShareXService.cs" />
-    <Compile Include="HttpServer.cs" />
     <Compile Include="SignatureService.cs" />
   </ItemGroup>
   <ItemGroup>

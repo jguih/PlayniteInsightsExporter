@@ -14,6 +14,6 @@ namespace ExporterPlayAtlasClient.Infra
             string endpoint,
             HttpContent content = null,
             string bodyHash = null
-        )
+        );
     }
 }

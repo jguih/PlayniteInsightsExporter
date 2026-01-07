@@ -1,4 +1,5 @@
 ﻿using ExporterCommon.Application;
+using ExporterCommon.Application.PlayAtlasHttpClient;
 using ExporterPlayAtlasClient.Commands.RegisterExtension;
 using System;
 using System.Collections.Generic;
@@ -23,14 +24,17 @@ namespace ExporterBootstrap.Application
     public class ExporterPlayAtlasClientApi
     {
         public readonly IPlayAtlasHttpClientPort PlayAtlasHttpClient;
+        public readonly IPlayAtlasEventStreamPort EventStream;
         public readonly ExporterPlayAtlasClientCommandsApi Command;
 
         public ExporterPlayAtlasClientApi(
             IPlayAtlasHttpClientPort playAtlasHttpClient,
+            IPlayAtlasEventStreamPort eventStream,
             IRegisterExtensionCommandHandlerPort registerExtensionCommandHandler
         )
         {
             PlayAtlasHttpClient = playAtlasHttpClient;
+            EventStream = eventStream;
             Command = new ExporterPlayAtlasClientCommandsApi(
                     registerExtensionCommandHandler
                 );

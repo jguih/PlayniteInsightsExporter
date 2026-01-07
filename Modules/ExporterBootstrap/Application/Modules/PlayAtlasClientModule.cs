@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ExporterBootstrap.Application.Module
@@ -42,6 +43,10 @@ namespace ExporterBootstrap.Application.Module
             {
                 Timeout = TimeSpan.FromSeconds(60)
             };
+            var sseHttpClient = new HttpClient()
+            {
+                Timeout = Timeout.InfiniteTimeSpan
+            };
 
             Client = new PlayAtlasHttpClient(
                 appLogger,
@@ -56,7 +61,7 @@ namespace ExporterBootstrap.Application.Module
             EventStream = new PlayAtlasEventStream(
                 requestSigner,
                 appLogger,
-                httpClient
+                httpClient: sseHttpClient
             );
 
             RegisterExtensionCommandHandler = new RegisterExtensionCommandHandler(
