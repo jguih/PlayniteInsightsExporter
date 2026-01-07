@@ -55,6 +55,7 @@
     <Compile Include="Application\ExporterPluginContextPort.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\CloseGameSessionCommand.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\OpenGameSessionCommand.cs" />
+    <Compile Include="Application\PlayAtlasHttpClient\PlayAtlasEventStreamPort.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\RegisterExtensionCommand.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\StaleGameSessionCommand.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\SyncGamesCommand.cs" />

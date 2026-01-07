@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Application\PlayAtlasEventStream.cs" />
     <Compile Include="Application\PlayAtlasHttpClient.cs" />
     <Compile Include="Commands\RegisterExtension\RegisterExtensionCommandHandler.cs" />
     <Compile Include="Dtos\BaseRequestDto.cs" />
@@ -59,6 +60,8 @@
     <Compile Include="Error\ExtensionAlreadyRegisteredException.cs" />
     <Compile Include="Infra\BaseHttpContentBuilder.cs" />
     <Compile Include="Infra\HttpContentBuilderPort.cs" />
+    <Compile Include="Infra\HttpRequestSigner.cs" />
+    <Compile Include="Infra\HttpRequestSignerPort.cs" />
     <Compile Include="Infra\JsonHttpContentBuilder.cs" />
     <Compile Include="Infra\SyncMediaFilesHttpContentBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

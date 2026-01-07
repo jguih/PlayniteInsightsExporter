@@ -1,4 +1,5 @@
 ﻿using ExporterCommon.Application;
+using ExporterCommon.Application.PlayAtlasHttpClient;
 using ExporterCommon.Infra;
 using ExporterPlayAtlasClient.Application;
 using ExporterPlayAtlasClient.Commands.RegisterExtension;
@@ -7,6 +8,7 @@ using ExporterSystem.Infra;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,6 +18,7 @@ namespace ExporterBootstrap.Application.Module
     {
         public IPlayAtlasHttpClientPort Client { get; }
         public IRegisterExtensionCommandHandlerPort RegisterExtensionCommandHandler { get; }
+        public IPlayAtlasEventStreamPort EventStream { get; }
 
         public PlayAtlasClientModule(
             IFileSystemServicePort fileSystem,
@@ -30,21 +33,35 @@ namespace ExporterBootstrap.Application.Module
             var syncMediaFilesHttpContentBuilder = new SyncMediaFilesHttpContentBuilder(fileSystem);
             var syncGamesDtoMapper = new SyncGamesDtoMapper();
             var jsonHttpContentBuilder = new JsonHttpContentBuilder();
+            var requestSigner = new HttpRequestSigner(
+                    pluginContext,
+                    systemConfig,
+                    signatureService
+                );
+            var httpClient = new HttpClient()
+            {
+                Timeout = TimeSpan.FromSeconds(60)
+            };
 
             Client = new PlayAtlasHttpClient(
-                appLogger: appLogger,
-                pluginContext: pluginContext,
-                systemConfig: systemConfig,
-                signatureService: signatureService,
-                hashService: hashService,
-                syncMediaFilesHttpContentBuilder: syncMediaFilesHttpContentBuilder,
-                syncGamesDtoMapper: syncGamesDtoMapper,
-                jsonHttpContentBuilder: jsonHttpContentBuilder
+                appLogger,
+                hashService,
+                syncMediaFilesHttpContentBuilder,
+                syncGamesDtoMapper,
+                jsonHttpContentBuilder,
+                requestSigner,
+                httpClient
+            );
+
+            EventStream = new PlayAtlasEventStream(
+                requestSigner,
+                appLogger,
+                httpClient
             );
 
             RegisterExtensionCommandHandler = new RegisterExtensionCommandHandler(
-                pluginContext: pluginContext,
-                keyManager: keyManager,
+                pluginContext,
+                keyManager,
                 playAtlasHttpClient: Client
             );
         }

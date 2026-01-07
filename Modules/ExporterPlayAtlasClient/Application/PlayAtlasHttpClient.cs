@@ -18,99 +18,38 @@ namespace ExporterPlayAtlasClient.Application
     public class PlayAtlasHttpClient : IPlayAtlasHttpClientPort
     {
         private readonly IAppLoggerPort appLogger;
-        private readonly IExporterPluginContextPort pluginContext;
-        private readonly ISystemConfigPort systemConfig;
-        private readonly ISignatureServicePort signatureService;
         private readonly IHashServicePort hashService;
         private readonly ISyncMediaFilesHttpContentBuilderPort syncMediaFilesHttpContentBuilder;
         private readonly ISyncGamesDtoMapperPort syncGamesDtoMapper;
         private readonly IJsonHttpContentBuilderPort jsonHttpContentBuilder;
+        private readonly IHttpRequestSignerPort requestSigner;
         private readonly HttpClient httpClient;
 
         public PlayAtlasHttpClient(
             IAppLoggerPort appLogger,
-            IExporterPluginContextPort pluginContext,
-            ISystemConfigPort systemConfig,
-            ISignatureServicePort signatureService,
             IHashServicePort hashService,
             ISyncMediaFilesHttpContentBuilderPort syncMediaFilesHttpContentBuilder,
             ISyncGamesDtoMapperPort syncGamesDtoMapper,
-            IJsonHttpContentBuilderPort jsonHttpContentBuilder
+            IJsonHttpContentBuilderPort jsonHttpContentBuilder,
+            IHttpRequestSignerPort requestSigner,
+            HttpClient httpClient
         )
         {
             this.appLogger = appLogger;
-            this.pluginContext = pluginContext;
-            this.systemConfig = systemConfig;
-            this.signatureService = signatureService;
             this.hashService = hashService;
             this.syncMediaFilesHttpContentBuilder = syncMediaFilesHttpContentBuilder;
             this.syncGamesDtoMapper = syncGamesDtoMapper;
             this.jsonHttpContentBuilder = jsonHttpContentBuilder;
-
-            httpClient = new HttpClient()
-            {
-                Timeout = TimeSpan.FromSeconds(60)
-            };
+            this.httpClient = httpClient;
+            this.requestSigner = requestSigner;
         }
-
-        private string ParseUrl(string endpoint = "")
-        {
-            var webAppUrl = pluginContext.GetWebServerURL();
-            if (string.IsNullOrEmpty(endpoint))
-            {
-                return webAppUrl;
-            }
-            return $"{webAppUrl.TrimEnd('/')}/{endpoint.TrimStart('/')}";
-        }
-
-        private HttpRequestMessage CreateSignedRequest(
-            HttpMethod method,
-            string endpoint,
-            HttpContent content = null,
-            string bodyHash = null
-        )
-        {
-            string serverUrl = pluginContext.GetWebServerURL();
-            string requestUrl = ParseUrl(endpoint);
-            string registrationId = systemConfig.ExtensionRegistrationId;
-            string extensionId = pluginContext.GetExtensionId();
-
-            byte[] canonicalBytes = signatureService.BuildRequestCanonicalString(
-                method: method,
-                endpoint: endpoint,
-                bodyHash: bodyHash
-            );
-
-            string signatureBase64 = signatureService.Sign(canonicalBytes);
-
-            var request = new HttpRequestMessage(method, requestUrl);
-
-            if (content != null)
-            {
-                request.Content = content;
-            }
-
-            request.Headers.Add("Origin", serverUrl);
-            request.Headers.Add("Referer", serverUrl);
-            request.Headers.Add("X-Signature", signatureBase64);
-            request.Headers.Add("X-ExtensionId", extensionId);
-            request.Headers.Add("X-RegistrationId", registrationId);
-
-            if (bodyHash != null)
-            {
-                request.Headers.Add("X-ContentHash", bodyHash);
-            }
-
-            return request;
-        }
-
 
         public async Task<PlayAtlasLibraryManifest> GetManifestAsync()
         {
             try
             {
                 string endpoint = SendGetManifestRequestDto.ENDPOINT;
-                using (var request = CreateSignedRequest(HttpMethod.Get, endpoint))
+                using (var request = requestSigner.CreateSignedRequest(HttpMethod.Get, endpoint))
                 using (var response = await httpClient.SendAsync(request))
                 {
                     response.EnsureSuccessStatusCode();
@@ -144,7 +83,7 @@ namespace ExporterPlayAtlasClient.Application
                     var jsonContent = jsonHttpContentBuilder.Build(requestDto)
                 )
                 using (
-                    var signedRequest = CreateSignedRequest(
+                    var signedRequest = requestSigner.CreateSignedRequest(
                         HttpMethod.Post,
                         endpoint,
                         jsonContent,
@@ -189,7 +128,7 @@ namespace ExporterPlayAtlasClient.Application
                     var multipartContent = syncMediaFilesHttpContentBuilder.Build(requestDto)
                 )
                 using (
-                    var signedRequest = CreateSignedRequest(
+                    var signedRequest = requestSigner.CreateSignedRequest(
                         HttpMethod.Post,
                         endpoint,
                         multipartContent,
@@ -229,7 +168,7 @@ namespace ExporterPlayAtlasClient.Application
                     var jsonContent = jsonHttpContentBuilder.Build(requestDto)
                 )
                 using (
-                    var signedRequest = CreateSignedRequest(
+                    var signedRequest = requestSigner.CreateSignedRequest(
                         HttpMethod.Post,
                         endpoint,
                         jsonContent,
@@ -271,7 +210,7 @@ namespace ExporterPlayAtlasClient.Application
                     var jsonContent = jsonHttpContentBuilder.Build(requestDto)
                 )
                 using (
-                    var signedRequest = CreateSignedRequest(
+                    var signedRequest = requestSigner.CreateSignedRequest(
                         HttpMethod.Post,
                         endpoint,
                         jsonContent,
@@ -311,7 +250,7 @@ namespace ExporterPlayAtlasClient.Application
                     var jsonContent = jsonHttpContentBuilder.Build(requestDto)
                 )
                 using (
-                    var signedRequest = CreateSignedRequest(
+                    var signedRequest = requestSigner.CreateSignedRequest(
                         HttpMethod.Post,
                         endpoint,
                         jsonContent,
@@ -353,7 +292,7 @@ namespace ExporterPlayAtlasClient.Application
                     var jsonContent = jsonHttpContentBuilder.Build(requestDto)
                 )
                 using (
-                    var signedRequest = CreateSignedRequest(
+                    var signedRequest = requestSigner.CreateSignedRequest(
                         HttpMethod.Post,
                         endpoint,
                         jsonContent,
