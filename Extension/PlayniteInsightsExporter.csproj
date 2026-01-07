@@ -103,10 +103,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Core\Core.csproj">
-      <Project>{01db3512-7dbb-49b3-b095-153ee27a04c5}</Project>
-      <Name>Core</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Modules\ExporterBootstrap\ExporterBootstrap.csproj">
       <Project>{bd220e5d-a3e9-42d9-9842-28102e2e34d8}</Project>
       <Name>ExporterBootstrap</Name>
