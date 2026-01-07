@@ -50,7 +50,7 @@ namespace PlayniteInsightsExporter.Src
             {
                 return new OperationOutcome(
                         false,
-                        SyncSeverity.Warning,
+                        OutcomeSeverity.Warning,
                         "Extension registration was canceled",
                         title
                     );
@@ -60,7 +60,7 @@ namespace PlayniteInsightsExporter.Src
             {
                 return new OperationOutcome(
                         false,
-                        SyncSeverity.Error,
+                        OutcomeSeverity.Error,
                         $"Failed to register extension: {result.Error.Message}",
                         title
                     );
@@ -68,7 +68,7 @@ namespace PlayniteInsightsExporter.Src
 
             return new OperationOutcome(
                         true,
-                        SyncSeverity.Success,
+                        OutcomeSeverity.Success,
                         "Extension registered successfully",
                         title
                     );

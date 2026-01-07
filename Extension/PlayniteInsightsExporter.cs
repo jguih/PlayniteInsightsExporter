@@ -174,7 +174,7 @@ namespace PlayniteInsightsExporter
             {
                 OperationOutcome outcome = new OperationOutcome(
                     false, 
-                    SyncSeverity.Error,
+                    OutcomeSeverity.Error,
                     $"Failed to initialize extension environment: {ex.Message}",
                     "PlayAtlas Exporter"
                 );
@@ -190,7 +190,7 @@ namespace PlayniteInsightsExporter
             {
                 OperationOutcome outcome = new OperationOutcome(
                     false,
-                    SyncSeverity.Error,
+                    OutcomeSeverity.Error,
                     $"Failed to create event stream with PlayAtlas server: {ex.Message}",
                     "PlayAtlas Exporter"
                 );
@@ -206,7 +206,7 @@ namespace PlayniteInsightsExporter
             cts.Cancel();
         }
 
-        public override void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
+        public override async void OnLibraryUpdated(OnLibraryUpdatedEventArgs args)
         {
             if (Settings?.Settings?.EnableLibrarySyncOnUpdate == true)
             {
@@ -220,7 +220,8 @@ namespace PlayniteInsightsExporter
                 var syncMediaFilesOutcome = syncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
                 PresentOperationOutcome(syncMediaFilesOutcome, notificationFeedbackChannel);
             }
-            // TODO: Process pending sessions
+            var processPendingSessionsResult = await gameSession.ProcessPendingSessionsAsync();
+            PresentOperationOutcome(processPendingSessionsResult, notificationFeedbackChannel);
         }
 
         public override ISettings GetSettings(bool firstRunSettings)
@@ -278,7 +279,7 @@ namespace PlayniteInsightsExporter
                     PresentOperationOutcome(
                         new OperationOutcome(
                             true, 
-                            SyncSeverity.Success, 
+                            OutcomeSeverity.Success, 
                             loc_successSyncClientServer, 
                             "Library Sync"
                         ), dialogFeedbackChannel);
@@ -338,15 +339,15 @@ namespace PlayniteInsightsExporter
         {
             switch (outcome.Severity)
             {
-                case SyncSeverity.Error:
+                case OutcomeSeverity.Error:
                     channel.ShowError(outcome.Message, outcome.Title);
                     break;
 
-                case SyncSeverity.Warning:
+                case OutcomeSeverity.Warning:
                     channel.ShowWarning(outcome.Message, outcome.Title);
                     break;
 
-                case SyncSeverity.Success:
+                case OutcomeSeverity.Success:
                     channel.ShowSuccess(outcome.Message, outcome.Title);
                     break;
             }

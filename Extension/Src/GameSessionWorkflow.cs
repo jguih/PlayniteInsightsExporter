@@ -6,12 +6,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace PlayniteInsightsExporter.Src
 {
     public class GameSessionWorkflow
     {
         private readonly ExporterApi ExporterApi;
+        private readonly string title = "Game Session";
 
         public GameSessionWorkflow(ExporterApi ExporterApi)
         {
@@ -20,8 +22,6 @@ namespace PlayniteInsightsExporter.Src
 
         public async Task<OperationOutcome> OpenSessionAsync(Game game)
         {
-            var title = "Game Session";
-
             try
             {
                 var now = DateTime.UtcNow;
@@ -31,7 +31,7 @@ namespace PlayniteInsightsExporter.Src
                 return new OperationOutcome()
                 {
                     Success = true,
-                    Severity = SyncSeverity.Success,
+                    Severity = OutcomeSeverity.Success,
                     Message = $"Created game session for {game.Name}",
                     Title = title
                 };
@@ -41,8 +41,8 @@ namespace PlayniteInsightsExporter.Src
                 return new OperationOutcome()
                 {
                     Success = false,
-                    Severity = SyncSeverity.Error,
-                    Message = ex.Message,
+                    Severity = OutcomeSeverity.Error,
+                    Message = $"Failed to open game session for {game.Name}: {ex.Message}",
                     Title = title
                 };
             }
@@ -50,8 +50,6 @@ namespace PlayniteInsightsExporter.Src
 
         public async Task<OperationOutcome> CloseSessionAsync(Game game, ulong duration)
         {
-            var title = "Game Session";
-
             try
             {
                 var now = DateTime.UtcNow;
@@ -61,7 +59,7 @@ namespace PlayniteInsightsExporter.Src
                 return new OperationOutcome()
                 {
                     Success = true,
-                    Severity = SyncSeverity.Success,
+                    Severity = OutcomeSeverity.Success,
                     Message = $"Closed game session for {game.Name}",
                     Title = title
                 };
@@ -71,8 +69,36 @@ namespace PlayniteInsightsExporter.Src
                 return new OperationOutcome()
                 {
                     Success = false,
-                    Severity = SyncSeverity.Error,
-                    Message = ex.Message,
+                    Severity = OutcomeSeverity.Error,
+                    Message = $"Failed to close game session for {game.Name}: {ex.Message}",
+                    Title = title
+                };
+            }
+        }
+
+        public async Task<OperationOutcome> ProcessPendingSessionsAsync()
+        {
+            try
+            {
+                var now = DateTime.UtcNow;
+                await ExporterApi.GameSession
+                    .GameSessionService
+                    .ProcessPendingSessionsAsync(now);
+                return new OperationOutcome()
+                {
+                    Success = true,
+                    Severity = OutcomeSeverity.Success,
+                    Message = $"Processed pending sessions successfully",
+                    Title = title
+                };
+            }
+            catch (Exception ex)
+            {
+                return new OperationOutcome()
+                {
+                    Success = false,
+                    Severity = OutcomeSeverity.Error,
+                    Message = $"Failed to process pending sessions: {ex.Message}",
                     Title = title
                 };
             }

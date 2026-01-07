@@ -254,7 +254,7 @@ namespace PlayniteInsightsExporter
                 {
                     Message = loc_operationCanceledByUser,
                     Title = "Sync Games",
-                    Severity = SyncSeverity.Warning,
+                    Severity = OutcomeSeverity.Warning,
                     Success = false
                 };
             }
@@ -266,7 +266,7 @@ namespace PlayniteInsightsExporter
                 {
                     Message = $"{loc_failedSyncGameLibrary}:\n\n{result.Error.Message}",
                     Title = "Sync Games",
-                    Severity = SyncSeverity.Error,
+                    Severity = OutcomeSeverity.Error,
                     Success = false
                 };
             }
@@ -276,7 +276,7 @@ namespace PlayniteInsightsExporter
             {
                 Message = loc_successSyncClientServer,
                 Title = "Sync Games",
-                Severity = SyncSeverity.Success,
+                Severity = OutcomeSeverity.Success,
                 Success = true
             };
         }
@@ -290,7 +290,7 @@ namespace PlayniteInsightsExporter
                 {
                     Message = loc_operationCanceledByUser,
                     Title = "Sync Media Files",
-                    Severity = SyncSeverity.Warning,
+                    Severity = OutcomeSeverity.Warning,
                     Success = false
                 };
             }
@@ -301,7 +301,7 @@ namespace PlayniteInsightsExporter
                 {
                     Message = $"Unexpected error while syncing media files:\n\n{result.ProgressResult.Error.Message}",
                     Title = "Sync Media Files",
-                    Severity = SyncSeverity.Error,
+                    Severity = OutcomeSeverity.Error,
                     Success = false
                 };
             }
@@ -312,7 +312,7 @@ namespace PlayniteInsightsExporter
                 {
                     Message = "Sync media files was not executed.",
                     Title = "Sync Media Files",
-                    Severity = SyncSeverity.Error,
+                    Severity = OutcomeSeverity.Error,
                     Success = false
                 };
             }
@@ -326,7 +326,7 @@ namespace PlayniteInsightsExporter
                         $"Skipped: {result.SyncResult.Skipped}\n" +
                         $"Failed: {result.SyncResult.Failed}",
                     Title = "Sync Media Files",
-                    Severity = SyncSeverity.Error,
+                    Severity = OutcomeSeverity.Error,
                     Success = false
                 };
             }
@@ -336,7 +336,7 @@ namespace PlayniteInsightsExporter
             {
                 Message = loc_successSyncClientServer,
                 Title = "Sync Media Games",
-                Severity = SyncSeverity.Success,
+                Severity = OutcomeSeverity.Success,
                 Success = true
             };
         }

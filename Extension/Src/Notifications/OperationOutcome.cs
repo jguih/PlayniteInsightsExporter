@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteInsightsExporter.Notifications
 {
-    public enum SyncSeverity
+    public enum OutcomeSeverity
     {
         Error,
         Success,
@@ -16,13 +16,13 @@ namespace PlayniteInsightsExporter.Notifications
     public class OperationOutcome
     {
         public bool Success { get; set; }
-        public SyncSeverity Severity { get; set; }
+        public OutcomeSeverity Severity { get; set; }
         public string Message { get; set; }
         public string Title { get; set; }
 
         public OperationOutcome() { }
 
-        public OperationOutcome(bool success, SyncSeverity severity, string message, string title)
+        public OperationOutcome(bool success, OutcomeSeverity severity, string message, string title)
         {
             Success = success;
             Severity = severity;

@@ -155,7 +155,7 @@ namespace PlayniteInsightsExporter
             plugin.PresentOperationOutcome(
                 new OperationOutcome(
                     true,
-                    SyncSeverity.Success,
+                    OutcomeSeverity.Success,
                     loc_successSyncClientServer,
                     "Library Sync"
                 ), dialogFeedbackChannel);
