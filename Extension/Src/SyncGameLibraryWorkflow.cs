@@ -264,7 +264,7 @@ namespace PlayniteInsightsExporter
                 var loc_failedSyncGameLibrary = ResourceProvider.GetString("LOC_Failed_SyncGameLibrary");
                 return new OperationOutcome
                 {
-                    Message = $"{loc_failedSyncGameLibrary}:\n\n{result.Error.Message}",
+                    Message = $"{loc_failedSyncGameLibrary}:\n\n{result.Error.GetType().Name}: {result.Error.Message}",
                     Title = "Sync Games",
                     Severity = OutcomeSeverity.Error,
                     Success = false
@@ -299,7 +299,7 @@ namespace PlayniteInsightsExporter
             {
                 return new OperationOutcome
                 {
-                    Message = $"Unexpected error while syncing media files:\n\n{result.ProgressResult.Error.Message}",
+                    Message = $"Unexpected error while syncing media files:\n\n{result.ProgressResult.Error.GetType().Name}: {result.ProgressResult.Error.Message}",
                     Title = "Sync Media Files",
                     Severity = OutcomeSeverity.Error,
                     Success = false

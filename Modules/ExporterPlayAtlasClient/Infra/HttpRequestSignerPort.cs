@@ -13,7 +13,8 @@ namespace ExporterPlayAtlasClient.Infra
             HttpMethod method,
             string endpoint,
             HttpContent content = null,
-            string bodyHash = null
+            string bodyHash = null,
+            bool includeRegistrationId = true
         );
     }
 }

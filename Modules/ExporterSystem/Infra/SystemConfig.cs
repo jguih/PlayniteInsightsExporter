@@ -1,4 +1,5 @@
 ﻿using ExporterCommon.Application;
+using ExporterCommon.Common;
 using ExporterCommon.Infra;
 using Newtonsoft.Json;
 using System;
@@ -14,12 +15,10 @@ namespace ExporterSystem.Infra
 
     public class SystemConfig : ISystemConfigPort
     {
-        private readonly IFileSystemServicePort fileSystemService;
-
         public string LibraryFilesDirPath { get; }
         public string SecurityDirPath { get; }
         public string SessionsDirPath { get; }
-        public string ExtensionRegistrationId { get; set; } = null;
+        public string RegistrationIdFilePath { get; }
 
         public SystemConfig(
             IFileSystemServicePort fileSystemService,
@@ -32,30 +31,10 @@ namespace ExporterSystem.Infra
             if (string.IsNullOrEmpty(dataDirPath))
                 throw new ArgumentNullException(nameof(dataDirPath));
 
-            this.fileSystemService = fileSystemService;
-
-            if (!fileSystemService.DirectoryExists(configDirPath))
-                throw new DirectoryNotFoundException(nameof(configDirPath));
-            if (!fileSystemService.DirectoryExists(dataDirPath))
-                throw new DirectoryNotFoundException(nameof(dataDirPath));
-
             LibraryFilesDirPath = fileSystemService.PathCombine(configDirPath, "library", "files");
             SecurityDirPath = fileSystemService.PathCombine(dataDirPath, "security");
             SessionsDirPath = fileSystemService.PathCombine(dataDirPath, "sessions");
-        }
-
-        public void LoadRegistrationId()
-        {
-            var registrationIdPath = fileSystemService.PathCombine(SecurityDirPath, "registrationId.txt");
-
-            if (!fileSystemService.FileExists(registrationIdPath))
-            {
-                throw new FileNotFoundException(registrationIdPath);
-            }
-
-            var jsonString = fileSystemService.FileReadAllText(registrationIdPath);
-            var registration = JsonConvert.DeserializeObject<ExtensionRegistration>(jsonString) ?? throw new InvalidDataException($"Failed to parse extension registration from file '{registrationIdPath}'");
-            ExtensionRegistrationId = registration.RegistrationId;
+            RegistrationIdFilePath = fileSystemService.PathCombine(SecurityDirPath, "registrationId.txt");
         }
     }
 }

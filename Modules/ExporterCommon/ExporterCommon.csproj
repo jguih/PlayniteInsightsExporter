@@ -61,6 +61,7 @@
     <Compile Include="Application\PlayAtlasHttpClient\SyncGamesCommand.cs" />
     <Compile Include="Application\PlayAtlasHttpClient\SyncMediaFilesCommand.cs" />
     <Compile Include="Application\QueryHandlerPort.cs" />
+    <Compile Include="Common\ExtensionRegistration.cs" />
     <Compile Include="Domain\AppCompany.cs" />
     <Compile Include="Domain\AppCompletionStatus.cs" />
     <Compile Include="Domain\AppGame.cs" />

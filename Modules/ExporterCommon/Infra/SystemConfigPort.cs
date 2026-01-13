@@ -9,10 +9,8 @@ namespace ExporterCommon.Infra
     public interface ISystemConfigPort
     {
         string LibraryFilesDirPath { get; }
-        string ExtensionRegistrationId { get; }
         string SecurityDirPath { get; }
         string SessionsDirPath { get; }
-
-        void LoadRegistrationId();
+        string RegistrationIdFilePath { get; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using ExporterCommon.Application;
 using ExporterCommon.Application.PlayAtlasHttpClient;
+using ExporterPlayAtlasClient.Application;
 using ExporterPlayAtlasClient.Commands.RegisterExtension;
 using System;
 using System.Collections.Generic;
@@ -26,11 +27,13 @@ namespace ExporterBootstrap.Application
         public readonly IPlayAtlasHttpClientPort PlayAtlasHttpClient;
         public readonly IPlayAtlasEventStreamPort EventStream;
         public readonly ExporterPlayAtlasClientCommandsApi Command;
+        public readonly IExtensionRegistrationFileHandlerPort ExtensionRegistrationHandler;
 
         public ExporterPlayAtlasClientApi(
             IPlayAtlasHttpClientPort playAtlasHttpClient,
             IPlayAtlasEventStreamPort eventStream,
-            IRegisterExtensionCommandHandlerPort registerExtensionCommandHandler
+            IRegisterExtensionCommandHandlerPort registerExtensionCommandHandler,
+            IExtensionRegistrationFileHandlerPort extensionRegistrationHandler
         )
         {
             PlayAtlasHttpClient = playAtlasHttpClient;
@@ -38,6 +41,7 @@ namespace ExporterBootstrap.Application
             Command = new ExporterPlayAtlasClientCommandsApi(
                     registerExtensionCommandHandler
                 );
+            ExtensionRegistrationHandler = extensionRegistrationHandler;
         }
     }
 }

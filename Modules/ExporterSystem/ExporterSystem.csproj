@@ -49,7 +49,6 @@
   <ItemGroup>
     <Compile Include="Infra\EnvironmentInitializer.cs" />
     <Compile Include="Infra\EnvironmentInitializerPort.cs" />
-    <Compile Include="Infra\ExtensionRegistration.cs" />
     <Compile Include="Infra\FileSystemService.cs" />
     <Compile Include="Infra\HashService.cs" />
     <Compile Include="Infra\KeyManager.cs" />

@@ -1,4 +1,5 @@
 ﻿using ExporterCommon.Application;
+using ExporterCommon.Common;
 using ExporterCommon.Infra;
 using ExporterPlayAtlasClient.Dtos;
 using ExporterPlayAtlasClient.Error;
@@ -6,6 +7,7 @@ using ExporterPlayAtlasClient.Infra;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -270,7 +272,7 @@ namespace ExporterPlayAtlasClient.Application
             }
         }
 
-        public async Task RegisterExtensionAsync(
+        public async Task<ExtensionRegistration> RegisterExtensionAsync(
             RegisterExtensionCommand command,
             CancellationToken cancellationToken = default
         )
@@ -296,7 +298,8 @@ namespace ExporterPlayAtlasClient.Application
                         HttpMethod.Post,
                         endpoint,
                         jsonContent,
-                        contentHash
+                        contentHash,
+                        includeRegistrationId: false
                     )
                 )
                 using (var response = await httpClient.SendAsync(signedRequest, cancellationToken))
@@ -305,6 +308,10 @@ namespace ExporterPlayAtlasClient.Application
                         throw new ExtensionAlreadyRegisteredException();
 
                     response.EnsureSuccessStatusCode();
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    var registration = JsonConvert.DeserializeObject<ExtensionRegistration>(content) ?? throw new InvalidDataException("Failed to parse extension registration response from PlayAtlas server");
+                    return registration;
                 }
 
             }

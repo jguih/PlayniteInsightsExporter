@@ -46,7 +46,8 @@ namespace ExporterBootstrap.Application
             var playAtlasClientApi = new ExporterPlayAtlasClientApi(
                     PlayAtlasClient.Client,
                     PlayAtlasClient.EventStream,
-                    PlayAtlasClient.RegisterExtensionCommandHandler
+                    PlayAtlasClient.RegisterExtensionCommandHandler,
+                    PlayAtlasClient.ExtensionRegistrationFileHandler
                 );
 
             var librarySyncApi = new ExporterLibrarySyncApi(

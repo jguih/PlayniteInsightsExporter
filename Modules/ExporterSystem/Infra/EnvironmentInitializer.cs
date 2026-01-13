@@ -50,8 +50,6 @@ namespace ExporterSystem.Infra
                 appLogger.Warn("Assymetric key pair is missing or invalid, trying to create a new pair...");
                 keyManager.WriteAsymmetricKeyPair();
             }
-
-            systemConfig.LoadRegistrationId();
         }
     }
 }

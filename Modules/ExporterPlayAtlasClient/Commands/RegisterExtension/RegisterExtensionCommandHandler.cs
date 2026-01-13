@@ -1,4 +1,5 @@
 ﻿using ExporterCommon.Application;
+using ExporterPlayAtlasClient.Application;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,16 +17,19 @@ namespace ExporterPlayAtlasClient.Commands.RegisterExtension
         private readonly IExporterPluginContextPort pluginContext;
         private readonly IKeyManagerPort keyManager;
         private readonly IPlayAtlasHttpClientPort playAtlasHttpClient;
+        private readonly IExtensionRegistrationFileHandlerPort extensionRegistrationFileHandler;
 
         public RegisterExtensionCommandHandler(
             IExporterPluginContextPort pluginContext, 
             IKeyManagerPort keyManager, 
-            IPlayAtlasHttpClientPort playAtlasHttpClient
+            IPlayAtlasHttpClientPort playAtlasHttpClient,
+            IExtensionRegistrationFileHandlerPort extensionRegistrationFileHandler
         )
         {
             this.pluginContext = pluginContext;
             this.keyManager = keyManager;
             this.playAtlasHttpClient = playAtlasHttpClient;
+            this.extensionRegistrationFileHandler = extensionRegistrationFileHandler;
         }
 
         public async Task ExecuteAsync(CancellationToken cancellationToken = default)
@@ -45,7 +49,9 @@ namespace ExporterPlayAtlasClient.Commands.RegisterExtension
                 PublicKeyPem = key
             };
 
-            await playAtlasHttpClient.RegisterExtensionAsync(command, cancellationToken);
+            var registration = await playAtlasHttpClient.RegisterExtensionAsync(command, cancellationToken);
+
+            extensionRegistrationFileHandler.WriteRegistration(registration);
         }
     }
 }

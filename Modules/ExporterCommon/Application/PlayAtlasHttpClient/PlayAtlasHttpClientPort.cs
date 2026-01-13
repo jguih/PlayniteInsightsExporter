@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ExporterCommon.Common;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +16,6 @@ namespace ExporterCommon.Application
         Task OpenGameSessionAsync(OpenGameSessionCommand command, CancellationToken cancellationToken = default);
         Task CloseGameSessionAsync(CloseGameSessionCommand command, CancellationToken cancellationToken = default);
         Task StaleGameSessionAsync(StaleGameSessionCommand command, CancellationToken cancellationToken = default);
-        Task RegisterExtensionAsync(RegisterExtensionCommand command, CancellationToken cancellationToken = default);
+        Task<ExtensionRegistration> RegisterExtensionAsync(RegisterExtensionCommand command, CancellationToken cancellationToken = default);
     }
 }

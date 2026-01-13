@@ -19,16 +19,19 @@ namespace ExporterPlayAtlasClient.Application
     {
         private readonly IHttpRequestSignerPort requestSigner;
         private readonly IAppLoggerPort appLogger;
+        private readonly IReadOnlyDictionary<string, ISseEventHandlerPort> handlers;
         private readonly HttpClient httpClient;
 
         public PlayAtlasEventStream(
             IHttpRequestSignerPort requestSigner,
             IAppLoggerPort appLogger,
+            IReadOnlyDictionary<string, ISseEventHandlerPort> handlers,
             HttpClient httpClient
         )
         {
             this.requestSigner = requestSigner;
             this.appLogger = appLogger;
+            this.handlers = handlers;
             this.httpClient = httpClient;
         }
 
@@ -52,21 +55,13 @@ namespace ExporterPlayAtlasClient.Application
         {
             appLogger.Info($"Received SSE event {eventType} ({eventId})");
 
-            switch (eventType)
+            if (!handlers.TryGetValue(eventType, out var handler))
             {
-                case "take-screenshot":
-                    // var cmd = JsonConvert.DeserializeObject<TakeScreenshotCommand>(json);
-                    // trigger Playnite action
-                    break;
-
-                case "update-playstate":
-                    // var update = JsonConvert.DeserializeObject<UpdatePlaystateCommand>(json);
-                    break;
-
-                default:
-                    appLogger.Warn($"Unknown SSE event: {eventType}");
-                    break;
+                appLogger.Warn($"Unknown SSE event: {eventType}");
+                return;
             }
+
+            handler.Handle(json, eventId);
         }
 
         private async Task ReadEventStream(
@@ -83,24 +78,33 @@ namespace ExporterPlayAtlasClient.Application
             while (!cancellationToken.IsCancellationRequested &&
                    (line = await reader.ReadLineAsync()) != null)
             {
-                if (line.Length == 0 && dataBuilder.Length > 0)
+                if (line.Length == 0)
                 {
-                    if (string.IsNullOrEmpty(eventType))
+                    if (dataBuilder.Length > 0 || eventType != null)
                     {
-                        eventType = "message";
+                        if (string.IsNullOrEmpty(eventType))
+                            eventType = "message";
+
+                        try
+                        {
+                            DispatchEvent(eventType, dataBuilder.ToString(), eventId);
+                        }
+                        catch (Exception ex)
+                        {
+                            appLogger.Error(
+                                $"Failed to process SSE event {eventType} ({eventId})",
+                                ex
+                            );
+                        }
+                        finally
+                        {
+                            dataBuilder.Clear();
+                        }
+
+                        eventType = null;
+                        eventId = null;
                     }
 
-                    try
-                    {
-                        DispatchEvent(eventType, dataBuilder.ToString(), eventId);
-                    }
-                    finally
-                    {
-                        dataBuilder.Clear();
-                    }
-
-                    eventType = null;
-                    eventId = null;
                     continue;
                 }
 
@@ -119,11 +123,13 @@ namespace ExporterPlayAtlasClient.Application
                 }
                 else if (line.StartsWith("data:"))
                 {
-                    dataBuilder.Append(line.Substring(5).Trim());
+                    if (dataBuilder.Length > 0)
+                        dataBuilder.Append('\n');
+
+                    dataBuilder.Append(line.Substring(5));
                 }
             }
         }
-
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {

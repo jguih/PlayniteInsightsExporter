@@ -1,5 +1,6 @@
 ﻿using ExporterCommon.Application;
 using ExporterCommon.Infra;
+using ExporterPlayAtlasClient.Application;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,16 +15,19 @@ namespace ExporterPlayAtlasClient.Infra
         private readonly IExporterPluginContextPort pluginContext;
         private readonly ISystemConfigPort systemConfig;
         private readonly ISignatureServicePort signatureService;
+        private readonly IExtensionRegistrationFileHandlerPort extensionRegistrationFileHandler;
 
         public HttpRequestSigner(
             IExporterPluginContextPort pluginContext, 
             ISystemConfigPort systemConfig, 
-            ISignatureServicePort signatureService
+            ISignatureServicePort signatureService,
+            IExtensionRegistrationFileHandlerPort extensionRegistrationFileHandler
         )
         {
             this.pluginContext = pluginContext;
             this.systemConfig = systemConfig;
             this.signatureService = signatureService;
+            this.extensionRegistrationFileHandler = extensionRegistrationFileHandler;
         }
 
         private string ParseUrl(string endpoint = "")
@@ -40,12 +44,12 @@ namespace ExporterPlayAtlasClient.Infra
             HttpMethod method, 
             string endpoint, 
             HttpContent content = null, 
-            string bodyHash = null
+            string bodyHash = null,
+            bool includeRegistrationId = true
         )
         {
             string serverUrl = pluginContext.GetWebServerURL();
             string requestUrl = ParseUrl(endpoint);
-            string registrationId = systemConfig.ExtensionRegistrationId;
             string extensionId = pluginContext.GetExtensionId();
 
             byte[] canonicalBytes = signatureService.BuildRequestCanonicalString(
@@ -67,7 +71,12 @@ namespace ExporterPlayAtlasClient.Infra
             request.Headers.Add("Referer", serverUrl);
             request.Headers.Add("X-Signature", signatureBase64);
             request.Headers.Add("X-ExtensionId", extensionId);
-            request.Headers.Add("X-RegistrationId", registrationId);
+
+            if (includeRegistrationId == true)
+            {
+                string registrationId = extensionRegistrationFileHandler.GetRegistrationId();
+                request.Headers.Add("X-RegistrationId", registrationId);
+            }
 
             if (bodyHash != null)
             {

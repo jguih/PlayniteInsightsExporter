@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ExporterSystem.Infra
+namespace ExporterCommon.Common
 {
     public class ExtensionRegistration
     {

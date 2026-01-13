@@ -2,6 +2,7 @@
 using ExporterCommon.Application.PlayAtlasHttpClient;
 using ExporterCommon.Infra;
 using ExporterPlayAtlasClient.Application;
+using ExporterPlayAtlasClient.Application.SseEventHandlers;
 using ExporterPlayAtlasClient.Commands.RegisterExtension;
 using ExporterPlayAtlasClient.Infra;
 using ExporterSystem.Infra;
@@ -20,6 +21,7 @@ namespace ExporterBootstrap.Application.Module
         public IPlayAtlasHttpClientPort Client { get; }
         public IRegisterExtensionCommandHandlerPort RegisterExtensionCommandHandler { get; }
         public IPlayAtlasEventStreamPort EventStream { get; }
+        public IExtensionRegistrationFileHandlerPort ExtensionRegistrationFileHandler { get; }
 
         public PlayAtlasClientModule(
             IFileSystemServicePort fileSystem,
@@ -34,11 +36,19 @@ namespace ExporterBootstrap.Application.Module
             var syncMediaFilesHttpContentBuilder = new SyncMediaFilesHttpContentBuilder(fileSystem);
             var syncGamesDtoMapper = new SyncGamesDtoMapper();
             var jsonHttpContentBuilder = new JsonHttpContentBuilder();
+
+            ExtensionRegistrationFileHandler = new ExtensionRegistrationFileHandler(
+                systemConfig,
+                fileSystem
+            );
+
             var requestSigner = new HttpRequestSigner(
                     pluginContext,
                     systemConfig,
-                    signatureService
+                    signatureService,
+                    ExtensionRegistrationFileHandler
                 );
+
             var httpClient = new HttpClient()
             {
                 Timeout = TimeSpan.FromSeconds(60)
@@ -58,16 +68,22 @@ namespace ExporterBootstrap.Application.Module
                 httpClient
             );
 
+            var handlers = new Dictionary<string, ISseEventHandlerPort>
+            {
+                ["take-screenshot"] = new TakeScreenshotSseHandler(appLogger),
+            };
             EventStream = new PlayAtlasEventStream(
                 requestSigner,
                 appLogger,
+                handlers,
                 httpClient: sseHttpClient
             );
 
             RegisterExtensionCommandHandler = new RegisterExtensionCommandHandler(
                 pluginContext,
                 keyManager,
-                playAtlasHttpClient: Client
+                playAtlasHttpClient: Client,
+                ExtensionRegistrationFileHandler
             );
         }
     }
