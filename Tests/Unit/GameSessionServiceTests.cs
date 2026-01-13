@@ -55,7 +55,8 @@ public class GameSessionServiceTests
             ), Times.Once);
         builder.Client
             .Verify(x => x.OpenGameSessionAsync(
-                It.IsAny<OpenGameSessionCommand>()
+                It.IsAny<OpenGameSessionCommand>(),
+                default
             ), Times.Once);
     }
 
