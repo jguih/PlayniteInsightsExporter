@@ -66,5 +66,9 @@ namespace ExporterCommon.Infra
         /// Mimics <see cref="System.IO.Path.GetFullPath(string)"/>
         /// </summary>
         string PathGetFullPath(string path);
+        /// <summary>
+        /// Mimics <see cref="System.IO.Path.GetExtension(string)"/>
+        /// </summary>
+        string PathGetExtension(string path);
     }
 }

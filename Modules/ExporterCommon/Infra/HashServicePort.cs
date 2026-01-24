@@ -14,7 +14,7 @@ namespace ExporterCommon.Application
         string ComputeCanonicalSHA256ForGameMediaFiles(
             string gameId,
             string contentHash,
-            string mediaFolderPath
+            IEnumerable<MediaFileDescriptor> descriptors
         );
         string ComputeSHA256Base64(string input);
         string ComputeSHA256Hex(string gameId, DateTime startTime);

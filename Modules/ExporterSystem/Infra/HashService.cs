@@ -47,7 +47,11 @@ namespace ExporterSystem.Infra
         }
 
 
-        public string ComputeCanonicalSHA256ForGameMediaFiles(string gameId, string contentHash, string mediaFolderPath)
+        public string ComputeCanonicalSHA256ForGameMediaFiles(
+            string gameId, 
+            string contentHash, 
+            IEnumerable<MediaFileDescriptor> descriptors
+        )
         {
             using (var sha256 = SHA256.Create())
             {
@@ -59,11 +63,11 @@ namespace ExporterSystem.Infra
                 AppendInfo(gameId);
                 AppendInfo(contentHash);
 
-                var files = fileSystemService.DirectoryGetFiles(mediaFolderPath)
-                    .Select(path => new
+                var files = descriptors
+                    .Select(d => new
                     {
-                        Path = path,
-                        Name = fileSystemService.PathGetFileName(path)
+                        Path = d.FullPath,
+                        Name = fileSystemService.PathGetFileName(d.FullPath)
                     })
                     .OrderBy(f => f.Name, StringComparer.Ordinal);
 

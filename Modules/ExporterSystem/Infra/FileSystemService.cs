@@ -79,5 +79,10 @@ namespace ExporterSystem.Infra
         {
             return Path.GetFullPath(path);
         }
+
+        public string PathGetExtension(string path)
+        {
+            return Path.GetExtension(path);
+        }
     }
 }

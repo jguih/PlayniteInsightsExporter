@@ -116,7 +116,7 @@ namespace ExporterPlayAtlasClient.Application
                 var canonicalHash = hashService.ComputeCanonicalSHA256ForGameMediaFiles(
                         gameId: command.GameId,
                         contentHash: command.ContentHash,
-                        mediaFolderPath: command.MediaFolderPath
+                        descriptors: command.MediaFiles
                     );
                 var requestDto = new SyncMediaFilesRequestDto
                 {

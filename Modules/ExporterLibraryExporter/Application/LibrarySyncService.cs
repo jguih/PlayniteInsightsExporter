@@ -116,6 +116,10 @@ namespace ExporterLibraryExporter.Application
 
                 var fullPath = fileSystemService.PathCombine(libraryFilesDir, relativePath);
                 fullPath = fileSystemService.PathGetFullPath(fullPath);
+                var extension = fileSystemService.PathGetExtension(fullPath);
+
+                if (string.Equals(extension, ".ico", StringComparison.OrdinalIgnoreCase))
+                    return;
 
                 if (normalizedFiles.Contains(fullPath))
                 {
