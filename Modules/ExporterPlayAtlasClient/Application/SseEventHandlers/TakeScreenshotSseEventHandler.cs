@@ -28,7 +28,7 @@ namespace ExporterPlayAtlasClient.Application.SseEventHandlers
             var cmd = JsonConvert.DeserializeObject<TakeScreenshotCommand>(json);
             var shareXPath = pluginContext.GetShareXExePath();
 
-            logger.Info($"Handling TakeScreenshot ({eventId})");
+            logger.Debug($"Handling TakeScreenshot ({eventId})");
 
             var psi = new ProcessStartInfo
             {

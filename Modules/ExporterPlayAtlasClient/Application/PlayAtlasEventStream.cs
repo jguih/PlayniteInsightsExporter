@@ -21,6 +21,7 @@ namespace ExporterPlayAtlasClient.Application
         private readonly IAppLoggerPort appLogger;
         private readonly IReadOnlyDictionary<string, ISseEventHandlerPort> handlers;
         private readonly HttpClient httpClient;
+        private int retryCounter = 0;
 
         public PlayAtlasEventStream(
             IHttpRequestSignerPort requestSigner,
@@ -53,11 +54,11 @@ namespace ExporterPlayAtlasClient.Application
 
         private void DispatchEvent(string eventType, string json, string eventId)
         {
-            appLogger.Info($"Received SSE event {eventType} ({eventId})");
+            appLogger.Info($"Received SSE from PlayAtlas server {eventType} ({eventId})");
 
             if (!handlers.TryGetValue(eventType, out var handler))
             {
-                appLogger.Warn($"Unknown SSE event: {eventType}");
+                appLogger.Warn($"Ignored SSE {eventType} due to unavailable handler that matches the event type");
                 return;
             }
 
@@ -92,7 +93,7 @@ namespace ExporterPlayAtlasClient.Application
                         catch (Exception ex)
                         {
                             appLogger.Error(
-                                $"Failed to process SSE event {eventType} ({eventId})",
+                                $"Failed to process SSE from PlayAtlas server {eventType} ({eventId})",
                                 ex
                             );
                         }
@@ -147,6 +148,10 @@ namespace ExporterPlayAtlasClient.Application
                     {
                         response.EnsureSuccessStatusCode();
 
+                        retryCounter = 0;
+
+                        appLogger.Info("Successfully stablished event stream connection with PlayAtlas server");
+
                         using (var stream = await response.Content.ReadAsStreamAsync())
                         using (var reader = new StreamReader(stream))
                         {
@@ -160,10 +165,12 @@ namespace ExporterPlayAtlasClient.Application
                 }
                 catch (Exception)
                 {
-                    appLogger.Info("SSE connection lost, retrying...");
+                    retryCounter++;
+                    if (retryCounter == 1 || retryCounter % 15 == 0)
+                        appLogger.Info($"Lost SSE connection with PlayAtlas server, retrying... (attempt {retryCounter})");
                     try
                     {
-                        await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
+                        await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
                     }
                     catch (OperationCanceledException)
                     {

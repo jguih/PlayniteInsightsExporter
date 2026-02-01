@@ -68,10 +68,7 @@ namespace ExporterBootstrap.Application.Module
                 httpClient
             );
 
-            var handlers = new Dictionary<string, ISseEventHandlerPort>
-            {
-                ["take-screenshot"] = new TakeScreenshotSseHandler(appLogger),
-            };
+            var handlers = PrepareEventStreamHandlers(appLogger);
             EventStream = new PlayAtlasEventStream(
                 requestSigner,
                 appLogger,
@@ -85,6 +82,18 @@ namespace ExporterBootstrap.Application.Module
                 playAtlasHttpClient: Client,
                 ExtensionRegistrationFileHandler
             );
+        }
+
+        private Dictionary<string, ISseEventHandlerPort> PrepareEventStreamHandlers(IAppLoggerPort appLogger)
+        {
+            var takeScreenshotHandler = new TakeScreenshotSseHandler(appLogger);
+
+            var handlers = new Dictionary<string, ISseEventHandlerPort>
+            {
+                [takeScreenshotHandler.EventType] = takeScreenshotHandler,
+            };
+
+            return handlers;
         }
     }
 }

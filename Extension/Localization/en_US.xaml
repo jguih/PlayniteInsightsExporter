@@ -4,12 +4,12 @@
     
     <!-- Library Sync -->
     <sys:String x:Key="LOC_SyncOperation_CanceledByUser">Game library sychronization with PlayAtlas was canceled.</sys:String>
-    <sys:String x:Key="LOC_Loading_SyncClientServer">Syncing library with server...</sys:String>
+    <sys:String x:Key="LOC_Loading_SyncClientServer">Syncing game library with PlayAtlas server...</sys:String>
     <sys:String x:Key="LOC_Failed_SyncGameLibrary">Unexpected error while syncing games library</sys:String>
     <sys:String x:Key="LOC_Success_SyncClientServer">Synchronization with PlayAtlas server completed successfully.</sys:String>
     <sys:String x:Key="LOC_Success_SyncGameLibrary">Game library synchronization with PlayAtlas server completed successfully.</sys:String>
     <sys:String x:Key="LOC_Success_SyncMediaFiles">Library media files synchronization with PlayAtlas server completed successfully.</sys:String>
-    <sys:String x:Key="LOC_Progress_SyncingMediaFiles">Syncing media files {{current}} of {{total}}: {{gameName}}</sys:String>
+    <sys:String x:Key="LOC_Progress_SyncingMediaFiles">Syncing media files with PlayAtlas server, {{current}} of {{total}}: {{gameName}}</sys:String>
     <sys:String x:Key="LOC_Progress_SyncingGames">Syncing {{total}} games with PlayAtlas server</sys:String>
 
     <sys:String x:Key="LOC_Success_Extension_Registration">Extension registration was requested. Approve it in the PlayAtlas UI.</sys:String>
