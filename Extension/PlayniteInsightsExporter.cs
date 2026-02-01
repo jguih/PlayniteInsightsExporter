@@ -68,22 +68,6 @@ namespace PlayniteInsightsExporter
             PlayniteApi.Database.Games.ItemCollectionChanged += OnItemCollectionChanged;
         }
 
-        private void FullGameSync(Game game, ISyncFeedbackChannelPort channel)
-        {
-            var sycnGamesResult = syncGameLibrary.SyncGames(game);
-            var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
-
-            if (!syncGamesOutcome.Success)
-            {
-                PresentOperationOutcome(syncGamesOutcome, channel);
-                return;
-            }
-
-            var syncMediaFilesResult = syncGameLibrary.SyncMediaFiles(game);
-            var syncMediaFilesOutcome = syncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
-            PresentOperationOutcome(syncMediaFilesOutcome, channel);
-        }
-
         private void OnItemCollectionChanged(
             object sender, 
             ItemCollectionChangedEventArgs<Game> e
@@ -105,7 +89,11 @@ namespace PlayniteInsightsExporter
 
                 var syncMediaFilesResult = syncGameLibrary.SyncMediaFiles(e.AddedItems);
                 var syncMediaFilesOutcome = syncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
-                PresentOperationOutcome(syncMediaFilesOutcome, notificationFeedbackChannel);
+
+                if (!syncMediaFilesOutcome.Success)
+                {
+                    PresentOperationOutcome(syncMediaFilesOutcome, notificationFeedbackChannel);
+                }
             }
         }
 
@@ -116,7 +104,14 @@ namespace PlayniteInsightsExporter
                 return;
             }
 
-            FullGameSync(args.Game, notificationFeedbackChannel);
+            var sycnGamesResult = syncGameLibrary.SyncGames(args.Game);
+            var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
+
+            if (!syncGamesOutcome.Success)
+            {
+                PresentOperationOutcome(syncGamesOutcome, notificationFeedbackChannel);
+                return;
+            }
         }
 
         public override async void OnGameStarted(OnGameStartedEventArgs args)
@@ -126,10 +121,12 @@ namespace PlayniteInsightsExporter
                 return;
             }
 
-            FullGameSync(args.Game, notificationFeedbackChannel);
-
             var sessionResult = await gameSession.OpenSessionAsync(args.Game);
-            PresentOperationOutcome(sessionResult, notificationFeedbackChannel);
+
+            if (!sessionResult.Success)
+            {
+                PresentOperationOutcome(sessionResult, notificationFeedbackChannel);
+            }
         }
 
         public override void OnGameStarting(OnGameStartingEventArgs args)
@@ -144,11 +141,22 @@ namespace PlayniteInsightsExporter
                 return;
             }
 
-            FullGameSync(args.Game, notificationFeedbackChannel);
+            var sycnGamesResult = syncGameLibrary.SyncGames(args.Game);
+            var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
+
+            if (!syncGamesOutcome.Success)
+            {
+                PresentOperationOutcome(syncGamesOutcome, notificationFeedbackChannel);
+                return;
+            }
 
             var sessionResult = await gameSession
                 .CloseSessionAsync(args.Game, args.ElapsedSeconds);
-            PresentOperationOutcome(sessionResult, notificationFeedbackChannel);
+
+            if (!sessionResult.Success)
+            {
+                PresentOperationOutcome(sessionResult, notificationFeedbackChannel);
+            }
         }
 
         public override void OnGameUninstalled(OnGameUninstalledEventArgs args)
@@ -158,7 +166,14 @@ namespace PlayniteInsightsExporter
                 return;
             }
 
-            FullGameSync(args.Game, notificationFeedbackChannel);
+            var sycnGamesResult = syncGameLibrary.SyncGames(args.Game);
+            var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
+
+            if (!syncGamesOutcome.Success)
+            {
+                PresentOperationOutcome(syncGamesOutcome, notificationFeedbackChannel);
+                return;
+            }
         }
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
