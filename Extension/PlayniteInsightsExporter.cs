@@ -141,21 +141,20 @@ namespace PlayniteInsightsExporter
                 return;
             }
 
-            var sycnGamesResult = syncGameLibrary.SyncGames(args.Game);
-            var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
-
-            if (!syncGamesOutcome.Success)
-            {
-                PresentOperationOutcome(syncGamesOutcome, notificationFeedbackChannel);
-                return;
-            }
-
             var sessionResult = await gameSession
                 .CloseSessionAsync(args.Game, args.ElapsedSeconds);
 
             if (!sessionResult.Success)
             {
                 PresentOperationOutcome(sessionResult, notificationFeedbackChannel);
+            }
+
+            var sycnGamesResult = syncGameLibrary.SyncGames(args.Game);
+            var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(sycnGamesResult);
+
+            if (!syncGamesOutcome.Success)
+            {
+                PresentOperationOutcome(syncGamesOutcome, notificationFeedbackChannel);
             }
         }
 
@@ -227,16 +226,29 @@ namespace PlayniteInsightsExporter
             {
                 var syncGamesProgressResult = syncGameLibrary.SyncGames();
                 var syncGamesOutcome = syncGameLibrary.InterpretSyncGamesResult(syncGamesProgressResult);
-                PresentOperationOutcome(syncGamesOutcome, notificationFeedbackChannel);
+
+                if (!syncGamesOutcome.Success)
+                {
+                    PresentOperationOutcome(syncGamesOutcome, notificationFeedbackChannel);
+                }
             }
             if (Settings?.Settings?.EnableMediaFilesSyncOnUpdate == true)
             {
                 var syncMediaFilesResult = syncGameLibrary.SyncMediaFiles();
                 var syncMediaFilesOutcome = syncGameLibrary.InterpretSyncMediaFilesResult(syncMediaFilesResult);
-                PresentOperationOutcome(syncMediaFilesOutcome, notificationFeedbackChannel);
+
+                if (!syncMediaFilesOutcome.Success)
+                {
+                    PresentOperationOutcome(syncMediaFilesOutcome, notificationFeedbackChannel);
+                }
             }
+
             var processPendingSessionsResult = await gameSession.ProcessPendingSessionsAsync();
-            PresentOperationOutcome(processPendingSessionsResult, notificationFeedbackChannel);
+
+            if (!processPendingSessionsResult.Success)
+            {
+                PresentOperationOutcome(processPendingSessionsResult, notificationFeedbackChannel);
+            }
         }
 
         public override ISettings GetSettings(bool firstRunSettings)
