@@ -157,29 +157,29 @@ namespace ExporterSystem.Infra
                     }
                 }
 
-                AppendInfoArr(game.Developers.Select(d => d.Name));
-                AppendInfoArr(game.Genres.Select(g => g.Name));
-                AppendInfoArr(game.Platforms.Select(p => p.Name));
-                AppendInfoArr(game.Publishers.Select(p => p.Name));
+                AppendInfoArr(game.Developers?.Select(d => d.Name));
+                AppendInfoArr(game.Genres?.Select(g => g.Name));
+                AppendInfoArr(game.Platforms?.Select(p => p.Name));
+                AppendInfoArr(game.Publishers?.Select(p => p.Name));
 
                 AppendInfo(game.Id.ToString());
-                AppendInfo(game.Name.ToString(CultureInfo.InvariantCulture));
+                AppendInfo(game.Name?.ToString(CultureInfo.InvariantCulture));
                 AppendInfo(game.InstallDirectory);
                 AppendInfo(
                     game.ReleaseDate.HasValue 
                         ? game.ReleaseDate?.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture)
-                        : ""
+                        : null
                 );
                 AppendInfo(game.Playtime.ToString(CultureInfo.InvariantCulture));
                 AppendInfo(
                     game.LastActivity.HasValue
                         ? game.LastActivity.Value.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture)
-                        : ""
+                        : null
                 );
-                AppendInfo(game.Description?.Substring(0, Math.Min(100, game.Description.Length)) ?? "");
+                AppendInfo(game.Description?.Substring(0, Math.Min(100, game.Description.Length)));
                 AppendInfo(game.IsHidden ? "1" : "0");
                 AppendInfo(game.IsInstalled ? "1" : "0");
-                AppendInfo(game.CompletionStatus.Name);
+                AppendInfo(game.CompletionStatus?.Name);
                 AppendInfo(game.BackgroundImage);
                 AppendInfo(game.CoverImage);
                 AppendInfo(game.Icon);
