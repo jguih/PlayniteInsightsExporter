@@ -52,9 +52,7 @@ namespace ExporterCommon.Domain
             }
             set
             {
-                if (string.IsNullOrEmpty(value))
-                    throw new ArgumentNullException(nameof(SpecificationId));
-                specificationId = value;
+                specificationId = value ?? name.ToLowerInvariant();
             }
         }
 
