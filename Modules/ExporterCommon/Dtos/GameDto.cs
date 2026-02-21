@@ -46,6 +46,7 @@ namespace ExporterCommon.Dtos
         public List<AppGenre> Genres { get; set; } = new List<AppGenre>();
         public List<AppCompany> Developers { get; set; } = new List<AppCompany>();
         public List<AppCompany> Publishers { get; set; } = new List<AppCompany>();
+        public List<AppTag> Tags { get; set; } = new List<AppTag>();
         public DateTime? ReleaseDate { get; set; } = null;
         public ulong Playtime { get; set; } = 0;
         public DateTime? LastActivity { get; set; } = null;
@@ -84,6 +85,7 @@ namespace ExporterCommon.Dtos
                 Genres = game.Genres,
                 Developers = game.Developers,
                 Publishers = game.Publishers,
+                Tags = game.Tags,
                 ReleaseDate = game.ReleaseDate,
                 Playtime = game.Playtime,
                 LastActivity = game.LastActivity,

@@ -211,6 +211,23 @@ namespace PlayniteInsightsExporter
                 exporterApi.Logger.Error(outcome.Message, ex);
                 PresentOperationOutcome(outcome, notificationFeedbackChannel);
             }
+
+            var games = exporterApi.PlayniteIntegration.Query.GetAllGames.Execute();
+            var corpus = exporterApi.GameCorpus.CorpusBuilder.Build(games.ToList());
+            var labeledCorpus = exporterApi.GameCorpus.CorpusLabeler.ApplyLabels(corpus);
+
+            var horrorCount = labeledCorpus.Where(lc =>
+            {
+                lc.Labels.TryGetValue("HORROR", out var value);
+                return value;
+            }).ToList();
+            var runBasedCount = labeledCorpus.Where(lc =>
+            {
+                lc.Labels.TryGetValue("RUN-BASED", out var value);
+                return value;
+            }).ToList();
+
+            var test = true;
         }
 
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)

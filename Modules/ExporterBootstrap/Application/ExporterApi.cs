@@ -14,6 +14,7 @@ namespace ExporterBootstrap.Application
         public readonly ExporterLibrarySyncApi LibrarySync;
         public readonly ExporterPlayniteIntegrationApi PlayniteIntegration;
         public readonly ExporterGameSessionApi GameSession;
+        public readonly ExporterGameCorpusApi GameCorpus;
         public readonly IEnvironmentInitializerPort EnvironmentInitializer;
         public readonly IAppLoggerPort Logger;
 
@@ -22,6 +23,7 @@ namespace ExporterBootstrap.Application
             ExporterLibrarySyncApi libraryExporterApi,
             ExporterPlayniteIntegrationApi playniteIntegrationApi,
             ExporterGameSessionApi gameSessionApi,
+            ExporterGameCorpusApi gameCorpusApi,
             IEnvironmentInitializerPort environmentInitializer,
             IAppLoggerPort appLogger
         )
@@ -30,6 +32,7 @@ namespace ExporterBootstrap.Application
             LibrarySync = libraryExporterApi;
             PlayniteIntegration = playniteIntegrationApi;
             GameSession = gameSessionApi;
+            GameCorpus = gameCorpusApi;
             EnvironmentInitializer = environmentInitializer;
             Logger = appLogger;
         }

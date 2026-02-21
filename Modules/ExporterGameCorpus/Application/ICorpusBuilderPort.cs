@@ -1,0 +1,15 @@
+﻿using ExporterCommon.Domain;
+using ExporterGameCorpus.Domain;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ExporterGameCorpus.Application
+{
+    public interface ICorpusBuilderPort
+    {
+        List<CorpusDocument> Build(List<AppGame> games);
+    }
+}

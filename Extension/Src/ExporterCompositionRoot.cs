@@ -81,13 +81,16 @@ namespace PlayniteInsightsExporter
                     systemConfig
                 );
 
+            IGameCorpusModulePort gameCorpus = new GameCorpusModule();
+
             var bootstrapper = new ExporterBootstraper(
                     appLogger,
                     infra,
                     playAtlasClient,
                     librarySync,
                     playniteIntegration,
-                    gameSession
+                    gameSession,
+                    gameCorpus
                 );
             return bootstrapper.BootstrapExporterApi();
         }

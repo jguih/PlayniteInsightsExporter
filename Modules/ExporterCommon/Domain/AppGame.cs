@@ -12,6 +12,7 @@ namespace ExporterCommon.Domain
         private List<AppGenre> genres = new List<AppGenre>();
         private List<AppCompany> developers = new List<AppCompany>();
         private List<AppCompany> publishers = new List<AppCompany>();
+        private List<AppTag> tags = new List<AppTag>();
         private DateTime? releaseDate = null;
         private ulong playtime = 0;
         private DateTime? lastActivity = null;
@@ -104,6 +105,20 @@ namespace ExporterCommon.Domain
                 if (value is null)
                     throw new ArgumentNullException(nameof(Publishers));
                 publishers = value;
+            }
+        }
+
+        public List<AppTag> Tags
+        {
+            get
+            {
+                return tags;
+            }
+            set
+            {
+                if (value is null)
+                    throw new ArgumentNullException(nameof(Tags));
+                tags = value;
             }
         }
 

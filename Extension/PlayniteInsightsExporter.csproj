@@ -114,6 +114,10 @@
       <Project>{0c45c5bf-6076-4d80-9dba-59edd13169b2}</Project>
       <Name>ExporterCommon</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Modules\ExporterGameCorpus\ExporterGameCorpus.csproj">
+      <Project>{A1499D5D-C936-4550-ABEE-EF5D003C1B0E}</Project>
+      <Name>ExporterGameCorpus</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Modules\ExporterGameSessions\ExporterGameSessions.csproj">
       <Project>{e3501de5-f87c-4720-9159-1f5c2d06a93d}</Project>
       <Name>ExporterGameSessions</Name>

@@ -161,6 +161,7 @@ namespace ExporterSystem.Infra
                 AppendInfoArr(game.Genres?.Select(g => g.Name));
                 AppendInfoArr(game.Platforms?.Select(p => p.Name));
                 AppendInfoArr(game.Publishers?.Select(p => p.Name));
+                AppendInfoArr(game.Tags?.Select(t => t.Name));
 
                 AppendInfo(game.Id.ToString());
                 AppendInfo(game.Name?.ToString(CultureInfo.InvariantCulture));

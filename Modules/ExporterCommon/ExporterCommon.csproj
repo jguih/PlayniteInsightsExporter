@@ -67,6 +67,7 @@
     <Compile Include="Domain\AppGame.cs" />
     <Compile Include="Domain\AppGenre.cs" />
     <Compile Include="Domain\AppPlatform.cs" />
+    <Compile Include="Domain\AppTag.cs" />
     <Compile Include="Domain\BaseEntity.cs" />
     <Compile Include="Domain\GameSession.cs" />
     <Compile Include="Error\InvalidStateException.cs" />

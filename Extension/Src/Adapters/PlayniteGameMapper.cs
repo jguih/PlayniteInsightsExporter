@@ -46,6 +46,12 @@ namespace PlayniteInsightsExporter.Adapters
                         Id = g.Id,
                         Name = g.Name,
                     }).ToList() ?? Enumerable.Empty<AppGenre>().ToList(),
+                Tags = game.Tags?
+                    .Select(t => new AppTag()
+                    {
+                        Id = t.Id,
+                        Name = t.Name,
+                    }).ToList() ?? Enumerable.Empty<AppTag>().ToList(),
                 Added = game.Added,
                 LastActivity = game.LastActivity,
                 ReleaseDate = game.ReleaseDate?.Date,

@@ -41,7 +41,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Application\ExporterGameCorpusApi.cs" />
     <Compile Include="Application\ExporterGameSessionApi.cs" />
+    <Compile Include="Application\Modules\GameCorpusModule.cs" />
+    <Compile Include="Application\Modules\IGameCorpusModulePort.cs" />
     <Compile Include="Application\Modules\GameSessionModule.cs" />
     <Compile Include="Application\Modules\GameSessionModulePort.cs" />
     <Compile Include="Application\Modules\InfraModule.cs" />
@@ -63,6 +66,10 @@
     <ProjectReference Include="..\ExporterCommon\ExporterCommon.csproj">
       <Project>{0c45c5bf-6076-4d80-9dba-59edd13169b2}</Project>
       <Name>ExporterCommon</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ExporterGameCorpus\ExporterGameCorpus.csproj">
+      <Project>{a1499d5d-c936-4550-abee-ef5d003c1b0e}</Project>
+      <Name>ExporterGameCorpus</Name>
     </ProjectReference>
     <ProjectReference Include="..\ExporterGameSessions\ExporterGameSessions.csproj">
       <Project>{e3501de5-f87c-4720-9159-1f5c2d06a93d}</Project>

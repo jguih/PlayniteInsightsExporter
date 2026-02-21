@@ -17,6 +17,8 @@ namespace ExporterBootstrap.Application
         private readonly ILibrarySyncModulePort LibrarySync;
         private readonly IPlayniteIntegrationModulePort PlayniteIntegration;
         private readonly IGameSessionModulePort GameSession;
+        private readonly IGameCorpusModulePort GameCorpus;
+
         private ExporterApi Api { get; set; } = null;
 
         public ExporterBootstraper(
@@ -25,7 +27,8 @@ namespace ExporterBootstrap.Application
             IPlayAtlasClientModulePort playAtlasClient,
             ILibrarySyncModulePort librarySync,
             IPlayniteIntegrationModulePort playniteIntegration,
-            IGameSessionModulePort gameSession
+            IGameSessionModulePort gameSession,
+            IGameCorpusModulePort gameCorpus
         )
         {
             AppLogger = appLogger;
@@ -34,6 +37,7 @@ namespace ExporterBootstrap.Application
             LibrarySync = librarySync;
             PlayniteIntegration = playniteIntegration;
             GameSession = gameSession;
+            GameCorpus = gameCorpus;
         }
 
         public ExporterApi BootstrapExporterApi()
@@ -63,11 +67,17 @@ namespace ExporterBootstrap.Application
 
             var gameSessionApi = new ExporterGameSessionApi(GameSession.GameSessionService);
 
+            var gameCorpusApi = new ExporterGameCorpusApi(
+                GameCorpus.CorpusBuilder,
+                GameCorpus.CorpusLabeler
+            );
+
             Api = new ExporterApi(
                 playAtlasClientApi,
                 librarySyncApi,
                 playniteIntegrationApi,
                 gameSessionApi,
+                gameCorpusApi,
                 Infra.EnvironmentInitializer,
                 AppLogger
             );
