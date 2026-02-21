@@ -211,12 +211,6 @@ namespace PlayniteInsightsExporter
                 exporterApi.Logger.Error(outcome.Message, ex);
                 PresentOperationOutcome(outcome, notificationFeedbackChannel);
             }
-
-            var games = exporterApi.PlayniteIntegration.Query.GetAllGames.Execute();
-            var corpus = exporterApi.GameCorpus.CorpusBuilder.Build(games.ToList());
-            var labeledCorpus = exporterApi.GameCorpus.CorpusLabeler.ApplyLabels(corpus);
-
-            var result = exporterApi.GameCorpus.TextCorpusMiner.Mine(labeledCorpus);
         }
 
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)

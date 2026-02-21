@@ -11,5 +11,6 @@ namespace ExporterGameCorpus.Domain
         public string Value { get; set; }
         public int Pos { get; set; }
         public int Neg { get; set; }
+        public double Score { get; set; }
     }
 }

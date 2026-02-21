@@ -1,5 +1,7 @@
-﻿using ExporterGameCorpus.Application;
+﻿using ExporterCommon.Infra;
+using ExporterGameCorpus.Application;
 using ExporterGameCorpus.Domain;
+using ExporterGameCorpus.Infra;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,15 +14,21 @@ namespace ExporterBootstrap.Application.Modules
     {
         public ICorpusBuilderPort CorpusBuilder { get; }
         public ICorpusLabelerPort CorpusLabeler { get; }
-        public ITextCorpusMinerPort TextCorpusMiner { get; }
+        public ICorpusMinerPort TextCorpusMiner { get; }
+        public IGameLibraryStatisticsParser StatisticsParser { get; }
+        public IGameLibraryStatisticsWritter StatisticsWritter { get; }
 
-        public GameCorpusModule() 
+        public GameCorpusModule(
+            IFileSystemServicePort fileSystemService    
+        ) 
         {
             var corpusNormalizer = new CorpusNormalizer(new CorpusNormalizerOptions());
 
             CorpusBuilder = new CorpusBuilder(corpusNormalizer);
             CorpusLabeler = new CorpusLabeler(ClassificationDefinitions.All);
-            TextCorpusMiner = new TextCorpusMiner();
+            TextCorpusMiner = new CorpusMiner();
+            StatisticsParser = new GameLibraryStatisticsParser();
+            StatisticsWritter = new GameLibraryStatisticsWritter(StatisticsParser, fileSystemService);
         }
     }
 }

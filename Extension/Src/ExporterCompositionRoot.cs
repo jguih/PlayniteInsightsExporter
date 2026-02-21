@@ -81,7 +81,7 @@ namespace PlayniteInsightsExporter
                     systemConfig
                 );
 
-            IGameCorpusModulePort gameCorpus = new GameCorpusModule();
+            IGameCorpusModulePort gameCorpus = new GameCorpusModule(fileSystem);
 
             var bootstrapper = new ExporterBootstraper(
                     appLogger,

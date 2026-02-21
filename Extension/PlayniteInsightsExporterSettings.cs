@@ -1,4 +1,5 @@
 ﻿using ExporterBootstrap.Application;
+using ExporterGameCorpus.Domain;
 using Infra;
 using Microsoft.Win32;
 using Playnite.SDK;
@@ -47,6 +48,8 @@ namespace PlayniteInsightsExporter
         public RelayCommand BrowseShareXPath { get; set; }
         [DontSerialize]
         public RelayCommand RegisterExtensionButton { get; set; }
+        [DontSerialize]
+        public RelayCommand ExportLibraryStatsButton { get; set; }
     }
 
     public class PlayniteInsightsExporterSettingsViewModel : ObservableObject, ISettings
@@ -70,6 +73,7 @@ namespace PlayniteInsightsExporter
                 settings.ExportLibraryButton = new RelayCommand(() => OnExportLibrary());
                 settings.BrowseShareXPath = new RelayCommand(() => OnBrowseShareXPath());
                 settings.RegisterExtensionButton = new RelayCommand(() => OnRegisterExtension());
+                settings.ExportLibraryStatsButton = new RelayCommand(() => OnExportGameLibraryStats());
                 OnPropertyChanged();
             }
         }
@@ -181,6 +185,50 @@ namespace PlayniteInsightsExporter
             var result = registerExtension.Register();
             var outcome = registerExtension.InterpretRegisterResult(result);
             plugin.PresentOperationOutcome(outcome, dialogFeedbackChannel);
+        }
+
+        public void OnExportGameLibraryStats()
+        {
+            var title = "PlayAtlas Game Library Statistics Exporter";
+
+            try
+            {
+                var games = exporterApi.PlayniteIntegration.Query.GetAllGames.Execute().ToList();
+                var corpus = exporterApi.GameCorpus.CorpusBuilder.Build(games);
+                var labeledCorpus = exporterApi.GameCorpus.CorpusLabeler.ApplyLabels(corpus);
+                var miningResult = exporterApi.GameCorpus.CorpusMiner.Mine(labeledCorpus);
+
+                var stats = new GameLibraryStatistics()
+                {
+                    LibraryData = new List<MiningExport>() { miningResult }
+                };
+
+                var path = playniteApi.Dialogs.SaveFile("JSON files|*.json", true);
+
+                exporterApi.GameCorpus.StatisticsWritter.Write(stats, path);
+
+                var outcome = new OperationOutcome()
+                {
+                    Success = true,
+                    Severity = OutcomeSeverity.Success,
+                    Message = "Successfully saved game library statistics file",
+                    Title = title
+                };
+
+                plugin.PresentOperationOutcome(outcome, dialogFeedbackChannel);
+            }
+            catch (Exception ex)
+            {
+                var outcome = new OperationOutcome()
+                {
+                    Success = false,
+                    Severity = OutcomeSeverity.Error,
+                    Message = $"Failed to export game library statistics: {ex.Message}",
+                    Title = title
+                };
+
+                plugin.PresentOperationOutcome(outcome, dialogFeedbackChannel);
+            }
         }
     }
 }

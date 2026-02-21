@@ -8,9 +8,11 @@ using System.Threading.Tasks;
 
 namespace ExporterGameCorpus.Application
 {
-    public class TextCorpusMiner : ITextCorpusMinerPort
+    public class CorpusMiner : ICorpusMinerPort
     {
-        public TextCorpusMiner() { }
+        private HashSet<string> stopwords = new HashSet<string> { "and", "the", "with", "for", "of", "in", "on", "a", "to", "is", "was" };
+
+        public CorpusMiner() { }
 
         private Dictionary<string, int> CountDocumentFrequency(
             IEnumerable<LabeledCorpusDocument> items)
@@ -35,6 +37,15 @@ namespace ExporterGameCorpus.Application
             }
 
             return map;
+        }
+
+        bool IsValidToken(string token)
+        {
+            if (token.All(char.IsDigit)) return false;
+
+            if (token.Length < 3) return false;
+
+            return true;
         }
 
         public MiningExport Mine(List<LabeledCorpusDocument> labeledCorpus)
@@ -68,47 +79,41 @@ namespace ExporterGameCorpus.Application
 
             var stats = new List<TokenStat>();
 
+            double posTotal = totalPositives;
+            double negTotal = usedNegativeCount;
+            double minPosRate = 0.05; // 5%
+
             foreach (var key in allKeys)
             {
+                if (!IsValidToken(key)) continue;
+                if (stopwords.Contains(key)) continue;
+
                 posMap.TryGetValue(key, out var pos);
                 negMap.TryGetValue(key, out var neg);
 
+                if (pos < 5) continue;
+
+                double posRate = pos / posTotal;
+                double negRate = neg / negTotal;
+                double lift = negRate == 0 ? double.MaxValue : posRate / negRate;
+                int nGramLength = key.Split(' ').Length;
+                double lengthBoost = Math.Pow(nGramLength, 1.5);
+                double weightedScore = lift * pos * lengthBoost;
+
+                if (posRate < minPosRate) continue;
                 if (key.Length < 3) continue;
 
                 stats.Add(new TokenStat
                 {
                     Value = key,
                     Pos = pos,
-                    Neg = neg
+                    Neg = neg,
+                    Score = weightedScore
                 });
             }
 
-            stats = stats
-                .Where(s => s.Pos >= 3)
-                .ToList();
-
-            double posTotal = totalPositives;
-            double negTotal = usedNegativeCount;
-
             var ranked = stats
-                .Select(s =>
-                {
-                    double posRate = s.Pos / posTotal;
-                    double negRate = s.Neg / negTotal;
-
-                    double lift = negRate == 0
-                        ? double.MaxValue
-                        : posRate / negRate;
-
-                    return new
-                    {
-                        s.Value,
-                        s.Pos,
-                        s.Neg,
-                        Lift = lift
-                    };
-                })
-                .OrderByDescending(x => x.Lift)
+                .OrderByDescending(s => s.Score)
                 .Take(200)
                 .ToList();
 
@@ -119,13 +124,6 @@ namespace ExporterGameCorpus.Application
                 TotalPositives = totalPositives,
                 UsedNegatives = usedNegativeCount,
                 TopTextTokens = ranked
-                    .Select(x => new TokenStat
-                    {
-                        Value = x.Value,
-                        Pos = x.Pos,
-                        Neg = x.Neg
-                    })
-                    .ToList()
             };
         }
     }

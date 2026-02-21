@@ -8,10 +8,6 @@ namespace ExporterGameCorpus.Domain
 {
     public class GameLibraryStatistics
     {
-        public string ClassificationId { get; set; }
-        public int TotalPositives { get; set; }
-        public int TotalNegatives { get; set; }
-        public List<TokenStat> TopTextTokens { get; set; } = new List<TokenStat>();
-        public List<TokenStat> TopTaxonomyTokens { get; set; } = new List<TokenStat>();
+        public List<MiningExport> LibraryData { get; set; } = new List<MiningExport>();
     }
 }

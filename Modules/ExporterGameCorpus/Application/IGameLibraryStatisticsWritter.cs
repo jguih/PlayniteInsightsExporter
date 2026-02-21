@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace ExporterGameCorpus.Application
 {
-    public interface ITextCorpusMinerPort
+    public interface IGameLibraryStatisticsWritter
     {
-        MiningExport Mine(List<LabeledCorpusDocument> labeledCorpus);
+        void Write(GameLibraryStatistics stats, string path);
     }
 }

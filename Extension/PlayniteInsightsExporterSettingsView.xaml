@@ -40,6 +40,12 @@
                     Command="{Binding Settings.RegisterExtensionButton}"
                     Margin="0,0,0,12"
                     HorizontalAlignment="Left"/>
+                <Button 
+                    Content="{DynamicResource LOC_Label_ExportLibraryStats}" 
+                    Width="150" 
+                    Command="{Binding Settings.ExportLibraryStatsButton}"
+                    Margin="0,0,0,12"
+                    HorizontalAlignment="Left"/>
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOC_Label_ShareX_Executable_Path}" Margin="0,0,0,12"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
