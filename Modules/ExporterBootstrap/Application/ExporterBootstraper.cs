@@ -69,7 +69,8 @@ namespace ExporterBootstrap.Application
 
             var gameCorpusApi = new ExporterGameCorpusApi(
                 GameCorpus.CorpusBuilder,
-                GameCorpus.CorpusLabeler
+                GameCorpus.CorpusLabeler,
+                GameCorpus.TextCorpusMiner
             );
 
             Api = new ExporterApi(

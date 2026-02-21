@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ExporterGameCorpus.Application
 {
-    public class CorpusNormalizer : ICorpusNormalizer
+    public class CorpusNormalizer : ICorpusNormalizerPort
     {
         private readonly CorpusNormalizerOptions Options;
 

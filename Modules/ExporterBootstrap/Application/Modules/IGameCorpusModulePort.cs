@@ -11,5 +11,6 @@ namespace ExporterBootstrap.Application.Modules
     {
         ICorpusBuilderPort CorpusBuilder { get; }
         ICorpusLabelerPort CorpusLabeler { get; }
+        ITextCorpusMinerPort TextCorpusMiner { get; }
     }
 }

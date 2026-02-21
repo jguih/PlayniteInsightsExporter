@@ -9,7 +9,7 @@ namespace ExporterGameCorpus.Domain
     public class CorpusDocument
     {
         public Guid PlayniteGameId { get; set; }
-        public string TextContent { get; set; }
-        public List<string> TaxonomyTerms { get; set; }
+        public List<string> TextTokens { get; set; }
+        public List<string> TaxonomyTokens { get; set; }
     }
 }

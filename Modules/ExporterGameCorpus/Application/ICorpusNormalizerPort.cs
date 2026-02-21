@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ExporterGameCorpus.Application
 {
-    public interface ICorpusNormalizer
+    public interface ICorpusNormalizerPort
     {
         string NormalizeText(string input);
         List<string> NormalizeTaxonomy(IEnumerable<string> terms);

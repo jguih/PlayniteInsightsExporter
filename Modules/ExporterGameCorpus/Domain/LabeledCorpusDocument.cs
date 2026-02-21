@@ -9,8 +9,8 @@ namespace ExporterGameCorpus.Domain
     public class LabeledCorpusDocument
     {
         public Guid PlayniteGameId { get; set; }
-        public string TextContent { get; set; }
-        public List<string> TaxonomyTerms { get; set; }
+        public List<string> TextTokens { get; set; }
+        public List<string> TaxonomyTokens { get; set; }
         public Dictionary<string, bool> Labels { get; set; }
     }
 }

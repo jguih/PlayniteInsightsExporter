@@ -216,18 +216,7 @@ namespace PlayniteInsightsExporter
             var corpus = exporterApi.GameCorpus.CorpusBuilder.Build(games.ToList());
             var labeledCorpus = exporterApi.GameCorpus.CorpusLabeler.ApplyLabels(corpus);
 
-            var horrorCount = labeledCorpus.Where(lc =>
-            {
-                lc.Labels.TryGetValue("HORROR", out var value);
-                return value;
-            }).ToList();
-            var runBasedCount = labeledCorpus.Where(lc =>
-            {
-                lc.Labels.TryGetValue("RUN-BASED", out var value);
-                return value;
-            }).ToList();
-
-            var test = true;
+            var result = exporterApi.GameCorpus.TextCorpusMiner.Mine(labeledCorpus);
         }
 
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)

@@ -47,13 +47,17 @@
     <Compile Include="Application\CorpusNormalizer.cs" />
     <Compile Include="Application\ICorpusBuilderPort.cs" />
     <Compile Include="Application\ICorpusLabelerPort.cs" />
-    <Compile Include="Application\ICorpusNormalizer.cs" />
-    <Compile Include="Application\TextPhraseMiner.cs" />
+    <Compile Include="Application\ICorpusNormalizerPort.cs" />
+    <Compile Include="Application\ITextCorpusMinerPort.cs" />
+    <Compile Include="Application\TextCorpusMiner.cs" />
     <Compile Include="Domain\ClassificationDefinition.cs" />
     <Compile Include="Domain\CorpusDocument.cs" />
     <Compile Include="Domain\CorpusNormalizercOptions.cs" />
+    <Compile Include="Domain\GameLibraryStatistics.cs" />
     <Compile Include="Domain\LabeledCorpusDocument.cs" />
-    <Compile Include="Domain\PhraseStat.cs" />
+    <Compile Include="Domain\MiningExport.cs" />
+    <Compile Include="Domain\TokenStat.cs" />
+    <Compile Include="Domain\ValueObject\ClassificationId.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

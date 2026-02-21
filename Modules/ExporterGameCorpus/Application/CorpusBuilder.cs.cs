@@ -4,20 +4,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ExporterGameCorpus.Application
 {
     public class CorpusBuilder : ICorpusBuilderPort
     {
-        private readonly ICorpusNormalizer CorpusNormalizer;
+        private readonly ICorpusNormalizerPort CorpusNormalizer;
 
-        public CorpusBuilder(ICorpusNormalizer corpusNormalizer)
+        public CorpusBuilder(ICorpusNormalizerPort corpusNormalizer)
         {
             CorpusNormalizer = corpusNormalizer;
         }
 
-        private List<string> MergeAndNormalizeTaxonomy(List<AppGenre> genres, List<AppTag> tags)
+        private List<string> BuildTaxonomyTokens(List<AppGenre> genres, List<AppTag> tags)
         {
             var list = new List<string>(genres.Count + tags.Count);
 
@@ -28,15 +29,45 @@ namespace ExporterGameCorpus.Application
             return CorpusNormalizer.NormalizeTaxonomy(distinct);
         }
 
+        private List<string> BuildTextTokens(string text)
+        {
+            var normalized = CorpusNormalizer.NormalizeText(text);
+
+            var matches = Regex.Matches(normalized.ToLower(), @"\b[\w']+\b");
+            var tokens = new List<string>(matches.Count);
+
+            foreach (Match match in matches)
+            {
+                tokens.Add(match.Value);
+            };
+
+            var result = new List<string>(tokens);
+
+            // Bigrams
+            for (int i = 0; i < tokens.Count - 1; i++)
+            {
+                result.Add($"{tokens[i]} {tokens[i + 1]}");
+            }
+
+            // Trigrams
+            for (int i = 0; i < tokens.Count - 2; i++)
+            {
+                result.Add($"{tokens[i]} {tokens[i + 1]} {tokens[i + 2]}");
+            }
+
+            return result;
+        }
+
         public List<CorpusDocument> Build(List<AppGame> rawGames)
         {
             return rawGames
                 .Where(g => !string.IsNullOrWhiteSpace(g.Description))
+                .Where(g => !g.IsHidden)
                 .Select(g => new CorpusDocument
                 {
                     PlayniteGameId = g.Id,
-                    TextContent = CorpusNormalizer.NormalizeText($"{g.Name}\n{g.Description}"),
-                    TaxonomyTerms = MergeAndNormalizeTaxonomy(g.Genres, g.Tags)
+                    TextTokens = BuildTextTokens($"{g.Name}\n{g.Description}"),
+                    TaxonomyTokens = BuildTaxonomyTokens(g.Genres, g.Tags)
                 })
                 .ToList();
         }

@@ -1,4 +1,5 @@
 ﻿using ExporterGameCorpus.Domain;
+using ExporterGameCorpus.Domain.ValueObject;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace ExporterGameCorpus.Application
             {
                 new ClassificationDefinition
                 {
-                    Id = "RUN-BASED",
+                    Id = ClassificationId.RUN_BASED,
                     RequiredTags = new List<string>
                     {
                         "roguelike",
@@ -24,7 +25,7 @@ namespace ExporterGameCorpus.Application
                 },
                 new ClassificationDefinition
                 {
-                    Id = "HORROR",
+                    Id = ClassificationId.HORROR,
                     RequiredTags = new List<string>
                     {
                         "horror",

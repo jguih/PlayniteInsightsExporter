@@ -11,14 +11,17 @@ namespace ExporterBootstrap.Application
     {
         public readonly ICorpusBuilderPort CorpusBuilder;
         public readonly ICorpusLabelerPort CorpusLabeler;
+        public readonly ITextCorpusMinerPort TextCorpusMiner;
 
         public ExporterGameCorpusApi(
             ICorpusBuilderPort corpusBuilder,
-            ICorpusLabelerPort corpusLabeler
+            ICorpusLabelerPort corpusLabeler,
+            ITextCorpusMinerPort textCorpusMiner
         )
         {
             CorpusBuilder = corpusBuilder;
             CorpusLabeler = corpusLabeler;
+            TextCorpusMiner = textCorpusMiner;
         }
     }
 }

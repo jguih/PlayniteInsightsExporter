@@ -12,6 +12,7 @@ namespace ExporterBootstrap.Application.Modules
     {
         public ICorpusBuilderPort CorpusBuilder { get; }
         public ICorpusLabelerPort CorpusLabeler { get; }
+        public ITextCorpusMinerPort TextCorpusMiner { get; }
 
         public GameCorpusModule() 
         {
@@ -19,6 +20,7 @@ namespace ExporterBootstrap.Application.Modules
 
             CorpusBuilder = new CorpusBuilder(corpusNormalizer);
             CorpusLabeler = new CorpusLabeler(ClassificationDefinitions.All);
+            TextCorpusMiner = new TextCorpusMiner();
         }
     }
 }

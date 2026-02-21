@@ -33,8 +33,8 @@ namespace ExporterGameCorpus.Application
                 return new LabeledCorpusDocument
                 {
                     PlayniteGameId = doc.PlayniteGameId,
-                    TextContent = doc.TextContent,
-                    TaxonomyTerms = doc.TaxonomyTerms,
+                    TextTokens = doc.TextTokens,
+                    TaxonomyTokens = doc.TaxonomyTokens,
                     Labels = labels
                 };
             }).ToList();
@@ -46,10 +46,10 @@ namespace ExporterGameCorpus.Application
             ClassificationDefinition def)
         {
             bool tagMatch = def.RequiredTags.Any(tag =>
-                doc.TaxonomyTerms.Contains(tag));
+                doc.TaxonomyTokens.Contains(tag));
 
             bool genreMatch = def.RequiredGenres.Any(genre =>
-                doc.TaxonomyTerms.Contains(genre));
+                doc.TaxonomyTokens.Contains(genre));
 
             return tagMatch || genreMatch;
         }
