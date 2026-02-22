@@ -9,6 +9,6 @@ namespace ExporterGameCorpus.Application
 {
     public interface ICorpusMinerPort
     {
-        MiningExport Mine(List<LabeledCorpusDocument> labeledCorpus);
+        GameLibraryStatistics Mine(List<LabeledCorpusDocument> labeledCorpus);
     }
 }

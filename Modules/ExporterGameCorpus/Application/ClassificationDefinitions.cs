@@ -21,7 +21,13 @@ namespace ExporterGameCorpus.Application
                         "roguelike",
                         "roguelite",
                         "procedural generation"
-                    }
+                    },
+                    RequiredGenres = new List<string>
+                    {
+                        "roguelike",
+                        "roguelite",
+                        "procedural generation"
+                    },
                 },
                 new ClassificationDefinition
                 {
@@ -30,8 +36,18 @@ namespace ExporterGameCorpus.Application
                     {
                         "horror",
                         "psychological horror",
-                        "survival horror"
-                    }
+                        "psychological-horror",
+                        "survival horror",
+                        "survival-horror"
+                    },
+                    RequiredGenres = new List<string>
+                    {
+                        "horror",
+                        "psychological horror",
+                        "psychological-horror",
+                        "survival horror",
+                        "survival-horror"
+                    },
                 }
             };
     }

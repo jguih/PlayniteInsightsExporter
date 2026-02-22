@@ -33,8 +33,8 @@ namespace ExporterGameCorpus.Application
         {
             var normalized = CorpusNormalizer.NormalizeText(text);
 
-            var matches = Regex.Matches(normalized.ToLower(), @"\b[\w']+\b");
-            var tokens = new List<string>(matches.Count);
+            var matches = Regex.Matches(normalized, @"\b[\w'-]+\b");
+            var tokens = new List<string>();
 
             foreach (Match match in matches)
             {
@@ -43,16 +43,19 @@ namespace ExporterGameCorpus.Application
 
             var result = new List<string>(tokens);
 
-            // Bigrams
             for (int i = 0; i < tokens.Count - 1; i++)
             {
                 result.Add($"{tokens[i]} {tokens[i + 1]}");
             }
 
-            // Trigrams
             for (int i = 0; i < tokens.Count - 2; i++)
             {
                 result.Add($"{tokens[i]} {tokens[i + 1]} {tokens[i + 2]}");
+            }
+
+            for (int i = 0; i < tokens.Count - 3; i++)
+            {
+                result.Add($"{tokens[i]} {tokens[i + 1]} {tokens[i + 2]} {tokens[i + 3]}");
             }
 
             return result;

@@ -196,12 +196,7 @@ namespace PlayniteInsightsExporter
                 var games = exporterApi.PlayniteIntegration.Query.GetAllGames.Execute().ToList();
                 var corpus = exporterApi.GameCorpus.CorpusBuilder.Build(games);
                 var labeledCorpus = exporterApi.GameCorpus.CorpusLabeler.ApplyLabels(corpus);
-                var miningResult = exporterApi.GameCorpus.CorpusMiner.Mine(labeledCorpus);
-
-                var stats = new GameLibraryStatistics()
-                {
-                    LibraryData = new List<MiningExport>() { miningResult }
-                };
+                var stats = exporterApi.GameCorpus.CorpusMiner.Mine(labeledCorpus);
 
                 var path = playniteApi.Dialogs.SaveFile("JSON files|*.json", true);
 

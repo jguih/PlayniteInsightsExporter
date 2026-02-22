@@ -86,7 +86,7 @@ namespace ExporterGameCorpus.Application
 
         private string NormalizePunctuation(string text)
         {
-            return Regex.Replace(text, @"[^\p{L}\p{Nd}]+", " ");
+            return Regex.Replace(text, @"[^\p{L}\p{Nd}'-]+", " ");
         }
 
         private string CollapseWhitespace(string text)
