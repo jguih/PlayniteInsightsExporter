@@ -329,10 +329,7 @@ namespace PlayniteInsightsExporter
 
         public string GetShareXExePath()
         {
-            var path = Settings?.Settings?.ShareXExePath ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(path))
-                throw new InvalidOperationException("ShareX executable path is not set in settings.");
-            return path;
+            throw new NotImplementedException();
         }
 
         public string GetExtensionVersion()

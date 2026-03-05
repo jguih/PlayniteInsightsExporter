@@ -108,6 +108,7 @@ namespace PlayniteInsightsExporter
 
         public GlobalProgressResult SyncGames(GameLibrarySyncDiff overrideDiff = null)
         {
+            var loc_progress_syncing_one_game = ResourceProvider.GetString("LOC_Progress_SyncingOneGame");
             var loc_progress_syncing_library = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
             var loc_progress_syncing_games = ResourceProvider.GetString("LOC_Progress_SyncingGames");
 
@@ -122,14 +123,30 @@ namespace PlayniteInsightsExporter
                 .Dialogs
                 .ActivateGlobalProgress(async progress =>
                 {
-                    var diff = overrideDiff 
+                    var diff = overrideDiff
                         ?? await ExporterApi.LibrarySync
                             .LibrarySyncService
                             .ComputeGameLibraryDiff();
                     var total = diff.Total;
 
-                    progress.Text = loc_progress_syncing_games
-                        .Replace("{{total}}", total.ToString());
+                    var firstDiffItem = total == 1 && diff != null ?
+                        diff.ToUpdate.Count > 0 ? diff.ToUpdate.FirstOrDefault() :
+                        diff.ToAdd.Count > 0 ? diff.ToAdd.FirstOrDefault() :
+                        null :
+                        null;
+                    var firstGame = firstDiffItem?.Game;
+
+                    if (total > 1 || firstGame == null)
+                    {
+                        progress.Text = loc_progress_syncing_games
+                            .Replace("{{total}}", total.ToString());
+                    }
+                    else if (firstGame != null)
+                    {
+                        progress.Text = loc_progress_syncing_one_game
+                            .Replace("{{gameName}}", firstGame.Name);
+                    }
+
 
                     await ExporterApi.LibrarySync
                         .LibrarySyncService
@@ -153,7 +170,7 @@ namespace PlayniteInsightsExporter
                 {
                     ProgressResult = new GlobalProgressResult(false, false, ex),
                     SyncResult = new SyncMediaFilesResult(
-                        ex.Message, 
+                        ex.Message,
                         SyncMediaFilesResultReasonCode.OneOrMoreFailed,
                         false,
                         0,
@@ -192,8 +209,9 @@ namespace PlayniteInsightsExporter
 
         public SyncMediaFilesWorkflowResult SyncMediaFiles(List<AppGame> overrideGames = null)
         {
+            var loc_progress_syncing_library_prefix = ResourceProvider.GetString("LOC_Progress_SyncingMediaFiles_Prefix");
+            var loc_progress_syncing_library_suffix = ResourceProvider.GetString("LOC_Progress_SyncingMediaFiles_Suffix");
             var loc_progress_syncing_library = ResourceProvider.GetString("LOC_Loading_SyncClientServer");
-            var loc_progress_syncing_media_files = ResourceProvider.GetString("LOC_Progress_SyncingMediaFiles");
 
             SyncMediaFilesResult syncResult = null;
 
@@ -201,7 +219,7 @@ namespace PlayniteInsightsExporter
                 .Dialogs
                 .ActivateGlobalProgress(async progress =>
                 {
-                    var games = overrideGames 
+                    var games = overrideGames
                         ?? ExporterApi.PlayniteIntegration
                             .Query
                             .GetAllGames
@@ -215,10 +233,11 @@ namespace PlayniteInsightsExporter
                     {
                         OnBeginProcessing = (game) =>
                         {
-                            var progressText = loc_progress_syncing_media_files
+                            var progressTextSuffix = loc_progress_syncing_library_suffix
                                 .Replace("{{current}}", (progress.CurrentProgressValue + 1).ToString())
                                 .Replace("{{total}}", (progress.ProgressMaxValue).ToString())
                                 .Replace("{{gameName}}", game.Name);
+                            var progressText = $"{loc_progress_syncing_library_prefix}\n{progressTextSuffix}";
                             progress.Text = progressText;
                         },
                         OnFinishProcessing = (game) =>
