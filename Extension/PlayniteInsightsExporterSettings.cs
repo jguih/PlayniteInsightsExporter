@@ -23,7 +23,6 @@ namespace PlayniteInsightsExporter
         private string webAppURL = string.Empty;
         private bool enableLibrarySyncOnUpdate = true;
         private bool enableMediaFilesSyncOnUpdate = true;
-        private string shareXExePath = string.Empty;
 
         public string WebAppURL { get => webAppURL; set => SetValue(ref webAppURL, value); }
         public bool EnableLibrarySyncOnUpdate
@@ -36,16 +35,9 @@ namespace PlayniteInsightsExporter
             get => enableMediaFilesSyncOnUpdate;
             set => SetValue(ref enableMediaFilesSyncOnUpdate, value);
         }
-        public string ShareXExePath
-        {
-            get => shareXExePath;
-            set => SetValue(ref shareXExePath, value);
-        }
 
         [DontSerialize]
         public RelayCommand ExportLibraryButton { get; set; }
-        [DontSerialize]
-        public RelayCommand BrowseShareXPath { get; set; }
         [DontSerialize]
         public RelayCommand RegisterExtensionButton { get; set; }
         [DontSerialize]
@@ -71,7 +63,6 @@ namespace PlayniteInsightsExporter
             {
                 settings = value;
                 settings.ExportLibraryButton = new RelayCommand(() => OnExportLibrary());
-                settings.BrowseShareXPath = new RelayCommand(() => OnBrowseShareXPath());
                 settings.RegisterExtensionButton = new RelayCommand(() => OnRegisterExtension());
                 settings.ExportLibraryStatsButton = new RelayCommand(() => OnExportGameLibraryStats());
                 OnPropertyChanged();
@@ -163,21 +154,6 @@ namespace PlayniteInsightsExporter
                     loc_successSyncClientServer,
                     "Library Sync"
                 ), dialogFeedbackChannel);
-        }
-
-        public void OnBrowseShareXPath()
-        {
-            var dialog = new OpenFileDialog
-            {
-                Filter = "Executable files (*.exe)|*.exe|All files (*.*)|*.*",
-                Title = "Select ShareX Executable"
-            };
-
-            bool? result = dialog.ShowDialog();
-            if (result == true)
-            {
-                Settings.ShareXExePath = dialog.FileName;
-            }
         }
 
         public void OnRegisterExtension()

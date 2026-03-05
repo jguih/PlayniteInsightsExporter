@@ -46,21 +46,6 @@
                     Command="{Binding Settings.ExportLibraryStatsButton}"
                     Margin="0,0,0,12"
                     HorizontalAlignment="Left"/>
-                <StackPanel>
-                    <TextBlock Text="{DynamicResource LOC_Label_ShareX_Executable_Path}" Margin="0,0,0,12"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                        <TextBox 
-                            x:Name="ExePathTextBox" 
-                            Width="300" 
-                            Text="{Binding Settings.ShareXExePath}"
-                        />
-                        <Button 
-                            Content="{DynamicResource LOC_Label_Browse}" 
-                            Command="{Binding Settings.BrowseShareXPath}" 
-                            Margin="5,0,0,0"
-                        />
-                    </StackPanel>
-                </StackPanel>
             </StackPanel>
         </TabItem>
     </TabControl>
